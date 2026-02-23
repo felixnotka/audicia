@@ -19,7 +19,7 @@ var cloudLog = ctrl.Log.WithName("ingestor").WithName("cloud")
 // cloud-provider-specific envelopes, and emits them on a channel.
 type CloudIngestor struct {
 	Source    MessageSource
-	Parser   EnvelopeParser
+	Parser    EnvelopeParser
 	Validator *ClusterIdentityValidator
 
 	// ProviderLabel is used as the "provider" label in Prometheus metrics.
@@ -71,7 +71,7 @@ func (c *CloudIngestor) CloudCheckpoint() CloudPosition {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	cp := CloudPosition{
-		LastTimestamp:     c.position.LastTimestamp,
+		LastTimestamp:    c.position.LastTimestamp,
 		PartitionOffsets: make(map[string]string, len(c.position.PartitionOffsets)),
 	}
 	for k, v := range c.position.PartitionOffsets {

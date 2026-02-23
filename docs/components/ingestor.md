@@ -13,7 +13,7 @@ outputting raw `audit.k8s.io/v1.Event` structs regardless of source type.
 Audit Log → **Ingestor** → Filter → Normalizer → Aggregator → Strategy → Compliance → Report
 ```
 
-**Input:** Raw audit events from a file on disk or an HTTPS webhook endpoint.
+**Input:** Raw audit events from a file on disk, an HTTPS webhook endpoint, or a cloud message bus.
 **Output:** Parsed `audit.k8s.io/v1.Event` structs on an internal event channel.
 
 The ingestor knows nothing about RBAC. Its only job is to reliably deliver audit events to the rest of the pipeline.
@@ -22,8 +22,7 @@ The ingestor knows nothing about RBAC. Its only job is to reliably deliver audit
 
 ## Ingestion Modes
 
-Each `AudiciaSource` CR specifies one of two ingestion modes. Both can run simultaneously — each source gets its own
-pipeline goroutine.
+Each `AudiciaSource` CR specifies one of three ingestion modes. Each source gets its own pipeline goroutine.
 
 ### File-Based Ingestion (`K8sAuditLog`)
 
@@ -81,9 +80,49 @@ spec:
 **Helm requirement:** `webhook.enabled=true`, `webhook.tlsSecretName=<secret>`. Does NOT need control plane
 scheduling — runs on any node.
 
+### Cloud-Based Ingestion (`CloudAuditLog`)
+
+Connects to a cloud-managed message bus and consumes audit events from provider-specific envelopes. Designed for
+managed Kubernetes platforms (AKS, EKS, GKE) where apiserver flags and audit log files are not accessible.
+
+**Package:** `pkg/ingestor/cloud/`
+
+| Behavior                        | Details                                                                                                  |
+|---------------------------------|----------------------------------------------------------------------------------------------------------|
+| **Message bus consumer**        | Connects via `MessageSource` interface. Azure Event Hub uses the Processor pattern for partition balancing. |
+| **Envelope parsing**            | `EnvelopeParser` unwraps provider-specific JSON. Azure: `records[].properties.log` contains audit JSON.  |
+| **Cluster identity validation** | Optional `clusterIdentity` check prevents ingesting events from other clusters sharing the same bus.     |
+| **Batch processing**            | Receives message batches, parses all events, then acknowledges the entire batch.                         |
+| **Per-partition checkpointing** | Tracks sequence numbers per partition in `AudiciaSource.status.cloudCheckpoint.partitionOffsets`.        |
+| **Error resilience**            | Receive errors trigger a 5-second backoff and retry. Unparseable messages are skipped and logged.        |
+| **Graceful shutdown**           | Source is closed with a 10-second timeout on context cancellation. Channel is closed after cleanup.      |
+
+**CRD configuration:**
+
+```yaml
+spec:
+  sourceType: CloudAuditLog
+  cloud:
+    provider: AzureEventHub
+    credentialSecretName: cloud-credentials
+    clusterIdentity: "/subscriptions/.../managedClusters/my-cluster"
+    azure:
+      eventHubNamespace: "myns.servicebus.windows.net"
+      eventHubName: "aks-audit-logs"
+      consumerGroup: "$Default"
+```
+
+**Helm requirement:** `cloudAuditLog.enabled=true`, `cloudAuditLog.provider=AzureEventHub`. Requires the operator
+image built with the `azure` build tag. Does NOT need control plane scheduling.
+
+**Build tags:** Cloud adapters are compiled conditionally (`-tags azure`). The default binary includes no cloud SDKs.
+See [Cloud Ingestion](../concepts/cloud-ingestion.md) for details.
+
 ---
 
 ## Core Functions
+
+### File / Webhook
 
 | Function             | Purpose                                                                                                                        |
 |----------------------|--------------------------------------------------------------------------------------------------------------------------------|
@@ -92,6 +131,16 @@ scheduling — runs on any node.
 | `handleAuditRequest` | Webhook mode handler. Enforces POST method, rate limiting, body size limits, JSON parsing, deduplication, and backpressure.    |
 | `seen`               | Bounded FIFO deduplication cache. Prevents duplicate processing when the same audit event is delivered more than once.         |
 | `allow`              | Token-bucket rate limiter. Returns `false` (HTTP 429) when the per-second request threshold is exceeded.                       |
+
+### Cloud
+
+| Function          | Purpose                                                                                                    |
+|-------------------|------------------------------------------------------------------------------------------------------------|
+| `Start`           | Connects to the cloud source, launches the receive loop goroutine, returns the event channel.              |
+| `receiveLoop`     | Main processing loop: receive batch → parse envelopes → validate identity → emit events → acknowledge.    |
+| `updatePosition`  | Updates per-partition sequence numbers and last timestamp after each batch.                                 |
+| `Checkpoint`      | Returns `ingestor.Position` with `LastTimestamp` (file fields zero — not applicable for cloud sources).    |
+| `CloudCheckpoint` | Returns full `CloudPosition` including per-partition offsets (used by the controller for status persistence). |
 
 ---
 
@@ -102,3 +151,5 @@ scheduling — runs on any node.
 - [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration walkthrough
 - [mTLS Setup Guide](../guides/mtls-setup.md) — Client certificate verification
 - [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full field reference
+- [Cloud Ingestion](../concepts/cloud-ingestion.md) — Cloud ingestion architecture and design
+- [AKS Setup Guide](../guides/aks-setup.md) — Azure Event Hub configuration walkthrough

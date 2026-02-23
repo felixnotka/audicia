@@ -25,11 +25,12 @@ Audicia fixes this by observing actual API access patterns and generating the mi
 
 ### AudiciaSource
 
-An `AudiciaSource` is a custom resource that tells Audicia where to find audit events. It supports two ingestion
+An `AudiciaSource` is a custom resource that tells Audicia where to find audit events. It supports three ingestion
 modes:
 
 - **File-based** (`K8sAuditLog`): Tails a Kubernetes audit log file on disk with checkpoint/resume.
 - **Webhook** (`Webhook`): Receives real-time audit events via HTTPS from the kube-apiserver's audit webhook backend.
+- **Cloud-based** (`CloudAuditLog`): Connects to a cloud message bus (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub) and parses audit events from provider-specific envelopes.
 
 ### AudiciaPolicyReport
 
@@ -54,14 +55,16 @@ It also flags sensitive excess — unused grants on high-risk resources like sec
 
 ## Supported Platforms
 
-| Platform             | File Mode    | Webhook Mode |
-|----------------------|--------------|--------------|
-| kubeadm (bare metal) | Full support | Full support |
-| k3s / RKE2           | Full support | Full support |
-| EKS / GKE / AKS     | Not supported | Not supported |
+| Platform             | File Mode    | Webhook Mode | Cloud Mode   |
+|----------------------|--------------|--------------|--------------|
+| kubeadm (bare metal) | Full support | Full support | N/A          |
+| k3s / RKE2           | Full support | Full support | N/A          |
+| AKS                  | Not supported | Not supported | Full support |
+| EKS / GKE            | Not supported | Not supported | Planned      |
 
-Managed Kubernetes (EKS, GKE, AKS) does not expose apiserver flags or audit log files. Cloud-specific log ingestors
-are planned for the future.
+Managed Kubernetes platforms do not expose apiserver flags or audit log files. Cloud mode connects to the platform's
+native audit pipeline instead. See the [Cloud Ingestion](../concepts/cloud-ingestion.md) concept and the
+[AKS Setup Guide](../guides/aks-setup.md) for details.
 
 ## What's Next
 

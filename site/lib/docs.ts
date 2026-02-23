@@ -39,6 +39,7 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "compliance-scoring", title: "Compliance Scoring" },
       { slug: "rbac-generation", title: "RBAC Policy Generation" },
       { slug: "security-model", title: "Security Model" },
+      { slug: "cloud-ingestion", title: "Cloud Ingestion" },
     ],
   },
   {
@@ -50,6 +51,7 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "mtls-setup", title: "mTLS Setup" },
       { slug: "filter-recipes", title: "Filter Recipes" },
       { slug: "kube-proxy-free", title: "Kube-Proxy-Free Clusters" },
+      { slug: "aks-setup", title: "AKS Setup (Event Hub)" },
       { slug: "demo-walkthrough", title: "Demo Walkthrough" },
     ],
   },
@@ -95,6 +97,7 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "audicia-source-file", title: "AudiciaSource: File" },
       { slug: "audicia-source-webhook", title: "AudiciaSource: Webhook" },
       { slug: "audicia-source-hardened", title: "AudiciaSource: Hardened" },
+      { slug: "audicia-source-cloud-aks", title: "AudiciaSource: Cloud (AKS)" },
       { slug: "webhook-kubeconfig", title: "Webhook Kubeconfig" },
       { slug: "webhook-kubeconfig-mtls", title: "Webhook Kubeconfig (mTLS)" },
       { slug: "network-policy", title: "NetworkPolicy" },

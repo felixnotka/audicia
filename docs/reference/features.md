@@ -8,7 +8,8 @@ Index of all features supported by Audicia. Each entry links to the relevant dee
 
 - **File-based ingestion** — Tail a Kubernetes audit log file with checkpoint/resume and log rotation detection. [Ingestor](../components/ingestor.md)
 - **Webhook ingestion** — Receive real-time audit events via HTTPS with TLS, mTLS, rate limiting, and deduplication. [Ingestor](../components/ingestor.md) | [Webhook Setup](../guides/webhook-setup.md)
-- **Dual mode** — Run file and webhook ingestion simultaneously. Each AudiciaSource gets its own pipeline.
+- **Cloud ingestion** — Connect to cloud message buses (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub) for managed Kubernetes audit logs. [Ingestor](../components/ingestor.md) | [Cloud Ingestion](../concepts/cloud-ingestion.md) | [AKS Setup](../guides/aks-setup.md)
+- **Multi-mode** — Run file, webhook, and cloud ingestion simultaneously. Each AudiciaSource gets its own pipeline.
 
 ## Processing
 
@@ -34,7 +35,7 @@ Index of all features supported by Audicia. Each entry links to the relevant dee
 
 - **Checkpoint and persistence** — Periodic flush to `AudiciaSource.status` (etcd-backed) with conflict retry. [Controller](../components/controller.md)
 - **Retention and limits** — Configurable max rules per report and retention window. [Helm Values](../configuration/helm-values.md)
-- **Prometheus metrics** — 8 operator metrics covering events processed, filtered, rules generated, pipeline latency. [Metrics](metrics.md)
+- **Prometheus metrics** — 13 operator metrics covering events processed, filtered, rules generated, pipeline latency, and cloud ingestion. [Metrics](metrics.md)
 - **Health probes** — Liveness and readiness endpoints for production monitoring. [Helm Values](../configuration/helm-values.md#health-probes)
 - **Helm chart** — Single-command install from `charts.audicia.io`. [Helm Values](../configuration/helm-values.md)
 
@@ -53,11 +54,12 @@ Index of all features supported by Audicia. Each entry links to the relevant dee
 
 ## Platform Compatibility
 
-| Platform             | File Mode    | Webhook Mode |
-|----------------------|--------------|--------------|
-| kubeadm (bare metal) | Full support | Full support |
-| k3s / RKE2           | Full support | Full support |
-| EKS / GKE / AKS      | Not supported | Not supported |
+| Platform             | File Mode    | Webhook Mode | Cloud Mode   |
+|----------------------|--------------|--------------|--------------|
+| kubeadm (bare metal) | Full support | Full support | N/A          |
+| k3s / RKE2           | Full support | Full support | N/A          |
+| AKS                  | Not supported | Not supported | Full support |
+| EKS / GKE            | Not supported | Not supported | Planned      |
 
 Inode-based log rotation detection uses `syscall.Stat_t` on Linux. On non-Linux platforms, inode detection is
 disabled — rotation falls back to file-not-found handling.

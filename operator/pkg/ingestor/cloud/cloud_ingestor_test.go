@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/apimachinery/pkg/types"
+	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
 // fakeParser implements EnvelopeParser for testing. It unmarshals the message
@@ -39,14 +39,6 @@ func makeEvent(auditID, verb, resource string) auditv1.Event {
 		ObjectRef: &auditv1.ObjectReference{
 			Resource: resource,
 		},
-	}
-}
-
-func makeEventWithAnnotations(auditID string, annotations map[string]string) auditv1.Event {
-	return auditv1.Event{
-		AuditID:     types.UID(auditID),
-		Verb:        "get",
-		Annotations: annotations,
 	}
 }
 
@@ -240,7 +232,7 @@ func TestCloudIngestor_ConnectError(t *testing.T) {
 func TestCloudIngestor_CheckpointRestore(t *testing.T) {
 	startPos := CloudPosition{
 		PartitionOffsets: map[string]string{"0": "50", "1": "25"},
-		LastTimestamp:     "2026-01-01T00:00:00Z",
+		LastTimestamp:    "2026-01-01T00:00:00Z",
 	}
 
 	source := NewFakeSource(

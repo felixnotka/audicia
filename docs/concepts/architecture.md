@@ -13,7 +13,7 @@ Every audit event flows through a six-stage pipeline:
 Audit Log → Ingestor → Filter → Normalizer → Aggregator → Strategy Engine → Compliance Engine → Report
 ```
 
-1. **[Ingestor](../components/ingestor.md)** — Reads audit events from a file on disk or an HTTPS webhook endpoint. Outputs raw `audit.k8s.io/v1.Event` structs.
+1. **[Ingestor](../components/ingestor.md)** — Reads audit events from a file on disk, an HTTPS webhook endpoint, or a cloud message bus (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub). Outputs raw `audit.k8s.io/v1.Event` structs.
 2. **[Filter](../components/filter.md)** — Drops events that shouldn't generate policy recommendations (system users, noisy namespaces). Configurable allow/deny chain.
 3. **[Normalizer](../components/normalizer.md)** — Converts raw events into canonical RBAC rules: parses subject identity, concatenates subresources, migrates API groups (`extensions` → `apps`).
 4. **[Aggregator](../components/aggregator.md)** — Deduplicates rules per subject. Same rule observed twice increments the count and updates `lastSeen`.
@@ -64,7 +64,8 @@ Audicia follows the principle of least privilege in its own design:
 
 - **Read-only** access to audit log sources and RBAC objects. No secrets access, no impersonation.
 - **No auto-apply.** Audicia generates policy recommendations. Humans or GitOps pipelines apply them.
-- **Minimal footprint.** Single Deployment, no external dependencies (no database, no message queue).
+- **Minimal footprint.** Single Deployment, no external dependencies (no database, no message queue). Cloud mode adds optional SDK dependencies via build tags.
 - **Webhook security.** TLS-only, mTLS recommended, rate limited, NetworkPolicy restricted.
+- **Cloud security.** Cloud credentials mounted as Secrets or obtained via workload identity. Cluster identity validation prevents cross-cluster event leakage.
 
 See the [Security Model](security-model.md) for the full threat model.

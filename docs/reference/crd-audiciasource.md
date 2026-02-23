@@ -53,7 +53,7 @@ For more examples, see the [Examples](../examples/audicia-source-hardened.md) se
 
 | Field               | Type    | Default | Description                                                 |
 |---------------------|---------|---------|-------------------------------------------------------------|
-| `sourceType`        | string  | -       | Ingestion backend: `K8sAuditLog` or `Webhook`               |
+| `sourceType`        | string  | -       | Ingestion backend: `K8sAuditLog`, `Webhook`, or `CloudAuditLog` |
 | `ignoreSystemUsers` | boolean | `true`  | Drop events from `system:*` users (except service accounts) |
 
 ## spec.location
@@ -71,6 +71,40 @@ For more examples, see the [Examples](../examples/audicia-source-hardened.md) se
 | `webhook.clientCASecretName`  | string  | -         | Name of a Secret containing `ca.crt` for mTLS client certificate verification |
 | `webhook.rateLimitPerSecond`  | integer | `100`     | Maximum requests per second (excess returns HTTP 429)                         |
 | `webhook.maxRequestBodyBytes` | integer | `1048576` | Maximum request body size in bytes (1MB default)                              |
+
+## spec.cloud
+
+Configuration for cloud-based audit log ingestion. Used with `sourceType: CloudAuditLog`.
+
+| Field                        | Type   | Default | Description                                                                                                                |
+|------------------------------|--------|---------|----------------------------------------------------------------------------------------------------------------------------|
+| `cloud.provider`             | string | -       | Cloud platform: `AzureEventHub`, `AWSCloudWatch`, or `GCPPubSub`                                                          |
+| `cloud.credentialSecretName` | string | -       | Name of a Secret containing cloud credentials (e.g., `connection-string` key). Leave empty for managed/workload identity    |
+| `cloud.clusterIdentity`     | string | -       | Identity string for cluster event validation. Format varies by provider (AKS resource ID, EKS ARN, GKE resource name)      |
+
+### spec.cloud.azure
+
+| Field                              | Type   | Default    | Description                                                                      |
+|------------------------------------|--------|------------|----------------------------------------------------------------------------------|
+| `cloud.azure.eventHubNamespace`    | string | -          | Fully qualified Event Hub namespace (e.g., `myns.servicebus.windows.net`)        |
+| `cloud.azure.eventHubName`        | string | -          | Event Hub instance name                                                          |
+| `cloud.azure.consumerGroup`       | string | `$Default` | Consumer group for partition reads                                               |
+| `cloud.azure.storageAccountURL`   | string | -          | Azure Blob Storage URL for checkpoint persistence. Empty = in-status checkpoints |
+| `cloud.azure.storageContainerName`| string | -          | Blob container name for checkpoints                                              |
+
+### spec.cloud.aws
+
+| Field                         | Type   | Default | Description                                           |
+|-------------------------------|--------|---------|-------------------------------------------------------|
+| `cloud.aws.logGroupName`     | string | -       | CloudWatch Logs group containing audit logs            |
+| `cloud.aws.logStreamPrefix`  | string | -       | Optional stream name prefix filter                     |
+
+### spec.cloud.gcp
+
+| Field                        | Type   | Default | Description                                 |
+|------------------------------|--------|---------|---------------------------------------------|
+| `cloud.gcp.projectID`       | string | -       | GCP project ID                              |
+| `cloud.gcp.subscriptionID`  | string | -       | Pub/Sub subscription ID for audit log topic |
 
 ## spec.policyStrategy
 
@@ -107,9 +141,10 @@ Ordered allow/deny chain. First match wins. Default: allow.
 
 ## status
 
-| Field                  | Type        | Description                                          |
-|------------------------|-------------|------------------------------------------------------|
-| `status.fileOffset`    | int64       | Byte offset in the audit log at last checkpoint      |
-| `status.lastTimestamp` | date-time   | Timestamp of the last processed event                |
-| `status.inode`         | int64       | Inode number for log rotation detection (Linux only) |
-| `status.conditions[]`  | Condition[] | Standard Kubernetes conditions (`Ready`)             |
+| Field                                         | Type        | Description                                                 |
+|-----------------------------------------------|-------------|-------------------------------------------------------------|
+| `status.fileOffset`                           | int64       | Byte offset in the audit log at last checkpoint             |
+| `status.lastTimestamp`                        | date-time   | Timestamp of the last processed event                       |
+| `status.inode`                                | int64       | Inode number for log rotation detection (Linux only)        |
+| `status.cloudCheckpoint.partitionOffsets`     | map         | Per-partition sequence numbers for cloud sources            |
+| `status.conditions[]`                         | Condition[] | Standard Kubernetes conditions (`Ready`)                    |
