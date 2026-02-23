@@ -69,9 +69,11 @@ func (s *EventHubSource) Connect(ctx context.Context) error {
 		return fmt.Errorf("creating Event Hub consumer client: %w", err)
 	}
 
-	checkpointStore, err := s.buildCheckpointStore(ctx)
+	checkpointStore, err := s.buildCheckpointStore()
 	if err != nil {
-		client.Close(ctx)
+		if closeErr := client.Close(ctx); closeErr != nil {
+			log.V(1).Info("failed to close client after checkpoint store error", "error", closeErr)
+		}
 		return fmt.Errorf("creating checkpoint store: %w", err)
 	}
 
@@ -85,7 +87,9 @@ func (s *EventHubSource) Connect(ctx context.Context) error {
 		},
 	})
 	if err != nil {
-		client.Close(ctx)
+		if closeErr := client.Close(ctx); closeErr != nil {
+			log.V(1).Info("failed to close client after processor error", "error", closeErr)
+		}
 		return fmt.Errorf("creating Event Hub processor: %w", err)
 	}
 
@@ -151,7 +155,9 @@ func (s *EventHubSource) Receive(ctx context.Context) ([]cloud.Message, error) {
 			s.mu.Lock()
 			s.partitionClient = nil
 			s.mu.Unlock()
-			pc.Close(ctx)
+			if closeErr := pc.Close(ctx); closeErr != nil {
+				log.V(1).Info("failed to close partition client after ownership lost", "error", closeErr)
+			}
 			return nil, nil
 		}
 		// Timeout is normal — no events available.
@@ -213,7 +219,9 @@ func (s *EventHubSource) Close(ctx context.Context) error {
 	s.mu.Unlock()
 
 	if pc != nil {
-		pc.Close(ctx)
+		if closeErr := pc.Close(ctx); closeErr != nil {
+			log.V(1).Info("failed to close partition client during shutdown", "error", closeErr)
+		}
 	}
 	if cancel != nil {
 		cancel()
@@ -252,7 +260,9 @@ func (s *EventHubSource) dispatchPartitions(ctx context.Context) {
 
 			select {
 			case <-ctx.Done():
-				pc.Close(ctx)
+				if closeErr := pc.Close(ctx); closeErr != nil {
+					log.V(1).Info("failed to close partition client during dispatch shutdown", "error", closeErr)
+				}
 				return
 			case <-time.After(500 * time.Millisecond):
 			}
@@ -264,7 +274,7 @@ func (s *EventHubSource) dispatchPartitions(ctx context.Context) {
 	}
 }
 
-func (s *EventHubSource) buildCheckpointStore(ctx context.Context) (azeventhubs.CheckpointStore, error) {
+func (s *EventHubSource) buildCheckpointStore() (azeventhubs.CheckpointStore, error) {
 	if s.StorageAccountURL == "" || s.StorageContainerName == "" {
 		// No external checkpoint store configured — use in-memory.
 		// Checkpoints are persisted in AudiciaSource status instead.
