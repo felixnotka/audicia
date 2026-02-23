@@ -73,8 +73,8 @@ docker-push: ## Push the container image.
 
 .PHONY: generate
 generate: ## Generate DeepCopy methods and CRD manifests.
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/..."
-	controller-gen crd paths="./pkg/apis/..." output:crd:artifacts:config=../deploy/helm/crds
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/audicia.io/v1alpha1"
+	controller-gen crd paths="./pkg/apis/audicia.io/v1alpha1" output:crd:artifacts:config=../deploy/helm/crds
 
 .PHONY: manifests
 manifests: generate ## Alias for generate.

@@ -5,12 +5,13 @@ import (
 )
 
 // SourceType defines the type of audit log source.
-// +kubebuilder:validation:Enum=K8sAuditLog;Webhook
+// +kubebuilder:validation:Enum=K8sAuditLog;Webhook;CloudAuditLog
 type SourceType string
 
 const (
-	SourceTypeK8sAuditLog SourceType = "K8sAuditLog"
-	SourceTypeWebhook     SourceType = "Webhook"
+	SourceTypeK8sAuditLog   SourceType = "K8sAuditLog"
+	SourceTypeWebhook       SourceType = "Webhook"
+	SourceTypeCloudAuditLog SourceType = "CloudAuditLog"
 )
 
 // ScopeMode controls whether ClusterRoles are generated.
@@ -62,6 +63,10 @@ type AudiciaSourceSpec struct {
 	// Webhook configures the webhook-based audit event receiver.
 	// +optional
 	Webhook *WebhookConfig `json:"webhook,omitempty"`
+
+	// Cloud configures cloud-based audit log ingestion (AKS Event Hub, EKS CloudWatch, GKE Pub/Sub).
+	// +optional
+	Cloud *CloudConfig `json:"cloud,omitempty"`
 
 	// PolicyStrategy configures how policies are generated.
 	// +optional
@@ -184,6 +189,104 @@ type LimitsConfig struct {
 	RetentionDays int32 `json:"retentionDays,omitempty"`
 }
 
+// CloudProvider defines supported cloud providers for audit log ingestion.
+// +kubebuilder:validation:Enum=AzureEventHub;AWSCloudWatch;GCPPubSub
+type CloudProvider string
+
+const (
+	CloudProviderAzureEventHub CloudProvider = "AzureEventHub"
+	CloudProviderAWSCloudWatch CloudProvider = "AWSCloudWatch"
+	CloudProviderGCPPubSub     CloudProvider = "GCPPubSub"
+)
+
+// CloudConfig configures cloud-based audit log ingestion.
+type CloudConfig struct {
+	// Provider specifies the cloud platform.
+	// +kubebuilder:validation:Required
+	Provider CloudProvider `json:"provider"`
+
+	// CredentialSecretName is the name of a Kubernetes Secret containing cloud
+	// credentials (e.g., connection string). The Secret must exist in the same
+	// namespace as the AudiciaSource. Leave empty for managed identity / workload identity.
+	// +optional
+	CredentialSecretName string `json:"credentialSecretName,omitempty"`
+
+	// ClusterIdentity is used to verify that received audit events belong to
+	// the cluster where this operator is running. Format varies by provider
+	// (e.g., AKS resource ID, EKS cluster ARN, GKE resource name).
+	// +kubebuilder:validation:Required
+	ClusterIdentity string `json:"clusterIdentity"`
+
+	// Azure contains Azure Event Hub-specific configuration.
+	// +optional
+	Azure *AzureEventHubConfig `json:"azure,omitempty"`
+
+	// AWS contains AWS CloudWatch-specific configuration.
+	// +optional
+	AWS *AWSCloudWatchConfig `json:"aws,omitempty"`
+
+	// GCP contains GCP Pub/Sub-specific configuration.
+	// +optional
+	GCP *GCPPubSubConfig `json:"gcp,omitempty"`
+}
+
+// AzureEventHubConfig configures Azure Event Hub-based ingestion.
+type AzureEventHubConfig struct {
+	// EventHubNamespace is the fully qualified Event Hub namespace
+	// (e.g., "myns.servicebus.windows.net").
+	// +kubebuilder:validation:Required
+	EventHubNamespace string `json:"eventHubNamespace"`
+
+	// EventHubName is the name of the Event Hub instance.
+	// +kubebuilder:validation:Required
+	EventHubName string `json:"eventHubName"`
+
+	// ConsumerGroup is the consumer group name.
+	// +kubebuilder:default="$Default"
+	// +optional
+	ConsumerGroup string `json:"consumerGroup,omitempty"`
+
+	// StorageAccountURL is the Azure Blob Storage URL used for checkpoint
+	// persistence by the Event Hub processor. If empty, checkpoints are
+	// stored in AudiciaSource status only.
+	// +optional
+	StorageAccountURL string `json:"storageAccountURL,omitempty"`
+
+	// StorageContainerName is the blob container name for checkpoints.
+	// +optional
+	StorageContainerName string `json:"storageContainerName,omitempty"`
+}
+
+// AWSCloudWatchConfig configures AWS CloudWatch-based ingestion (placeholder).
+type AWSCloudWatchConfig struct {
+	// LogGroupName is the CloudWatch Logs group containing audit logs.
+	// +kubebuilder:validation:Required
+	LogGroupName string `json:"logGroupName"`
+
+	// LogStreamPrefix is an optional stream name prefix filter.
+	// +optional
+	LogStreamPrefix string `json:"logStreamPrefix,omitempty"`
+}
+
+// GCPPubSubConfig configures GCP Pub/Sub-based ingestion (placeholder).
+type GCPPubSubConfig struct {
+	// ProjectID is the GCP project ID.
+	// +kubebuilder:validation:Required
+	ProjectID string `json:"projectID"`
+
+	// SubscriptionID is the Pub/Sub subscription name.
+	// +kubebuilder:validation:Required
+	SubscriptionID string `json:"subscriptionID"`
+}
+
+// CloudCheckpointStatus stores cloud-specific checkpoint data.
+type CloudCheckpointStatus struct {
+	// PartitionOffsets maps partition/shard IDs to their last-acknowledged
+	// sequence numbers. Used to resume consumption after restart.
+	// +optional
+	PartitionOffsets map[string]string `json:"partitionOffsets,omitempty"`
+}
+
 // AudiciaSourceStatus defines the observed state of an AudiciaSource.
 type AudiciaSourceStatus struct {
 	// FileOffset is the byte offset of the last processed position in the audit log file.
@@ -197,6 +300,10 @@ type AudiciaSourceStatus struct {
 	// Inode is the inode number of the audit log file (for rotation detection).
 	// +optional
 	Inode uint64 `json:"inode,omitempty"`
+
+	// CloudCheckpoint stores resumption state for cloud audit log sources.
+	// +optional
+	CloudCheckpoint *CloudCheckpointStatus `json:"cloudCheckpoint,omitempty"`
 
 	// Conditions represent the latest available observations of the source's state.
 	// +optional

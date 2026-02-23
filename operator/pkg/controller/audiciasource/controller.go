@@ -28,6 +28,7 @@ import (
 	"github.com/felixnotka/audicia/operator/pkg/diff"
 	"github.com/felixnotka/audicia/operator/pkg/filter"
 	"github.com/felixnotka/audicia/operator/pkg/ingestor"
+	"github.com/felixnotka/audicia/operator/pkg/ingestor/cloud"
 	"github.com/felixnotka/audicia/operator/pkg/metrics"
 	"github.com/felixnotka/audicia/operator/pkg/normalizer"
 	"github.com/felixnotka/audicia/operator/pkg/rbac"
@@ -222,6 +223,36 @@ func createIngestor(source audiciav1alpha1.AudiciaSource, logger logr.Logger) (i
 		}
 
 		return wh, nil
+
+	case audiciav1alpha1.SourceTypeCloudAuditLog:
+		if source.Spec.Cloud == nil {
+			logger.Error(nil, "CloudAuditLog source requires cloud config")
+			return nil, fmt.Errorf("CloudAuditLog source requires cloud config")
+		}
+
+		msgSource, parser, err := cloud.BuildAdapter(source.Spec.Cloud)
+		if err != nil {
+			logger.Error(err, "failed to build cloud adapter", "provider", source.Spec.Cloud.Provider)
+			return nil, fmt.Errorf("building cloud adapter: %w", err)
+		}
+
+		// Restore cloud checkpoint from status.
+		startPos := cloud.CloudPosition{}
+		if source.Status.CloudCheckpoint != nil && source.Status.CloudCheckpoint.PartitionOffsets != nil {
+			startPos.PartitionOffsets = source.Status.CloudCheckpoint.PartitionOffsets
+		}
+		if source.Status.LastTimestamp != nil {
+			startPos.LastTimestamp = source.Status.LastTimestamp.Format(time.RFC3339)
+		}
+
+		var validator *cloud.ClusterIdentityValidator
+		if source.Spec.Cloud.ClusterIdentity != "" {
+			validator = &cloud.ClusterIdentityValidator{
+				ExpectedIdentity: source.Spec.Cloud.ClusterIdentity,
+			}
+		}
+
+		return cloud.NewCloudIngestor(msgSource, parser, validator, startPos), nil
 
 	default:
 		logger.Error(nil, "unknown source type", "sourceType", source.Spec.SourceType)
@@ -511,6 +542,14 @@ func (r *Reconciler) populateReportStatus(
 // flushCheckpoint persists the ingestor checkpoint back to the AudiciaSource status.
 func (r *Reconciler) flushCheckpoint(ctx context.Context, key types.NamespacedName, ing ingestor.Ingestor) {
 	logger := ctrl.Log.WithName("pipeline").WithValues("source", key)
+
+	// Cloud ingestors have partition-based checkpoints.
+	if cloudIng, ok := ing.(*cloud.CloudIngestor); ok {
+		r.flushCloudCheckpoint(ctx, key, cloudIng, logger)
+		return
+	}
+
+	// File/webhook checkpoint path (unchanged).
 	pos := ing.Checkpoint()
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -534,6 +573,40 @@ func (r *Reconciler) flushCheckpoint(ctx context.Context, key types.NamespacedNa
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			logger.Error(err, "failed to update checkpoint")
+		}
+	} else {
+		metrics.CheckpointLagSeconds.WithLabelValues(key.String()).Set(0)
+	}
+}
+
+// flushCloudCheckpoint persists cloud-specific partition offsets to AudiciaSource status.
+func (r *Reconciler) flushCloudCheckpoint(ctx context.Context, key types.NamespacedName, ing *cloud.CloudIngestor, logger logr.Logger) {
+	cp := ing.CloudCheckpoint()
+
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var source audiciav1alpha1.AudiciaSource
+		if err := r.Get(ctx, key, &source); err != nil {
+			return err
+		}
+
+		if source.Status.CloudCheckpoint == nil {
+			source.Status.CloudCheckpoint = &audiciav1alpha1.CloudCheckpointStatus{}
+		}
+		source.Status.CloudCheckpoint.PartitionOffsets = cp.PartitionOffsets
+
+		if cp.LastTimestamp != "" {
+			t, err := time.Parse(time.RFC3339, cp.LastTimestamp)
+			if err == nil {
+				mt := metav1.NewTime(t)
+				source.Status.LastTimestamp = &mt
+			}
+		}
+
+		return r.Status().Update(ctx, &source)
+	})
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			logger.Error(err, "failed to update cloud checkpoint")
 		}
 	} else {
 		metrics.CheckpointLagSeconds.WithLabelValues(key.String()).Set(0)
