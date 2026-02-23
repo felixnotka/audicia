@@ -74,8 +74,8 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
 ```
 
-> **Alternative:** If you prefer connection strings over Workload Identity, see
-> [Option A in the full AKS guide](../guides/aks-setup.md#option-a-connection-string).
+The Helm chart automatically adds the `azure.workload.identity/use: "true"` pod label when the Azure provider is
+configured, which causes the Workload Identity webhook to inject the required credentials into the pod.
 
 ## Step 4: Create an AudiciaSource
 
@@ -129,7 +129,7 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [AKS Setup Guide](../guides/aks-setup.md) — Connection strings, blob checkpoints, and troubleshooting
+- [AKS Setup Guide](../guides/aks-setup.md) — Full guide with blob checkpoints and troubleshooting
 - [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
 - [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
 - [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works

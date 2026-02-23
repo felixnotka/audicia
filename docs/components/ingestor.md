@@ -104,7 +104,6 @@ spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/.../managedClusters/my-cluster"
     azure:
       eventHubNamespace: "myns.servicebus.windows.net"

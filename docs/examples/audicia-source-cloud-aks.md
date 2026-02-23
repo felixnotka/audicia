@@ -1,6 +1,6 @@
 # AudiciaSource: Cloud (AKS)
 
-An AudiciaSource configured for cloud-based ingestion from an AKS cluster via Azure Event Hub.
+An AudiciaSource configured for cloud-based ingestion from an AKS cluster via Azure Event Hub using Workload Identity.
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -12,7 +12,6 @@ spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-rg/providers/Microsoft.ContainerService/managedClusters/my-cluster"
     azure:
       eventHubNamespace: "my-namespace.servicebus.windows.net"
@@ -44,24 +43,27 @@ spec:
 |-------|-------|-------|
 | `sourceType` | `CloudAuditLog` | Selects the cloud ingestion path |
 | `cloud.provider` | `AzureEventHub` | Azure Event Hub adapter |
-| `cloud.credentialSecretName` | `cloud-credentials` | Secret with `connection-string` key. Omit for workload identity |
 | `cloud.clusterIdentity` | AKS resource ID | Used to filter events from shared Event Hubs |
 | `cloud.azure.eventHubNamespace` | FQDN | Fully qualified Event Hub namespace |
 | `cloud.azure.eventHubName` | Hub name | Event Hub instance receiving diagnostic logs |
 | `cloud.azure.consumerGroup` | `$Default` | Consumer group for partition reads |
 
-## Credential Secret
+## Authentication
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: cloud-credentials
-  namespace: audicia-system
-type: Opaque
-stringData:
-  connection-string: "Endpoint=sb://my-namespace.servicebus.windows.net/;SharedAccessKeyName=audicia-reader;SharedAccessKey=...;EntityPath=aks-audit-logs"
+Authentication uses Azure Workload Identity. The Helm chart adds the `azure.workload.identity/use: "true"` pod label
+automatically, and the ServiceAccount must be annotated with the managed identity client ID:
+
+```bash
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+  --set cloudAuditLog.enabled=true \
+  --set cloudAuditLog.provider=AzureEventHub \
+  --set cloudAuditLog.azure.eventHubNamespace="my-namespace.servicebus.windows.net" \
+  --set cloudAuditLog.azure.eventHubName="aks-audit-logs" \
+  --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
 ```
+
+See the [AKS Setup Guide](../guides/aks-setup.md) for full Workload Identity setup including managed identity creation
+and federated credential configuration.
 
 ## Related
 

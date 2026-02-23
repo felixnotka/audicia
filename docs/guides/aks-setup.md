@@ -1,12 +1,10 @@
 # AKS Setup (Event Hub)
 
 This guide walks through configuring Audicia to ingest audit logs from an Azure Kubernetes Service (AKS) cluster via
-Azure Event Hub.
+Azure Event Hub using Workload Identity.
 
 ## Prerequisites
 
-- An AKS cluster with [Diagnostic Settings](https://learn.microsoft.com/en-us/azure/aks/monitor-aks#resource-logs)
-  enabled, routing `kube-audit` or `kube-audit-admin` logs to an Event Hub
 - An Azure Event Hub namespace and instance receiving the diagnostic logs
 - The Audicia operator image built with the `azure` build tag
 - Helm 3
@@ -26,22 +24,10 @@ az monitor diagnostic-settings create \
 
 Use `kube-audit-admin` to reduce volume (excludes read-only events) or `kube-audit` for complete coverage.
 
-## Step 2: Create a Credential Secret
+## Step 2: Set Up Workload Identity
 
-### Option A: Connection String
-
-Create a Secret containing the Event Hub connection string:
-
-```bash
-kubectl create secret generic cloud-credentials \
-  --from-literal=connection-string="Endpoint=sb://<NAMESPACE>.servicebus.windows.net/;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<EVENT_HUB_NAME>" \
-  -n audicia-system
-```
-
-### Option B: Workload Identity (Recommended)
-
-For production, use Azure Workload Identity. No credential Secret is needed — the operator authenticates via a
-federated token projected into the pod.
+Audicia authenticates to Azure Event Hub using Workload Identity. Create a managed identity, grant it access, and
+federate it with the Kubernetes ServiceAccount.
 
 **1. Create a managed identity:**
 
@@ -84,24 +70,7 @@ az identity federated-credential create \
 
 ```bash
 helm repo add audicia https://charts.audicia.io
-```
 
-### With Connection String (Option A)
-
-```bash
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=AzureEventHub \
-  --set cloudAuditLog.credentialSecretName=cloud-credentials \
-  --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
-  --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>"
-```
-
-### With Workload Identity (Option B)
-
-No credential Secret is needed. Instead, annotate the ServiceAccount:
-
-```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
@@ -109,6 +78,10 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>" \
   --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
 ```
+
+The Helm chart automatically adds the `azure.workload.identity/use: "true"` pod label when the Azure provider is
+configured, which causes the Workload Identity webhook to inject `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and the
+federated token volume into the pod.
 
 ## Step 4: Create an AudiciaSource
 
@@ -122,7 +95,6 @@ spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>"
     azure:
       eventHubNamespace: "<NAMESPACE>.servicebus.windows.net"
@@ -175,7 +147,8 @@ independently of AudiciaSource status.
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
 | No messages received | Diagnostic Settings not routing to Event Hub | Verify `az monitor diagnostic-settings show` |
-| Authentication error | Wrong connection string or missing role assignment | Check Secret contents or workload identity setup |
+| Authentication error | Missing role assignment or unfederated identity | Verify `az role assignment list` and federated credential |
+| Multiple identity error | Pod has multiple identities, missing WI label | Ensure `azure.workload.identity/use: "true"` pod label is set |
 | Events from wrong cluster | Shared Event Hub without `clusterIdentity` | Set `clusterIdentity` to the AKS resource ID |
 | High `cloud_lag_seconds` | Consumer group falling behind | Check consumer group lag in Azure portal |
 

@@ -128,10 +128,6 @@ cloudAuditLog:
   enabled: false
   # -- Cloud provider: AzureEventHub, AWSCloudWatch, or GCPPubSub.
   provider: ""
-  # -- Name of a Secret containing cloud credentials (e.g., Event Hub connection string).
-  # The Secret must exist in the release namespace. Key: "connection-string".
-  # Leave empty for managed identity / workload identity.
-  credentialSecretName: ""
   # -- Cluster identity string for event validation. Format varies by provider:
   # AKS: resource ID (/subscriptions/.../managedClusters/<name>)
   # EKS: cluster ARN

@@ -27,7 +27,6 @@ type EventHubSource struct {
 	Namespace     string // Fully qualified namespace (e.g., "myns.servicebus.windows.net")
 	EventHub      string
 	ConsumerGroup string
-	ConnectionStr string // Optional: if set, use connection string instead of managed identity.
 
 	// StorageAccountURL and StorageContainerName configure checkpoint blob storage.
 	// If empty, no external checkpoint store is used (in-memory only).
@@ -44,27 +43,17 @@ type EventHubSource struct {
 }
 
 func (s *EventHubSource) Connect(ctx context.Context) error {
-	var (
-		client *azeventhubs.ConsumerClient
-		err    error
-	)
-
 	consumerGroup := s.ConsumerGroup
 	if consumerGroup == "" {
 		consumerGroup = azeventhubs.DefaultConsumerGroup
 	}
 
-	if s.ConnectionStr != "" {
-		client, err = azeventhubs.NewConsumerClientFromConnectionString(
-			s.ConnectionStr, s.EventHub, consumerGroup, nil)
-	} else {
-		cred, credErr := azidentity.NewDefaultAzureCredential(nil)
-		if credErr != nil {
-			return fmt.Errorf("creating Azure credential: %w", credErr)
-		}
-		client, err = azeventhubs.NewConsumerClient(
-			s.Namespace, s.EventHub, consumerGroup, cred, nil)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return fmt.Errorf("creating Azure credential: %w", err)
 	}
+	client, err := azeventhubs.NewConsumerClient(
+		s.Namespace, s.EventHub, consumerGroup, cred, nil)
 	if err != nil {
 		return fmt.Errorf("creating Event Hub consumer client: %w", err)
 	}

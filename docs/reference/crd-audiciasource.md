@@ -79,7 +79,6 @@ Configuration for cloud-based audit log ingestion. Used with `sourceType: CloudA
 | Field                        | Type   | Default | Description                                                                                                                |
 |------------------------------|--------|---------|----------------------------------------------------------------------------------------------------------------------------|
 | `cloud.provider`             | string | -       | Cloud platform: `AzureEventHub`, `AWSCloudWatch`, or `GCPPubSub`                                                          |
-| `cloud.credentialSecretName` | string | -       | Name of a Secret containing cloud credentials (e.g., `connection-string` key). Leave empty for managed/workload identity    |
 | `cloud.clusterIdentity`     | string | -       | Identity string for cluster event validation. Format varies by provider (AKS resource ID, EKS ARN, GKE resource name)      |
 
 ### spec.cloud.azure
