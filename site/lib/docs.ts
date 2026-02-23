@@ -287,7 +287,7 @@ export async function buildSearchIndex(): Promise<SearchEntry[]> {
         .replaceAll(/\|[^\n]+\|/g, "") // remove table rows
         .replaceAll(/---+/g, "") // remove hr
         .replaceAll(/\n{2,}/g, " ")
-        .replaceAll(/\n/g, " ")
+        .replaceAll("\n", " ")
         .trim()
         .slice(0, 160);
 
