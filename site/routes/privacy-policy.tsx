@@ -37,7 +37,7 @@ export default define.page(function PrivacyPolicy() {
               {" "}
               <strong>Hetzner Online GmbH</strong>{" "}
               (Germany). The domain is registered with{" "}
-              <strong>Strato AG</strong>. These providers act as processors on
+              <strong>Cloudflare</strong>. These providers act as processors on
               my behalf (Art. 28 GDPR). There are{" "}
               <strong>no third-country transfers</strong>.
             </p>
