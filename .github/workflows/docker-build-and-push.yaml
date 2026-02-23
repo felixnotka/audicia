@@ -37,6 +37,7 @@ jobs:
             VERSION=${{ inputs.new_version }}
             COMMIT=${{ github.sha }}
             DATE=${{ github.event.head_commit.timestamp }}
+            GO_BUILD_TAGS=azure
           tags: |
             felixnotka/audicia-operator:${{ inputs.new_version }}
             ${{ inputs.environment == 'prod' && 'felixnotka/audicia-operator:latest' || '' }}
