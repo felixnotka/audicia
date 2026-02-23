@@ -61,6 +61,34 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set tolerations[0].effect=NoSchedule
 ```
 
+> **Permission denied?** Kubernetes audit logs are a sensitive resource — they are typically
+> owned by root and restricted to root-only access. The operator runs as a non-root user
+> (UID 10000) by default, which means it cannot read the audit log without elevated privileges.
+>
+> You have two options:
+>
+> **Option A: Run the operator as root** (simplest, recommended for dedicated operator nodes):
+>
+> ```bash
+> helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+>   --set auditLog.enabled=true \
+>   --set auditLog.hostPath=/var/log/kube-audit.log \
+>   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
+>   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
+>   --set tolerations[0].effect=NoSchedule \
+>   --set podSecurityContext.runAsUser=0 \
+>   --set podSecurityContext.runAsNonRoot=false
+> ```
+>
+> **Option B: Relax file permissions on the host** (keeps the operator non-root):
+>
+> ```bash
+> chmod 644 /var/log/kube-audit.log
+> ```
+>
+> Note that some kube-apiserver configurations reset file permissions on restart. If you choose
+> this approach, verify the permissions persist after an apiserver restart.
+
 ### For Webhook Ingestion
 
 The operator can run on any node. You need a TLS certificate:
