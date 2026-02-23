@@ -34,7 +34,7 @@ kubectl create secret tls audicia-webhook-tls \
 ## Step 3: Install Audicia with Webhook Mode
 
 ```bash
-helm upgrade audicia audicia/audicia -n audicia-system \
+helm upgrade audicia audicia/audicia-operator -n audicia-system \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```

@@ -96,7 +96,7 @@ kubectl patch audiciasource <NAME> -n audicia-system --type=merge \
 Mount the client CA volume by setting the Helm value:
 
 ```bash
-helm upgrade audicia audicia/audicia \
+helm upgrade audicia audicia/audicia-operator \
   --namespace audicia-system \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls \
