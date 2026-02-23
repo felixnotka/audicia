@@ -47,10 +47,15 @@ See [Recovery: Apiserver Crash Loop](#recovery-apiserver-crash-loop) at the bott
 Run this on the control plane node (or your workstation — you'll need the files in both
 places).
 
-> **Important:** You need the webhook Service's ClusterIP for the certificate SAN. If this
-> is a fresh install, first do Steps 2-3 to create the namespace and install Audicia, note
-> the ClusterIP from `kubectl get svc -n audicia-system`, then come back here. If
-> reinstalling, the ClusterIP may change — regenerate the cert.
+> **Important:** You need the IP address that the kube-apiserver will use to reach the
+> webhook for the certificate SAN. This is either the Service ClusterIP or
+> `127.0.0.1` if using hostPort mode.
+
+### Option A: ClusterIP mode (default)
+
+If this is a fresh install, first do Steps 2-3 to create the namespace and install Audicia,
+note the ClusterIP from `kubectl get svc -n audicia-system`, then come back here. If
+reinstalling, the ClusterIP may change — regenerate the cert.
 
 ```bash
 # First, get the Service ClusterIP (after Helm install):
@@ -66,16 +71,34 @@ openssl req -x509 -newkey rsa:4096 -nodes \
   -addext "subjectAltName=DNS:audicia-audicia-operator-webhook.audicia-system.svc,DNS:audicia-audicia-operator-webhook.audicia-system.svc.cluster.local,IP:${CLUSTER_IP}"
 ```
 
-The SAN (Subject Alternative Name) **must** include the Service ClusterIP. The
-kube-apiserver runs with `hostNetwork: true` and uses the node's DNS resolver, which
-**cannot resolve** Kubernetes `.svc.cluster.local` names. The webhook kubeconfig must
-therefore use the ClusterIP, and the certificate must have that IP in its SAN.
+### Option B: hostPort mode (recommended for Cilium / kube-proxy-free clusters)
+
+Some CNIs (e.g. Cilium without kube-proxy) cannot route ClusterIP traffic from the host
+namespace. In this case, use `webhook.hostPort=true` to expose the webhook directly on the
+node. The operator must be scheduled on the control plane node, and the apiserver connects
+via `127.0.0.1`.
+
+```bash
+openssl req -x509 -newkey rsa:4096 -nodes \
+  -keyout webhook-server.key \
+  -out webhook-server.crt \
+  -days 365 \
+  -subj "/CN=audicia-webhook" \
+  -addext "subjectAltName=IP:127.0.0.1"
+```
+
+### Why the IP matters
+
+The SAN (Subject Alternative Name) **must** include the IP the kube-apiserver uses to
+reach the webhook. The kube-apiserver runs with `hostNetwork: true` and uses the node's
+DNS resolver, which **cannot resolve** Kubernetes `.svc.cluster.local` names. The webhook
+kubeconfig must therefore use an IP address.
 
 > **Why not the DNS name?** The kube-apiserver static pod uses `hostNetwork: true`, so it
 > uses the node's `/etc/resolv.conf` (typically pointing to a public DNS or systemd-resolved).
 > Cluster-internal DNS names like `*.svc.cluster.local` are only resolvable via CoreDNS,
 > which runs inside the cluster's pod network. The apiserver cannot reach CoreDNS for name
-> resolution. Using the ClusterIP bypasses this entirely.
+> resolution. Using an IP address bypasses this entirely.
 
 ---
 
@@ -116,11 +139,27 @@ the kube-apiserver) can send events to the webhook.
 ```bash
 helm install audicia audicia/audicia-operator \
   --create-namespace --namespace audicia-system \
-  --set image.repository=felixnotka/audicia-operator \
-  --set image.tag=latest \
   --set webhook.enabled=true \
   --set webhook.port=8443 \
   --set webhook.tlsSecretName=audicia-webhook-tls
+```
+
+### Basic TLS with hostPort
+
+If your CNI cannot route ClusterIP traffic from the host namespace (common with Cilium
+without kube-proxy), use `hostPort` mode. This requires scheduling the operator on the
+control plane node:
+
+```bash
+helm install audicia audicia/audicia-operator \
+  --create-namespace --namespace audicia-system \
+  --set webhook.enabled=true \
+  --set webhook.port=8443 \
+  --set webhook.tlsSecretName=audicia-webhook-tls \
+  --set webhook.hostPort=true \
+  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
+  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
+  --set tolerations[0].effect=NoSchedule
 ```
 
 ### With mTLS (recommended for production)
@@ -128,13 +167,13 @@ helm install audicia audicia/audicia-operator \
 ```bash
 helm install audicia audicia/audicia-operator \
   --create-namespace --namespace audicia-system \
-  --set image.repository=felixnotka/audicia-operator \
-  --set image.tag=latest \
   --set webhook.enabled=true \
   --set webhook.port=8443 \
   --set webhook.tlsSecretName=audicia-webhook-tls \
   --set webhook.clientCASecretName=kube-apiserver-client-ca
 ```
+
+Add `--set webhook.hostPort=true` and the nodeSelector/tolerations from above if needed.
 
 ### Upgrading from Basic TLS to mTLS
 
@@ -249,8 +288,10 @@ mv /etc/kubernetes/kube-apiserver.yaml /etc/kubernetes/manifests/kube-apiserver.
 > startup. Unlike the TLS server cert, the client certificate fields require an update to
 > the kubeconfig file and an apiserver restart to take effect.
 
-> **Note:** Webhook mode does NOT need `nodeSelector`, `tolerations`, or `runAsUser: 0`.
-> The pod can run on any node — no hostPath, no control plane scheduling.
+> **Note:** In ClusterIP mode, webhook mode does NOT need `nodeSelector`, `tolerations`,
+> or `runAsUser: 0`. The pod can run on any node — no hostPath, no control plane scheduling.
+> In hostPort mode, the operator must be scheduled on the control plane node (nodeSelector +
+> tolerations) so the apiserver can reach it via `127.0.0.1`.
 
 ---
 
@@ -270,7 +311,8 @@ kubectl get svc -n audicia-system
 ```
 
 > **Write down the ClusterIP** (e.g., `10.111.100.194`). You will need it for the webhook
-> kubeconfig in Step 6 and the TLS certificate SAN in Step 1.
+> kubeconfig in Step 6 and the TLS certificate SAN in Step 1. If using hostPort mode, you
+> don't need the ClusterIP — the apiserver will connect via `127.0.0.1`.
 
 Verify the webhook container port and TLS volume:
 
@@ -340,12 +382,15 @@ If using mTLS, you should also see: `"mTLS enabled" clientCA="/etc/audicia/webho
 SSH to the control plane node and create the kubeconfig that tells the kube-apiserver
 where to send audit events.
 
-> **You MUST use the Service ClusterIP, not the DNS name.** The kube-apiserver runs with
+> **You MUST use an IP address, not the DNS name.** The kube-apiserver runs with
 > `hostNetwork: true` and cannot resolve `.svc.cluster.local` names — it uses the node's
 > DNS resolver, not CoreDNS. If you use the DNS name, the apiserver will silently drop all
 > audit events with `dial tcp: lookup ... no such host`.
+>
+> - **ClusterIP mode:** Use the Service ClusterIP from Step 4 (e.g., `10.111.100.194`).
+> - **hostPort mode:** Use `127.0.0.1` — the webhook is exposed on the node's loopback.
 
-Get the ClusterIP from Step 4, then create the kubeconfig. Example templates are in the
+Get the IP for your mode, then create the kubeconfig. Example templates are in the
 documentation:
 
 - [Webhook Kubeconfig (Basic TLS)](../examples/webhook-kubeconfig.md) — basic TLS (no mTLS)
@@ -447,7 +492,10 @@ cp webhook-server.crt /etc/kubernetes/pki/audicia-webhook-ca.crt
 > **ClusterIP stability:** The ClusterIP is stable across pod restarts and Helm upgrades
 > as long as the Service is not deleted and recreated. If you run `helm uninstall` and
 > `helm install` (which recreates the Service), the ClusterIP may change — update the
-> kubeconfig and regenerate the TLS certificate.
+> kubeconfig and regenerate the TLS certificate. Pin it with
+> `--set webhook.service.clusterIP=<IP>` to avoid this.
+>
+> **hostPort mode** avoids this problem entirely — the kubeconfig always uses `127.0.0.1`.
 
 ---
 
@@ -534,14 +582,13 @@ pipeline goroutine. The kube-apiserver supports both `--audit-log-path` (file) a
 ```bash
 helm install audicia audicia/audicia-operator \
   --create-namespace --namespace audicia-system \
-  --set image.repository=felixnotka/audicia-operator \
-  --set image.tag=latest \
   --set auditLog.enabled=true \
   --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
   --set webhook.enabled=true \
   --set webhook.port=8443 \
   --set webhook.tlsSecretName=audicia-webhook-tls \
   --set webhook.clientCASecretName=kube-apiserver-client-ca \
+  --set webhook.hostPort=true \
   --set nodeSelector."kubernetes\.io/hostname"=<CONTROL-PLANE-NODE> \
   --set tolerations[0].key="node-role.kubernetes.io/control-plane" \
   --set tolerations[0].operator="Exists" \
@@ -551,8 +598,8 @@ helm install audicia audicia/audicia-operator \
 ```
 
 > **Note:** Dual mode requires control plane scheduling because the file ingestor needs
-> hostPath access. If you only use webhook mode, none of the nodeSelector/tolerations/root
-> settings are needed.
+> hostPath access. `hostPort=true` is recommended in dual mode since the operator is already
+> on the control plane node.
 
 Then apply both AudiciaSource CRs. See the [File Mode](../examples/audicia-source-file.md)
 and [Webhook Mode](../examples/audicia-source-webhook.md) example pages for the full manifests.

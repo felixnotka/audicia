@@ -96,6 +96,12 @@ webhook:
   # signed by this CA are accepted (typically the kube-apiserver).
   # Optional but recommended for production.
   clientCASecretName: ""
+  # -- Expose the webhook port on the host via hostPort. When the operator
+  # runs on the control plane node, this lets the kube-apiserver reach it
+  # via localhost:<port> — bypassing ClusterIP routing issues with some CNIs
+  # (e.g. Cilium without kube-proxy). Recommended for single-node or
+  # dedicated control plane setups.
+  hostPort: false
   service:
     # -- Fixed ClusterIP for the webhook Service. Set this so the IP stays
     # the same across helm uninstall/install cycles — the kube-apiserver
@@ -103,6 +109,11 @@ webhook:
     # and cannot resolve cluster DNS). Pick any free IP from your cluster's
     # service CIDR (kubeadm default: 10.96.0.0/12). Leave empty for auto-assignment.
     clusterIP: ""
+    # -- Fixed NodePort for the webhook Service. When set, the service type
+    # is changed to NodePort and the webhook is reachable at <nodeIP>:<nodePort>.
+    # Useful when ClusterIP is not reachable from the host namespace.
+    # Must be in the range 30000-32767. Leave empty to use ClusterIP.
+    nodePort: ""
   networkPolicy:
     # -- Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.
     enabled: false

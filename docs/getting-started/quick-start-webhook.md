@@ -14,6 +14,8 @@ control plane node scheduling.
 
 The webhook receiver requires TLS. For production, use certificates from your PKI. For testing:
 
+### ClusterIP mode (default)
+
 ```bash
 # Get the webhook Service ClusterIP
 CLUSTER_IP=$(kubectl get svc -n audicia-system -l app.kubernetes.io/name=audicia-operator -o jsonpath='{.items[0].spec.clusterIP}')
@@ -22,6 +24,17 @@ CLUSTER_IP=$(kubectl get svc -n audicia-system -l app.kubernetes.io/name=audicia
 openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-server.crt \
   -days 365 -nodes -subj '/CN=audicia-webhook' \
   -addext "subjectAltName=IP:${CLUSTER_IP}"
+```
+
+### hostPort mode (for Cilium / kube-proxy-free clusters)
+
+If your CNI cannot route ClusterIP from the host namespace, use hostPort mode. The
+certificate needs `127.0.0.1` as the SAN instead:
+
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-server.crt \
+  -days 365 -nodes -subj '/CN=audicia-webhook' \
+  -addext "subjectAltName=IP:127.0.0.1"
 ```
 
 ## Step 2: Create the TLS Secret
@@ -33,10 +46,24 @@ kubectl create secret tls audicia-webhook-tls \
 
 ## Step 3: Install Audicia with Webhook Mode
 
+### ClusterIP mode
+
 ```bash
 helm upgrade audicia audicia/audicia-operator -n audicia-system \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
+```
+
+### hostPort mode
+
+```bash
+helm upgrade audicia audicia/audicia-operator -n audicia-system \
+  --set webhook.enabled=true \
+  --set webhook.tlsSecretName=audicia-webhook-tls \
+  --set webhook.hostPort=true \
+  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
+  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
+  --set tolerations[0].effect=NoSchedule
 ```
 
 ## Step 4: Create an AudiciaSource
@@ -79,7 +106,11 @@ EOF
 
 ## Step 5: Configure the kube-apiserver
 
-Create the webhook kubeconfig on the control plane node. You need the ClusterIP from Step 1:
+Create the webhook kubeconfig on the control plane node.
+
+### ClusterIP mode
+
+Use the ClusterIP from Step 1:
 
 ```bash
 echo $CLUSTER_IP
@@ -106,7 +137,30 @@ current-context: audicia
 EOF
 ```
 
-> **Important:** You must use the ClusterIP, not a DNS name. The kube-apiserver uses `hostNetwork: true` and cannot
+### hostPort mode
+
+Use `127.0.0.1` — the webhook is exposed directly on the node:
+
+```bash
+cat > /etc/kubernetes/audit-webhook-kubeconfig.yaml <<EOF
+apiVersion: v1
+kind: Config
+clusters:
+  - name: audicia
+    cluster:
+      certificate-authority: /etc/kubernetes/pki/audicia-webhook-ca.crt
+      server: https://127.0.0.1:8443
+contexts:
+  - name: audicia
+    context:
+      cluster: audicia
+users:
+  - name: audicia
+current-context: audicia
+EOF
+```
+
+> **Important:** You must use an IP address, not a DNS name. The kube-apiserver uses `hostNetwork: true` and cannot
 > resolve `.svc.cluster.local` names.
 
 Copy the webhook CA certificate:

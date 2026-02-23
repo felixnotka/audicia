@@ -115,6 +115,8 @@ kubectl logs -n audicia-system deploy/audicia --tail=20 | grep mTLS
 The kube-apiserver must now present a client certificate when connecting to Audicia's webhook. On the control plane
 node, update the webhook kubeconfig to add client cert and key:
 
+Replace `<WEBHOOK-IP>` with the Service ClusterIP (ClusterIP mode) or `127.0.0.1` (hostPort mode):
+
 ```yaml
 apiVersion: v1
 kind: Config
@@ -122,7 +124,7 @@ clusters:
   - name: audicia
     cluster:
       certificate-authority: /etc/kubernetes/pki/audicia-webhook-ca.crt
-      server: https://<CLUSTER-IP>:8443
+      server: https://<WEBHOOK-IP>:8443
 contexts:
   - name: audicia
     context:

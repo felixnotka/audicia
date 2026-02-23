@@ -6,6 +6,32 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 
 ---
 
+## 0.1.2
+
+### Added
+- `webhook.hostPort` Helm value — exposes the webhook directly on the host, bypassing ClusterIP routing issues with Cilium and other kube-proxy-free CNIs
+- `webhook.service.nodePort` Helm value — optional NodePort service type for the webhook
+- Troubleshooting section for ClusterIP unreachable from host namespace
+
+### Fixed
+- Remaining incorrect Helm chart name references in webhook and mTLS guides
+- Documented audit log file permissions (root-owned) and two workarounds
+- Documented kube-apiserver restart procedure for kubeadm clusters
+
+### Changed
+- All webhook docs now cover both ClusterIP and hostPort modes (installation, quick start, webhook setup, mTLS setup, helm values reference, troubleshooting)
+
+---
+
+## 0.1.1
+
+### Fixed
+- Helm chart `image.tag` no longer pins a stale image digest; defaults to chart `appVersion`
+- Fixed incorrect Helm chart name (`audicia` → `audicia-operator`) across installation docs
+- Updated site favicon and privacy policy
+
+---
+
 ## 0.1.0
 
 **Released:** 2026-02-23

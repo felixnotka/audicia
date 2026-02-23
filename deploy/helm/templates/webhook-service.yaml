@@ -7,7 +7,11 @@ metadata:
   labels:
     {{- include "audicia.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.webhook.service.nodePort }}
+  type: NodePort
+  {{- else }}
   type: ClusterIP
+  {{- end }}
   {{- if .Values.webhook.service.clusterIP }}
   clusterIP: {{ .Values.webhook.service.clusterIP }}
   {{- end }}
@@ -16,6 +20,9 @@ spec:
       port: {{ .Values.webhook.port }}
       targetPort: webhook
       protocol: TCP
+      {{- if .Values.webhook.service.nodePort }}
+      nodePort: {{ .Values.webhook.service.nodePort }}
+      {{- end }}
   selector:
     {{- include "audicia.selectorLabels" . | nindent 4 }}
 {{- end }}

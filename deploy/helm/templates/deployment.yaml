@@ -58,6 +58,9 @@ spec:
             - name: webhook
               containerPort: {{ .Values.webhook.port }}
               protocol: TCP
+              {{- if .Values.webhook.hostPort }}
+              hostPort: {{ .Values.webhook.port }}
+              {{- end }}
             {{- end }}
           livenessProbe:
             httpGet:

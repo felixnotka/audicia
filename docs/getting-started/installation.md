@@ -95,6 +95,7 @@ The operator can run on any node. You need a TLS certificate:
 
 ```bash
 # Create TLS certificate (self-signed for testing)
+# Use the ClusterIP as the SAN (get it after Helm install from kubectl get svc -n audicia-system)
 openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-server.crt \
   -days 365 -nodes -subj '/CN=audicia-webhook' \
   -addext "subjectAltName=IP:<CLUSTER-IP>"
@@ -109,6 +110,28 @@ helm install audicia audicia/audicia-operator -n audicia-system \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```
+
+> **ClusterIP unreachable?** On Cilium or other kube-proxy-free CNIs, the kube-apiserver
+> (which runs on `hostNetwork`) may not be able to route traffic to a ClusterIP. In this
+> case, use hostPort mode — it exposes the webhook directly on the node:
+>
+> ```bash
+> # Use 127.0.0.1 as the SAN instead of the ClusterIP
+> openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-server.crt \
+>   -days 365 -nodes -subj '/CN=audicia-webhook' \
+>   -addext "subjectAltName=IP:127.0.0.1"
+>
+> helm install audicia audicia/audicia-operator -n audicia-system \
+>   --set webhook.enabled=true \
+>   --set webhook.tlsSecretName=audicia-webhook-tls \
+>   --set webhook.hostPort=true \
+>   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
+>   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
+>   --set tolerations[0].effect=NoSchedule
+> ```
+>
+> The webhook kubeconfig then uses `server: https://127.0.0.1:8443` instead of the ClusterIP.
+> See [Troubleshooting](../troubleshooting.md#clusterip-unreachable-from-host-namespace).
 
 After installing, you must configure the kube-apiserver to send audit events to the webhook.
 This requires adding a flag and restarting the apiserver. See the

@@ -41,15 +41,16 @@ The webhook receiver is running but the kube-apiserver is not sending events.
    cat /var/log/pods/kube-system_kube-apiserver-*/kube-apiserver/*.log | grep -i webhook | tail -10
    ```
    - `no such host` — DNS resolution failure. See [DNS resolution failure](#dns-resolution-failure) below.
-   - `tls: bad certificate` — TLS cert SAN doesn't match the server address. Regenerate the cert with the correct ClusterIP.
+   - `tls: bad certificate` — TLS cert SAN doesn't match the server address. Regenerate the cert with the correct IP (ClusterIP or `127.0.0.1` for hostPort).
    - `connection refused` — Audicia isn't running or the Service has no endpoints.
+   - Connection timeout / no errors — ClusterIP may be unreachable from the host. See [ClusterIP unreachable](#clusterip-unreachable-from-host-namespace).
    - No webhook errors at all — The apiserver may not have the `--audit-webhook-config-file` flag.
 
-2. **Verify the webhook kubeconfig uses a ClusterIP, not a DNS name:**
+2. **Verify the webhook kubeconfig uses an IP address, not a DNS name:**
    ```bash
    cat /etc/kubernetes/audit-webhook-kubeconfig.yaml
    ```
-   The `server:` field must be `https://<CLUSTER-IP>:8443`, NOT a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and cannot resolve cluster DNS.
+   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443` or `https://127.0.0.1:8443` for hostPort mode), NOT a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and cannot resolve cluster DNS.
 
 3. **Check that the audit policy allows the events you expect:**
    ```bash
@@ -76,6 +77,52 @@ The webhook receiver is running but the kube-apiserver is not sending events.
 
 ---
 
+## ClusterIP unreachable from host namespace
+
+The kube-apiserver runs with `hostNetwork: true`. On some CNIs — particularly Cilium in
+kube-proxy-free mode — ClusterIP traffic from the host namespace is not routed to pods.
+The apiserver silently drops audit events (in batch mode) or logs connection timeouts.
+
+**Symptoms:** Audicia pod is running, webhook HTTPS server is listening, but `curl -k
+https://<CLUSTER-IP>:8443` hangs from the control plane node. Curling the pod IP directly
+works fine.
+
+**Diagnose:**
+
+```bash
+# Check if pod IP works
+POD_IP=$(kubectl get pod -n audicia-system -l app.kubernetes.io/name=audicia-operator -o jsonpath='{.items[0].status.podIP}')
+curl -k https://${POD_IP}:8443 -v --connect-timeout 5
+
+# Check if ClusterIP works
+CLUSTER_IP=$(kubectl get svc -n audicia-system -l app.kubernetes.io/name=audicia-operator -o jsonpath='{.items[?(@.spec.ports[0].name=="webhook")].spec.clusterIP}')
+curl -k https://${CLUSTER_IP}:8443 -v --connect-timeout 5
+```
+
+If the pod IP works but the ClusterIP doesn't, this is a host-to-ClusterIP routing issue.
+
+**Fix: Use hostPort mode.** This exposes the webhook directly on the node, bypassing
+ClusterIP entirely:
+
+```bash
+helm upgrade audicia audicia/audicia-operator -n audicia-system \
+  --set webhook.enabled=true \
+  --set webhook.tlsSecretName=audicia-webhook-tls \
+  --set webhook.hostPort=true \
+  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
+  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
+  --set tolerations[0].effect=NoSchedule
+```
+
+Then update the webhook kubeconfig to use `127.0.0.1` and regenerate the TLS certificate
+with `IP:127.0.0.1` as the SAN. See [Webhook Setup Guide](guides/webhook-setup.md#step-1-generate-a-self-signed-tls-certificate).
+
+> **Cilium socket LB:** Cilium's `socketLB.enabled=true` (aka `bpf-lb-sock`) is supposed
+> to fix host-to-ClusterIP routing, but it may require a node reboot after enabling and
+> doesn't work in all configurations. hostPort is more reliable.
+
+---
+
 ## DNS resolution failure
 
 The apiserver logs show:
@@ -86,17 +133,17 @@ dial tcp: lookup audicia-....svc on 185.12.64.1:53: no such host
 
 The kube-apiserver is trying to resolve the Service DNS name using the node's DNS resolver (e.g., your ISP's DNS), not the cluster's CoreDNS. This happens because the apiserver runs with `hostNetwork: true`.
 
-**Fix:** Use the Service ClusterIP in the webhook kubeconfig:
+**Fix:** Use an IP address in the webhook kubeconfig:
 
 ```bash
 # Get the ClusterIP
 kubectl get svc -n audicia-system
 
-# Update the kubeconfig — replace the DNS name with the ClusterIP
+# Update the kubeconfig — replace the DNS name with the ClusterIP (or 127.0.0.1 for hostPort mode)
 vi /etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
 
-Also ensure the TLS certificate has the ClusterIP as a SAN. If it only has DNS SANs, regenerate it. See [Webhook Setup Guide](guides/webhook-setup.md#step-1-generate-a-self-signed-tls-certificate).
+Also ensure the TLS certificate has the IP as a SAN. If it only has DNS SANs, regenerate it. See [Webhook Setup Guide](guides/webhook-setup.md#step-1-generate-a-self-signed-tls-certificate).
 
 After updating, restart the apiserver:
 
