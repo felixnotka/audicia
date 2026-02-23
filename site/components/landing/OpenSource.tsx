@@ -38,6 +38,14 @@ export default function OpenSource() {
           >
             Contribute
           </a>
+          <a
+            className="hero-cta-secondary"
+            href="https://github.com/sponsors/felixnotka"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Sponsor
+          </a>
         </div>
       </div>
     </section>

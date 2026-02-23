@@ -163,6 +163,14 @@ export default define.page(function App({ Component, url, state }) {
             >
               GitHub
             </a>
+            <a
+              className="footer-menu-item"
+              href="https://github.com/sponsors/felixnotka"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Sponsor
+            </a>
           </div>
         </footer>
       </body>
