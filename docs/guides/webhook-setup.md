@@ -114,7 +114,7 @@ the kube-apiserver) can send events to the webhook.
 ### Basic TLS (no mTLS)
 
 ```bash
-helm install audicia audicia/audicia \
+helm install audicia audicia/audicia-operator \
   --create-namespace --namespace audicia-system \
   --set image.repository=felixnotka/audicia-operator \
   --set image.tag=latest \
@@ -126,7 +126,7 @@ helm install audicia audicia/audicia \
 ### With mTLS (recommended for production)
 
 ```bash
-helm install audicia audicia/audicia \
+helm install audicia audicia/audicia-operator \
   --create-namespace --namespace audicia-system \
   --set image.repository=felixnotka/audicia-operator \
   --set image.tag=latest \
@@ -206,7 +206,7 @@ kubectl patch audiciasource realtime-audit -n audicia-system --type=merge \
 **Step C: Helm upgrade** to mount the client CA volume:
 
 ```bash
-helm upgrade audicia audicia/audicia \
+helm upgrade audicia audicia/audicia-operator \
   --namespace audicia-system \
   --set image.repository=felixnotka/audicia-operator \
   --set image.tag=latest \
@@ -532,7 +532,7 @@ pipeline goroutine. The kube-apiserver supports both `--audit-log-path` (file) a
 `--audit-webhook-config-file` (webhook) at the same time.
 
 ```bash
-helm install audicia audicia/audicia \
+helm install audicia audicia/audicia-operator \
   --create-namespace --namespace audicia-system \
   --set image.repository=felixnotka/audicia-operator \
   --set image.tag=latest \

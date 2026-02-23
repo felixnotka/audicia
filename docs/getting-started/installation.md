@@ -45,7 +45,7 @@ You should see JSON audit events. If the file is empty or missing, check your ap
 
 ```bash
 helm repo add audicia https://charts.audicia.io
-helm install audicia audicia/audicia -n audicia-system --create-namespace
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace
 ```
 
 ### For File-Based Ingestion
@@ -53,7 +53,7 @@ helm install audicia audicia/audicia -n audicia-system --create-namespace
 The operator needs to run on a control plane node with access to the audit log file:
 
 ```bash
-helm install audicia audicia/audicia -n audicia-system --create-namespace \
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
   --set auditLog.hostPath=/var/log/kube-audit.log \
   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
@@ -77,7 +77,7 @@ kubectl create secret tls audicia-webhook-tls \
   --cert=webhook-server.crt --key=webhook-server.key -n audicia-system
 
 # Install with webhook mode
-helm install audicia audicia/audicia -n audicia-system \
+helm install audicia audicia/audicia-operator -n audicia-system \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```

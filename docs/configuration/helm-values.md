@@ -4,7 +4,7 @@ Complete reference for all Helm chart configuration values.
 
 ```bash
 helm repo add audicia https://charts.audicia.io
-helm install audicia audicia/audicia -n audicia-system --create-namespace
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace
 ```
 
 ---
@@ -144,7 +144,7 @@ assigns a new ClusterIP and breaks the kubeconfig.
 ## Example: File Mode (Control Plane)
 
 ```bash
-helm install audicia audicia/audicia -n audicia-system --create-namespace \
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
   --set auditLog.hostPath=/var/log/kube-audit.log \
   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
@@ -157,7 +157,7 @@ helm install audicia audicia/audicia -n audicia-system --create-namespace \
 ## Example: Webhook Mode
 
 ```bash
-helm install audicia audicia/audicia -n audicia-system --create-namespace \
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```
@@ -165,7 +165,7 @@ helm install audicia audicia/audicia -n audicia-system --create-namespace \
 ## Example: Webhook Mode with mTLS
 
 ```bash
-helm install audicia audicia/audicia -n audicia-system --create-namespace \
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls \
   --set webhook.clientCASecretName=kube-apiserver-client-ca \
