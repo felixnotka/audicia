@@ -110,8 +110,28 @@ helm install audicia audicia/audicia-operator -n audicia-system \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```
 
-See the [Webhook Setup Guide](../guides/webhook-setup.md) for the full walkthrough including kube-apiserver
-configuration and mTLS.
+After installing, you must configure the kube-apiserver to send audit events to the webhook.
+This requires adding a flag and restarting the apiserver. See the
+[Webhook Setup Guide](../guides/webhook-setup.md) for the full walkthrough including
+kube-apiserver configuration and mTLS.
+
+> **How to restart the kube-apiserver.** On kubeadm clusters, the kube-apiserver runs as a
+> static pod managed by the kubelet. To restart it after changing its manifest:
+>
+> ```bash
+> # Move the manifest out of the watched directory
+> mv /etc/kubernetes/manifests/kube-apiserver.yaml /etc/kubernetes/kube-apiserver.yaml
+>
+> # Wait for the old pod to terminate
+> sleep 5
+>
+> # Move it back — kubelet will start a new pod
+> mv /etc/kubernetes/kube-apiserver.yaml /etc/kubernetes/manifests/kube-apiserver.yaml
+> ```
+>
+> The apiserver should be back within 30-60 seconds. Verify with `kubectl get nodes`. If it
+> doesn't come back within 2 minutes, check the static pod logs with
+> `crictl logs $(crictl ps --name kube-apiserver -q)`.
 
 ## Verify Installation
 
