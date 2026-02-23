@@ -40,26 +40,74 @@ kubectl create secret generic cloud-credentials \
 
 ### Option B: Workload Identity (Recommended)
 
-For production, use Azure Workload Identity. No credential Secret is needed — annotate the ServiceAccount instead:
+For production, use Azure Workload Identity. No credential Secret is needed — the operator authenticates via a
+federated token projected into the pod.
 
-```yaml
-serviceAccount:
-  annotations:
-    azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
+**1. Create a managed identity:**
+
+```bash
+az identity create \
+  --name audicia-operator \
+  --resource-group <RG> \
+  --location <LOCATION>
 ```
 
-The managed identity needs the `Azure Event Hubs Data Receiver` role on the Event Hub namespace.
+Note the `clientId` from the output — this is the `<MANAGED_IDENTITY_CLIENT_ID>` used below.
+
+**2. Grant it the Event Hubs Data Receiver role:**
+
+```bash
+az role assignment create \
+  --assignee <MANAGED_IDENTITY_CLIENT_ID> \
+  --role "Azure Event Hubs Data Receiver" \
+  --scope /subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.EventHub/namespaces/<NAMESPACE>
+```
+
+**3. Federate the identity with the Kubernetes ServiceAccount:**
+
+```bash
+AKS_OIDC_ISSUER=$(az aks show --name <CLUSTER> --resource-group <RG> --query "oidcIssuerProfile.issuerUrl" -o tsv)
+
+az identity federated-credential create \
+  --name audicia-federated \
+  --identity-name audicia-operator \
+  --resource-group <RG> \
+  --issuer "$AKS_OIDC_ISSUER" \
+  --subject system:serviceaccount:audicia-system:audicia-operator \
+  --audiences api://AzureADTokenExchange
+```
+
+> **Note:** The `--subject` must match the namespace and ServiceAccount name used by the Helm chart
+> (`audicia-system:audicia-operator` by default).
 
 ## Step 3: Install with Helm
+
+```bash
+helm repo add audicia https://charts.audicia.io
+```
+
+### With Connection String (Option A)
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
   --set cloudAuditLog.credentialSecretName=cloud-credentials \
-  --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
   --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
   --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>"
+```
+
+### With Workload Identity (Option B)
+
+No credential Secret is needed. Instead, annotate the ServiceAccount:
+
+```bash
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+  --set cloudAuditLog.enabled=true \
+  --set cloudAuditLog.provider=AzureEventHub \
+  --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
+  --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>" \
+  --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
 ```
 
 ## Step 4: Create an AudiciaSource

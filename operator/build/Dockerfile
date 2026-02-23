@@ -19,7 +19,8 @@ ARG VERSION=dev
 ARG COMMIT=none
 ARG DATE=unknown
 ARG GO_BUILD_TAGS=""
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build \
     -tags "${GO_BUILD_TAGS}" \
     -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
     -o /audicia \

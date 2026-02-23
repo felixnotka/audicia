@@ -155,4 +155,5 @@ kubectl logs -n audicia-system -l app.kubernetes.io/name=audicia-operator
 
 - [Quick Start: File Ingestion](quick-start-file.md) — Create your first AudiciaSource and generate reports
 - [Quick Start: Webhook Ingestion](quick-start-webhook.md) — Real-time audit events via HTTPS
+- [Quick Start: AKS Cloud Ingestion](quick-start-aks.md) — Ingest audit logs from AKS via Event Hub
 - [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration with TLS and mTLS
