@@ -20,12 +20,18 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 - **Go build tags** — `azure` build tag for conditional Azure SDK compilation; default binary remains cloud-free
 - **`build-azure` Make target** — Build and Docker targets for the Azure-enabled binary
 - **Cloud Ingestion concept page** — Architecture overview of MessageSource/EnvelopeParser abstractions and provider registry
-- **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration
+- **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration with connection string and Workload Identity paths
+- **AKS Quick Start** — Streamlined getting-started guide for AKS cloud ingestion via Workload Identity
 - **Cloud AKS example** — AudiciaSource YAML example for AKS Event Hub ingestion
+- **Multi-arch Docker images** — CI now builds `linux/amd64` and `linux/arm64` images for ARM-based AKS node pools
+- **Azure build tag in CI** — Lint, test, and Docker build pipelines include `-tags azure` so the Azure adapter is compiled, tested, and shipped
 
 ### Changed
 - Platform compatibility table updated across docs: AKS now shows "Full support" for Cloud Mode
 - Managed Kubernetes limitation updated: AKS addressed via cloud ingestion, EKS/GKE planned
+- Dockerfile uses `TARGETARCH` from Buildx instead of hardcoded `GOARCH=amd64`
+- AKS guide now includes full Workload Identity setup steps (managed identity, role assignment, federated credential)
+- Helm install commands in AKS docs include `helm repo add` and separate variants for connection string vs Workload Identity
 
 ---
 
