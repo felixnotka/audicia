@@ -1,0 +1,51 @@
+# Binaries
+bin/
+/audicia
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go
+vendor/
+*.test
+*.out
+coverage.txt
+coverage.html
+go.work
+go.work.sum
+
+# IDE / AI tooling
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Build
+dist/
+
+# Helm
+deploy/helm/charts/
+*.tgz
+
+# SBOM / release artifacts
+sbom.spdx.json
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Temporary
+tmp/

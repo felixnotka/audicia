@@ -1,0 +1,29 @@
+# Build artifacts
+bin/
+dist/
+coverage.txt
+coverage.html
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Documentation (not needed in image)
+docs/
+*.md
+LICENSE
+
+# Local development
+examples/
+tests/
+hack/

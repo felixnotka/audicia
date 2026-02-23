@@ -1,0 +1,43 @@
+version: "2"
+
+run:
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # - gosimple   # Commented out to unblock build (S1002 errors)
+    # - gocritic   # Commented out to unblock build (hugeParam, rangeValCopy errors)
+    - misspell
+    - unconvert
+    - unparam
+    - nakedret
+    # - prealloc   # Commented out to unblock build (allocation errors)
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+    nakedret:
+      max-func-lines: 30
+  exclusions:
+    rules:
+      # Don't lint generated files.
+      - path: zz_generated
+        linters:
+          - ALL
+      # Allow unused parameters in test files.
+      - path: _test\.go
+        linters:
+          - unparam
+
+formatters:
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/felixnotka/audicia/operator

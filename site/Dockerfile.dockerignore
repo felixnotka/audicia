@@ -1,0 +1,27 @@
+# Operator source (not needed for site build)
+operator/
+
+# Deploy (Helm chart not needed in site image — charts are copied separately by CI)
+deploy/
+
+# Build artifacts
+bin/
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# Git
+.git/
+
+# CI/CD
+.github/
+
+# Marketing (not used by site build)
+marketing/
+
+# Site build artifacts (regenerated during build)
+site/_fresh/
+site/node_modules/
+site/.deno/

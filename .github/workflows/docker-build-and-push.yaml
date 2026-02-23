@@ -1,0 +1,73 @@
+name: Docker Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      new_version:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image with provenance and SBOM
+        uses: docker/build-push-action@v6
+        with:
+          context: operator
+          file: operator/build/Dockerfile
+          platforms: linux/amd64
+          build-args: |
+            VERSION=${{ inputs.new_version }}
+            COMMIT=${{ github.sha }}
+            DATE=${{ github.event.head_commit.timestamp }}
+          tags: |
+            felixnotka/audicia-operator:${{ inputs.new_version }}
+            ${{ inputs.environment == 'prod' && 'felixnotka/audicia-operator:latest' || '' }}
+          push: true
+          sbom: true
+          provenance: mode=max
+
+      - name: Set up Helm
+        if: inputs.environment == 'prod'
+        uses: azure/setup-helm@v4
+
+      - name: Package Helm chart
+        if: inputs.environment == 'prod'
+        run: |
+          helm package deploy/helm/ \
+            --version ${{ inputs.new_version }} \
+            --app-version ${{ inputs.new_version }}
+
+      - name: Create and push git tag
+        if: inputs.environment == 'prod'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ inputs.new_version }}"
+          git push origin "${{ inputs.new_version }}"
+
+      - name: Create GitHub Release
+        if: inputs.environment == 'prod'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.new_version }}
+          generate_release_notes: true
+          files: |
+            audicia-operator-*.tgz

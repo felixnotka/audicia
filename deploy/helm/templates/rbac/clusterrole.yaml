@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "audicia.fullname" . }}
+  labels:
+    {{- include "audicia.labels" . | nindent 4 }}
+rules:
+  # AudiciaSource: read + status update
+  - apiGroups: ["audicia.io"]
+    resources: ["audiciasources"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["audicia.io"]
+    resources: ["audiciasources/status"]
+    verbs: ["get", "update", "patch"]
+
+  # AudiciaPolicyReport: full CRUD (operator creates/updates reports)
+  - apiGroups: ["audicia.io"]
+    resources: ["audiciapolicyreports"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["audicia.io"]
+    resources: ["audiciapolicyreports/status"]
+    verbs: ["get", "update", "patch"]
+
+  # RBAC: read-only access for compliance resolver (diff engine)
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+    verbs: ["get", "list", "watch"]
+
+  # Events: emit Kubernetes events on resources
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

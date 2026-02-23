@@ -1,0 +1,22 @@
+# Kubernetes audit policy for use with Audicia.
+# Logs all API requests at Metadata level (user, verb, resource, status).
+# See: docs/guides/audit-policy.md
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  # Skip health endpoints (high volume, no RBAC value)
+  - level: None
+    nonResourceURLs:
+      - /healthz*
+      - /livez*
+      - /readyz*
+
+  # Skip apiserver-to-apiserver traffic
+  - level: None
+    users:
+      - system:apiserver
+
+  # Log everything else at Metadata level
+  - level: Metadata
+    omitStages:
+      - RequestReceived

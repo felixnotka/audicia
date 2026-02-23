@@ -1,0 +1,85 @@
+name: Determine Version
+
+on:
+  workflow_call:
+    outputs:
+      new_version:
+        description: 'The determined version'
+        value: ${{ jobs.determine-version.outputs.new_version }}
+      environment:
+        description: 'Target environment (prod or dev)'
+        value: ${{ jobs.determine-version.outputs.environment }}
+
+permissions:
+  contents: read
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      environment: ${{ steps.version.outputs.environment }}
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version
+        id: version
+        shell: bash
+        run: |
+          set -eo pipefail
+
+          # Fetch all tags
+          git fetch --tags
+
+          # Get Major.Minor from version.json
+          MAJOR=$(jq -r '.Major' version.json)
+          MINOR=$(jq -r '.Minor' version.json)
+          BRANCH="${GITHUB_REF#refs/heads/}"
+
+          if [ "$BRANCH" = "main" ]; then
+            # Production: Find highest existing patch and increment
+            LATEST_TAG=$(git tag -l "${MAJOR}.${MINOR}.*" | grep -v "\-dev\." | sort -V | tail -n1 || true)
+
+            if [ -z "$LATEST_TAG" ]; then
+              # First release for this Major.Minor
+              PATCH=0
+            else
+              # Extract and increment patch
+              PATCH=$(echo "$LATEST_TAG" | cut -d. -f3)
+              PATCH=$((PATCH + 1))
+            fi
+
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            ENVIRONMENT=prod
+
+            echo "Computed prod version: ${NEW_VERSION} (tag created by release job)"
+          elif [ "$BRANCH" = "develop" ]; then
+            # Develop: Use latest prod patch + run number (no git tag)
+            LATEST_TAG=$(git tag -l "${MAJOR}.${MINOR}.*" | grep -v "\-dev\." | sort -V | tail -n1 || true)
+
+            if [ -z "$LATEST_TAG" ]; then
+              # No prod release yet, start from 0
+              PATCH=0
+            else
+              # Use same patch as latest prod version
+              PATCH=$(echo "$LATEST_TAG" | cut -d. -f3)
+            fi
+
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}-dev.${GITHUB_RUN_NUMBER}"
+            ENVIRONMENT=dev
+
+            echo "Created dev version: ${NEW_VERSION} (no tag)"
+          else
+            # Other branches: Use run number for uniqueness (no tagging)
+            NEW_VERSION="${MAJOR}.${MINOR}.0-dev.${GITHUB_RUN_NUMBER}"
+            ENVIRONMENT=dev
+
+            echo "Created feature branch version: ${NEW_VERSION}"
+          fi
+
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"

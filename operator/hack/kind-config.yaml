@@ -1,0 +1,29 @@
+# kind cluster with audit logging enabled.
+# Usage: kind create cluster --config operator/hack/kind-config.yaml --name audicia-dev
+# See: docs/getting-started/installation.md
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            audit-log-path: /var/log/kube-audit.log
+            audit-policy-file: /etc/kubernetes/audit-policy.yaml
+            audit-log-maxage: "7"
+            audit-log-maxbackup: "3"
+            audit-log-maxsize: "100"
+          extraVolumes:
+            - name: audit-policy
+              hostPath: /etc/kubernetes/audit-policy.yaml
+              mountPath: /etc/kubernetes/audit-policy.yaml
+              readOnly: true
+            - name: audit-log
+              hostPath: /var/log/kube-audit.log
+              mountPath: /var/log/kube-audit.log
+    extraMounts:
+      - hostPath: ./operator/hack/audit-policy.yaml
+        containerPath: /etc/kubernetes/audit-policy.yaml
+        readOnly: true

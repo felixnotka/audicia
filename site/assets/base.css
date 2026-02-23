@@ -1,0 +1,402 @@
+/* Inter — latin-ext */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/inter/Inter-LatinExt.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Inter — latin */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/inter/Inter-Latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* JetBrains Mono — latin-ext */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-LatinExt.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* JetBrains Mono — latin */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-Latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.3rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  /* 14px */
+  --font-size-sm: 0.8rem;
+  /* 16px */
+  --font-size-base: 1rem;
+  /* 18px */
+  --font-size-lg: 1.125rem;
+  /* 24px */
+  --font-size-xl: 1.5rem;
+  /* 32px */
+  --font-size-2xl: clamp(0.7rem, 2.5vw + 0.5rem, 2rem);
+  /* 48px */
+  --font-size-3xl: clamp(1rem, 3.75vw + 0.75rem, 3rem);
+  /* 64px */
+  --font-size-4xl: clamp(1.3rem, 5vw + 1rem, 4rem);
+  /* 140px */
+  --font-size-title: clamp(2.75rem, 7vw + 1rem, 8.75rem);
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-2xl: 24px;
+  --border-radius-full: 50%;
+
+  --component-height-sm: 40px;
+  --component-height-md: 60px;
+  --component-height-lg: 80px;
+  --component-height-xl: 100px;
+  --component-height-2xl: 120px;
+  --component-height-3xl: 140px;
+  --component-height-4xl: 160px;
+
+  --max-width-sm: 480px;
+  --max-width-md: 768px;
+  --max-width-lg: 1024px;
+  --max-width-xl: 1280px;
+
+  --header-h: var(--component-height-lg);
+  --footer-h: var(--component-height-md);
+  --header-margin-v: 0px;
+  --footer-margin-v: 0px;
+  --page-margin-v: 32px;
+
+  /* Audicia color palette */
+  --color-bg: #0D1B2A;
+  --color-text: #E2E8F0;
+  --color-text-strong: #FFFFFF;
+  --color-muted: #94A3B8;
+  --color-border: #1B2838;
+  --color-border-strong: #334155;
+  --color-link: #00C853;
+  --color-link-hover: #00E676;
+
+  /* Audicia brand colors */
+  --color-accent: #00C853;
+  --color-card-bg: #1B2838;
+  --color-score-red: #FF1744;
+  --color-score-yellow: #FFD600;
+  --color-score-green: #00C853;
+  --color-terminal-amber: #FFB300;
+  --color-k8s-blue: #326CE5;
+
+  --font-family-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+
+  --container-w: min(90%, var(--max-width-xl));
+}
+
+html, body {
+  font-family:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  scrollbar-gutter: stable both-edges;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Dark scrollbars */
+* {
+  scrollbar-color: var(--color-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-muted);
+}
+
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 200;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+}
+
+.skip-to-main:focus {
+  position: fixed;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  width: auto;
+  height: auto;
+}
+
+a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.page-container,
+.post-container {
+  width: var(--container-w);
+  max-width: var(--container-w);
+  margin-inline: auto;
+}
+
+.footer {
+  width: 100%;
+  max-width: var(--container-w);
+  margin-inline: auto;
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  max-width: 100%;
+  height: var(--component-height-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow-y: hidden;
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--color-border-strong);
+  padding-inline: max(5%, calc((100% - var(--max-width-xl)) / 2));
+}
+
+.navbar-logo {
+  max-height: var(--component-height-xl);
+  max-width: var(--component-height-xl);
+  overflow-x: hidden;
+  height: auto;
+  width: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.navbar-wordmark {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.navbar-wordmark span {
+  color: var(--color-accent);
+}
+
+.navbar-menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.navbar-menu-item {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  text-decoration: none;
+}
+
+.navbar-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001;
+}
+
+.burger-line {
+  width: 25px;
+  height: 3px;
+  background-color: var(--color-text-strong);
+  margin: 3px 0;
+  transition: 0.3s;
+  border-radius: 2px;
+}
+
+.navbar-burger.active .burger-line:nth-child(1) {
+  transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.navbar-burger.active .burger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-burger.active .burger-line:nth-child(3) {
+  transform: rotate(45deg) translate(-5px, -6px);
+}
+
+.footer {
+  height: var(--component-height-md);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--spacing-md);
+  overflow-y: hidden;
+  position: relative;
+  z-index: 10;
+  background: var(--color-bg);
+}
+
+.footer-copyright,
+.footer-license {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.footer-menu {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.footer-menu-item {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.footer-menu-item:hover {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: underline;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+main {
+  overflow: visible;
+  height: auto;
+  min-height: auto;
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+code {
+  font-family: var(--font-family-mono);
+  background-color: var(--color-card-bg);
+  color: var(--color-terminal-amber);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  font-family: var(--font-family-mono);
+  background-color: var(--color-card-bg);
+  color: var(--color-text);
+  padding: 1rem;
+  border-radius: var(--border-radius-md);
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+/* Fix accessibility for GFM task list checkboxes */
+input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+/* Style task list items */
+li:has(input[type="checkbox"]) {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+li:has(input[type="checkbox"]) input[type="checkbox"] {
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+}

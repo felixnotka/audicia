@@ -1,0 +1,55 @@
+{
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "check": "deno fmt --check . && deno lint . && deno check",
+    "dev": "vite --host",
+    "build": "vite build",
+    "start": "deno serve -A _fresh/server.js",
+    "update": "deno run -A -r jsr:@fresh/update ."
+  },
+  "lint": { "rules": { "tags": ["fresh", "recommended"] } },
+  "exclude": ["**/_fresh/*"],
+  "imports": {
+    "@deno/gfm": "jsr:@deno/gfm@^0.11.0",
+    "@std/front-matter": "jsr:@std/front-matter@^1.0.9",
+    "@std/path": "jsr:@std/path@^1.1.2",
+    "fresh": "jsr:@fresh/core@^2.1.4",
+    "preact": "npm:preact@^10.28.4",
+    "@preact/signals": "npm:@preact/signals@^2.3.2",
+    "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.5",
+    "vite": "npm:vite@^7.3.1",
+    "@material/web": "npm:@material/web@^2.4.0",
+    "github-slugger": "npm:github-slugger@^2.0",
+    "he": "npm:he@^1.2.0",
+    "katex": "npm:katex@^0.16.32",
+    "marked": "npm:marked@^12.0.2",
+    "marked-alert": "npm:marked-alert@^2.1.2",
+    "marked-footnote": "npm:marked-footnote@^1.4.0",
+    "marked-highlight": "npm:marked-highlight@^2.2.3",
+    "marked-gfm-heading-id": "npm:marked-gfm-heading-id@^3.2.0",
+    "prismjs": "npm:prismjs@^1.30.0",
+    "sanitize-html": "npm:sanitize-html@^2.17.1"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.asynciterable", "dom.iterable", "deno.ns"],
+    "jsx": "precompile",
+    "jsxImportSource": "preact",
+    "jsxPrecompileSkipElements": [
+      "a",
+      "img",
+      "source",
+      "body",
+      "html",
+      "head",
+      "title",
+      "meta",
+      "script",
+      "link",
+      "style",
+      "base",
+      "noscript",
+      "template"
+    ],
+    "types": ["vite/client", "./lib/types/material-web.d.ts"]
+  }
+}

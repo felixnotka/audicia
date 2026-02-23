@@ -1,0 +1,71 @@
+name: Site Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      new_version:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      operator_changed:
+        required: false
+        type: string
+        default: 'false'
+
+jobs:
+  build-site:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Download chart releases
+        run: |
+          mkdir -p site/static/charts
+          gh release list --limit 100 --json tagName -q '.[].tagName' | while read -r tag; do
+            gh release download "$tag" \
+              --pattern "audicia-operator-*.tgz" \
+              --dir site/static/charts/ \
+              --skip-existing 2>/dev/null || true
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package current Helm chart
+        if: inputs.environment == 'prod' && inputs.operator_changed == 'true'
+        run: |
+          helm package deploy/helm/ \
+            --version ${{ inputs.new_version }} \
+            --app-version ${{ inputs.new_version }} \
+            --destination site/static/charts/
+
+      - name: Generate Helm repo index
+        run: |
+          helm repo index site/static/charts/ \
+            --url https://charts.audicia.io
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push site image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: site/Dockerfile
+          platforms: linux/amd64
+          tags: |
+            felixnotka/audicia-site:${{ inputs.new_version }}
+            ${{ inputs.environment == 'prod' && 'felixnotka/audicia-site:latest' || '' }}
+          push: true

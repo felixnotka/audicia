@@ -1,0 +1,120 @@
+# Default values for audicia-operator.
+
+# -- Number of replicas. Only 1 is needed (leader election handles HA).
+replicaCount: 1
+
+image:
+  # -- Container image repository.
+  repository: felixnotka/audicia-operator
+  # -- Image pull policy.
+  pullPolicy: Always
+  # -- Overrides the image tag (default is the chart appVersion).
+  tag: "latest@sha256:b6f7e7aea30b0f420c42aea299e0060d7e5dbcbfbcd8c7b407ee29c919f93d14"
+
+# -- Image pull secrets for private registries.
+imagePullSecrets: []
+
+# -- Override the release name.
+nameOverride: ""
+# -- Override the full release name.
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Whether to create a ServiceAccount.
+  create: true
+  # -- Annotations to add to the ServiceAccount.
+  annotations: {}
+  # -- The name of the ServiceAccount. If not set, a name is generated.
+  name: ""
+
+# -- Pod annotations.
+podAnnotations: {}
+
+# -- Pod security context.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10000
+  fsGroup: 10000
+
+# -- Container security context.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+operator:
+  # -- Metrics bind address.
+  metricsBindAddress: ":8080"
+  # -- Health probe bind address.
+  healthProbeBindAddress: ":8081"
+  # -- Enable leader election.
+  leaderElection:
+    enabled: true
+  # -- Log level (0=info, 1=debug).
+  logLevel: 0
+
+# -- Resource requests and limits.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# -- Node selector.
+nodeSelector: {}
+
+# -- Tolerations.
+tolerations: []
+
+# -- Affinity rules.
+affinity: {}
+
+# Audit log volume configuration.
+auditLog:
+  # -- Enable mounting the audit log volume.
+  enabled: false
+  # -- Host path to the audit log file.
+  hostPath: /var/log/kube-audit.log
+
+# Webhook audit event receiver configuration.
+webhook:
+  # -- Enable the webhook audit event receiver.
+  enabled: false
+  # -- HTTPS port for the webhook receiver.
+  port: 8443
+  # -- Name of an existing TLS Secret (must contain tls.crt and tls.key).
+  # Required when webhook.enabled is true. Create with:
+  #   kubectl create secret tls audicia-webhook-tls \
+  #     --cert=server.crt --key=server.key -n audicia-system
+  tlsSecretName: ""
+  # -- Name of a Secret containing a CA bundle (ca.crt) for mTLS client
+  # certificate verification. When set, only clients presenting a certificate
+  # signed by this CA are accepted (typically the kube-apiserver).
+  # Optional but recommended for production.
+  clientCASecretName: ""
+  service:
+    # -- Fixed ClusterIP for the webhook Service. Set this so the IP stays
+    # the same across helm uninstall/install cycles — the kube-apiserver
+    # webhook kubeconfig references this IP directly (it runs on hostNetwork
+    # and cannot resolve cluster DNS). Pick any free IP from your cluster's
+    # service CIDR (kubeadm default: 10.96.0.0/12). Leave empty for auto-assignment.
+    clusterIP: ""
+  networkPolicy:
+    # -- Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.
+    enabled: false
+    # -- CIDR of your control plane node(s). Required when networkPolicy.enabled is true.
+    # Find it with: kubectl get nodes -o wide | grep control-plane
+    # For a single node use /32 (e.g. 162.55.131.175/32).
+    controlPlaneCIDR: ""
+
+serviceMonitor:
+  # -- Whether to create a Prometheus ServiceMonitor.
+  enabled: false
+  # -- Additional labels for the ServiceMonitor.
+  labels: {}
+  # -- Scrape interval.
+  interval: 30s

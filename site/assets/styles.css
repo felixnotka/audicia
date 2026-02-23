@@ -1,0 +1,249 @@
+.page-container {
+  display: grid;
+  margin: var(--spacing-md) auto;
+  gap: var(--spacing-lg);
+}
+
+.page-header {
+  display: flex;
+  align-content: center;
+  flex-direction: column;
+}
+
+.page-title {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-size: var(--font-size-4xl);
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+
+.page-metadata {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.page-metadata-item {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: 300;
+  color: var(--color-muted);
+}
+
+.page-content {
+  display: block;
+  padding: var(--spacing-md);
+  position: relative;
+  max-width: var(--container-w);
+  margin-inline: auto;
+}
+
+.page-content-grid {
+  display: grid;
+  margin: var(--spacing-sm);
+  width: min(75vw, 975px);
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--spacing-md);
+}
+
+.page-content-item {
+  width: 100%;
+  min-height: 250px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.page-content-item::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-border);
+}
+
+.page-content-item.last-row-item::before {
+  display: none;
+}
+
+.page-content-item.last-in-row::after {
+  display: none;
+}
+
+.month-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.month-separator {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-md);
+}
+
+.month-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  white-space: nowrap;
+  padding: 0 var(--spacing-sm);
+}
+
+.month-line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border-strong);
+  border-radius: 1px;
+}
+
+/* Fade effect only on blog page */
+body:has(.page-content-grid) .page-content::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to bottom, transparent 0%, var(--color-bg) 100%);
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.3s ease;
+}
+
+body:has(.page-content-grid) .page-content.fade-hidden::after {
+  opacity: 0;
+}
+
+.home {
+  min-height: calc(
+    100dvh - var(--header-h) - var(--footer-h) - var(--header-margin-v)
+      - var(--footer-margin-v)
+      - var(--page-margin-v)
+  );
+}
+
+.full-height {
+  display: grid;
+  grid-template-rows: 1fr 7fr;
+}
+
+.home .page-header {
+  justify-content: center;
+}
+
+.home-title {
+  text-align: left;
+  font-size: var(--font-size-title);
+  line-height: 1;
+  margin-left: -3px;
+}
+
+.home-subtitle {
+  text-align: left;
+  font-size: var(--font-size-xl);
+  padding-bottom: var(--spacing-lg);
+  line-height: 1;
+}
+
+.home-cta {
+  width: fit-content;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  padding: var(--spacing-md) var(--spacing-xl);
+  color: var(--color-bg);
+  background-color: var(--color-accent);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.home-cta:hover {
+  text-decoration: none;
+  color: var(--color-bg);
+  background-color: var(--color-link-hover);
+}
+
+@media (max-width: 840px) {
+  .page-content-item::after {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-burger {
+    display: flex;
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-2xl);
+    gap: var(--spacing-xl);
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+
+  .navbar-menu.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .navbar-menu-item {
+    text-align: center;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+    color: var(--color-text-strong);
+    text-decoration: none;
+    border-radius: var(--border-radius-md);
+    min-width: 200px;
+  }
+
+  .footer {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    gap: 0;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .footer-copyright {
+    display: none;
+  }
+
+  .footer-license {
+    display: none;
+  }
+
+  .footer-menu {
+    text-align: center;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .page-content {
+    padding: 0;
+  }
+
+  .home-subtitle {
+    padding: 0;
+  }
+}

@@ -1,0 +1,67 @@
+name: pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  determine-version:
+    uses: ./.github/workflows/determine-version.yaml
+
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      operator: ${{ steps.filter.outputs.operator }}
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            operator:
+              - 'operator/**'
+              - 'deploy/helm/**'
+
+  lint-and-test:
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.operator == 'true'
+    uses: ./.github/workflows/lint-and-test.yaml
+    secrets: inherit
+
+  docker-build-and-push:
+    needs: [determine-version, detect-changes, lint-and-test]
+    if: needs.detect-changes.outputs.operator == 'true'
+    uses: ./.github/workflows/docker-build-and-push.yaml
+    secrets: inherit
+    with:
+      new_version: ${{ needs.determine-version.outputs.new_version }}
+      environment: ${{ needs.determine-version.outputs.environment }}
+
+  site-build-and-push:
+    needs: [determine-version, detect-changes, docker-build-and-push]
+    # Always run unless a prior required job actually failed or was cancelled.
+    # Skipped operator jobs (no operator changes) are fine — the site must
+    # rebuild on every push regardless.
+    if: >-
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/site-build-and-push.yaml
+    secrets: inherit
+    with:
+      new_version: ${{ needs.determine-version.outputs.new_version }}
+      environment: ${{ needs.determine-version.outputs.environment }}
+      operator_changed: ${{ needs.detect-changes.outputs.operator == 'true' }}

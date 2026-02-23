@@ -1,0 +1,40 @@
+Audicia operator has been installed.
+
+1. Check the operator status:
+
+   kubectl get pods -n {{ .Release.Namespace }} -l {{ include "audicia.selectorLabels" . | replace ": " "=" | replace "\n" "," }}
+
+2. Create an AudiciaSource to start processing audit logs.
+   See https://audicia.io/docs/examples/audicia-source-file for the manifest.
+
+3. View generated policy reports:
+
+   kubectl get audiciapolicyreports --all-namespaces
+{{- if .Values.webhook.enabled }}
+
+Webhook endpoint is enabled:
+
+  Service: {{ include "audicia.fullname" . }}-webhook.{{ .Release.Namespace }}.svc:{{ .Values.webhook.port }}
+{{- if .Values.webhook.service.clusterIP }}
+  ClusterIP: {{ .Values.webhook.service.clusterIP }} (pinned)
+{{- else }}
+
+  ⚠ No fixed ClusterIP set. The ClusterIP will change on every reinstall,
+  breaking the kube-apiserver webhook kubeconfig. To avoid this, set:
+
+    --set webhook.service.clusterIP=<CLUSTER-IP>
+
+  Find the current ClusterIP with:
+
+    kubectl get svc {{ include "audicia.fullname" . }}-webhook -n {{ .Release.Namespace }} -o jsonpath='{.spec.clusterIP}'
+{{- end }}
+
+  IMPORTANT: The kube-apiserver runs on hostNetwork and cannot resolve cluster
+  DNS. Your audit-webhook-kubeconfig.yaml must use the ClusterIP directly:
+
+    server: https://<CLUSTER-IP>:{{ .Values.webhook.port }}
+
+  See docs/guides/webhook-setup.md for the full setup guide.
+{{- end }}
+
+For more information, visit: https://github.com/felixnotka/audicia

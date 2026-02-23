@@ -1,0 +1,7 @@
+.error-image {
+  height: min(800px, 40vh);
+  width: min(800px, 60vw);
+  background-color: red;
+  border-radius: var(--border-radius-lg);
+  justify-self: center;
+}
