@@ -11,7 +11,8 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 ### Added
 - `webhook.hostPort` Helm value — exposes the webhook directly on the host, bypassing ClusterIP routing issues with Cilium and other kube-proxy-free CNIs
 - `webhook.service.nodePort` Helm value — optional NodePort service type for the webhook
-- Troubleshooting section for ClusterIP unreachable from host namespace
+- Dedicated [Kube-Proxy-Free Guide](guides/kube-proxy-free.md) covering hostPort setup, NodePort, ClusterIP diagnostics, and real client IP preservation
+- [RBAC Policy Generation](concepts/rbac-generation.md) concept page — explains what gets generated, the observation-to-RBAC pipeline, safety guardrails, and how to use the output
 
 ### Fixed
 - Remaining incorrect Helm chart name references in webhook and mTLS guides
@@ -19,7 +20,8 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 - Documented kube-apiserver restart procedure for kubeadm clusters
 
 ### Changed
-- All webhook docs now cover both ClusterIP and hostPort modes (installation, quick start, webhook setup, mTLS setup, helm values reference, troubleshooting)
+- Consolidated all kube-proxy-free / hostPort content into a single dedicated guide instead of duplicating across 7 files
+- Main webhook docs (setup, quick start, mTLS, installation, helm values) now focus on the standard ClusterIP path with callout links to the kube-proxy-free guide
 
 ---
 

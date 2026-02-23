@@ -4,6 +4,9 @@ This tutorial walks you through setting up Audicia to receive real-time audit ev
 backend. This is the recommended mode for production — it provides sub-second event delivery and doesn't require
 control plane node scheduling.
 
+> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from the host namespace.
+> See the dedicated [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) instead.
+
 ## Prerequisites
 
 - Audicia installed with `webhook.enabled=true` (see [Installation](installation.md))
@@ -13,8 +16,6 @@ control plane node scheduling.
 ## Step 1: Create TLS Certificates
 
 The webhook receiver requires TLS. For production, use certificates from your PKI. For testing:
-
-### ClusterIP mode (default)
 
 ```bash
 # Get the webhook Service ClusterIP
@@ -26,17 +27,6 @@ openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-serve
   -addext "subjectAltName=IP:${CLUSTER_IP}"
 ```
 
-### hostPort mode (for Cilium / kube-proxy-free clusters)
-
-If your CNI cannot route ClusterIP from the host namespace, use hostPort mode. The
-certificate needs `127.0.0.1` as the SAN instead:
-
-```bash
-openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-server.crt \
-  -days 365 -nodes -subj '/CN=audicia-webhook' \
-  -addext "subjectAltName=IP:127.0.0.1"
-```
-
 ## Step 2: Create the TLS Secret
 
 ```bash
@@ -46,24 +36,10 @@ kubectl create secret tls audicia-webhook-tls \
 
 ## Step 3: Install Audicia with Webhook Mode
 
-### ClusterIP mode
-
 ```bash
 helm upgrade audicia audicia/audicia-operator -n audicia-system \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
-```
-
-### hostPort mode
-
-```bash
-helm upgrade audicia audicia/audicia-operator -n audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.hostPort=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule
 ```
 
 ## Step 4: Create an AudiciaSource
@@ -106,11 +82,7 @@ EOF
 
 ## Step 5: Configure the kube-apiserver
 
-Create the webhook kubeconfig on the control plane node.
-
-### ClusterIP mode
-
-Use the ClusterIP from Step 1:
+Create the webhook kubeconfig on the control plane node. Use the ClusterIP from Step 1:
 
 ```bash
 echo $CLUSTER_IP
@@ -127,29 +99,6 @@ clusters:
     cluster:
       certificate-authority: /etc/kubernetes/pki/audicia-webhook-ca.crt
       server: https://<CLUSTER-IP>:8443
-contexts:
-  - name: audicia
-    context:
-      cluster: audicia
-users:
-  - name: audicia
-current-context: audicia
-EOF
-```
-
-### hostPort mode
-
-Use `127.0.0.1` — the webhook is exposed directly on the node:
-
-```bash
-cat > /etc/kubernetes/audit-webhook-kubeconfig.yaml <<EOF
-apiVersion: v1
-kind: Config
-clusters:
-  - name: audicia
-    cluster:
-      certificate-authority: /etc/kubernetes/pki/audicia-webhook-ca.crt
-      server: https://127.0.0.1:8443
 contexts:
   - name: audicia
     context:

@@ -87,39 +87,9 @@ The apiserver silently drops audit events (in batch mode) or logs connection tim
 https://<CLUSTER-IP>:8443` hangs from the control plane node. Curling the pod IP directly
 works fine.
 
-**Diagnose:**
-
-```bash
-# Check if pod IP works
-POD_IP=$(kubectl get pod -n audicia-system -l app.kubernetes.io/name=audicia-operator -o jsonpath='{.items[0].status.podIP}')
-curl -k https://${POD_IP}:8443 -v --connect-timeout 5
-
-# Check if ClusterIP works
-CLUSTER_IP=$(kubectl get svc -n audicia-system -l app.kubernetes.io/name=audicia-operator -o jsonpath='{.items[?(@.spec.ports[0].name=="webhook")].spec.clusterIP}')
-curl -k https://${CLUSTER_IP}:8443 -v --connect-timeout 5
-```
-
-If the pod IP works but the ClusterIP doesn't, this is a host-to-ClusterIP routing issue.
-
-**Fix: Use hostPort mode.** This exposes the webhook directly on the node, bypassing
-ClusterIP entirely:
-
-```bash
-helm upgrade audicia audicia/audicia-operator -n audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.hostPort=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule
-```
-
-Then update the webhook kubeconfig to use `127.0.0.1` and regenerate the TLS certificate
-with `IP:127.0.0.1` as the SAN. See [Webhook Setup Guide](guides/webhook-setup.md#step-1-generate-a-self-signed-tls-certificate).
-
-> **Cilium socket LB:** Cilium's `socketLB.enabled=true` (aka `bpf-lb-sock`) is supposed
-> to fix host-to-ClusterIP routing, but it may require a node reboot after enabling and
-> doesn't work in all configurations. hostPort is more reliable.
+**Fix:** Use hostPort mode. See the [Kube-Proxy-Free Guide](guides/kube-proxy-free.md)
+for the complete setup including diagnosis steps, hostPort configuration, and TLS
+certificate generation.
 
 ---
 
@@ -139,7 +109,7 @@ The kube-apiserver is trying to resolve the Service DNS name using the node's DN
 # Get the ClusterIP
 kubectl get svc -n audicia-system
 
-# Update the kubeconfig — replace the DNS name with the ClusterIP (or 127.0.0.1 for hostPort mode)
+# Update the kubeconfig — replace the DNS name with the ClusterIP
 vi /etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
 

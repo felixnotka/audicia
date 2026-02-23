@@ -96,6 +96,8 @@ Applies user-configured knobs to shape the final RBAC output:
 Safety guardrails: never generates `cluster-admin`, only emits standard K8s verbs, `Safe` wildcards require all 8
 verbs observed.
 
+See [RBAC Policy Generation](rbac-generation.md) for details on the generated output and how to use it.
+
 ## 7. RBAC Resolver + Diff Engine
 
 **Packages:** `pkg/rbac/`, `pkg/diff/` | **Deep-dive:** [Compliance Engine Component](../components/compliance-engine.md)

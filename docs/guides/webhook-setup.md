@@ -48,10 +48,11 @@ Run this on the control plane node (or your workstation — you'll need the file
 places).
 
 > **Important:** You need the IP address that the kube-apiserver will use to reach the
-> webhook for the certificate SAN. This is either the Service ClusterIP or
-> `127.0.0.1` if using hostPort mode.
+> webhook for the certificate SAN. This is the Service ClusterIP.
 
-### Option A: ClusterIP mode (default)
+> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from the host
+> namespace. See the dedicated [Kube-Proxy-Free Guide](kube-proxy-free.md) for the
+> hostPort-based setup instead.
 
 If this is a fresh install, first do Steps 2-3 to create the namespace and install Audicia,
 note the ClusterIP from `kubectl get svc -n audicia-system`, then come back here. If
@@ -69,22 +70,6 @@ openssl req -x509 -newkey rsa:4096 -nodes \
   -days 365 \
   -subj "/CN=audicia-webhook" \
   -addext "subjectAltName=DNS:audicia-audicia-operator-webhook.audicia-system.svc,DNS:audicia-audicia-operator-webhook.audicia-system.svc.cluster.local,IP:${CLUSTER_IP}"
-```
-
-### Option B: hostPort mode (recommended for Cilium / kube-proxy-free clusters)
-
-Some CNIs (e.g. Cilium without kube-proxy) cannot route ClusterIP traffic from the host
-namespace. In this case, use `webhook.hostPort=true` to expose the webhook directly on the
-node. The operator must be scheduled on the control plane node, and the apiserver connects
-via `127.0.0.1`.
-
-```bash
-openssl req -x509 -newkey rsa:4096 -nodes \
-  -keyout webhook-server.key \
-  -out webhook-server.crt \
-  -days 365 \
-  -subj "/CN=audicia-webhook" \
-  -addext "subjectAltName=IP:127.0.0.1"
 ```
 
 ### Why the IP matters
@@ -144,24 +129,6 @@ helm install audicia audicia/audicia-operator \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```
 
-### Basic TLS with hostPort
-
-If your CNI cannot route ClusterIP traffic from the host namespace (common with Cilium
-without kube-proxy), use `hostPort` mode. This requires scheduling the operator on the
-control plane node:
-
-```bash
-helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.port=8443 \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.hostPort=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule
-```
-
 ### With mTLS (recommended for production)
 
 ```bash
@@ -172,8 +139,6 @@ helm install audicia audicia/audicia-operator \
   --set webhook.tlsSecretName=audicia-webhook-tls \
   --set webhook.clientCASecretName=kube-apiserver-client-ca
 ```
-
-Add `--set webhook.hostPort=true` and the nodeSelector/tolerations from above if needed.
 
 ### Upgrading from Basic TLS to mTLS
 
@@ -288,10 +253,8 @@ mv /etc/kubernetes/kube-apiserver.yaml /etc/kubernetes/manifests/kube-apiserver.
 > startup. Unlike the TLS server cert, the client certificate fields require an update to
 > the kubeconfig file and an apiserver restart to take effect.
 
-> **Note:** In ClusterIP mode, webhook mode does NOT need `nodeSelector`, `tolerations`,
-> or `runAsUser: 0`. The pod can run on any node — no hostPath, no control plane scheduling.
-> In hostPort mode, the operator must be scheduled on the control plane node (nodeSelector +
-> tolerations) so the apiserver can reach it via `127.0.0.1`.
+> **Note:** Webhook mode (ClusterIP) does NOT need `nodeSelector`, `tolerations`, or
+> `runAsUser: 0`. The pod can run on any node — no hostPath, no control plane scheduling.
 
 ---
 
@@ -311,8 +274,7 @@ kubectl get svc -n audicia-system
 ```
 
 > **Write down the ClusterIP** (e.g., `10.111.100.194`). You will need it for the webhook
-> kubeconfig in Step 6 and the TLS certificate SAN in Step 1. If using hostPort mode, you
-> don't need the ClusterIP — the apiserver will connect via `127.0.0.1`.
+> kubeconfig in Step 6 and the TLS certificate SAN in Step 1.
 
 Verify the webhook container port and TLS volume:
 
@@ -387,8 +349,7 @@ where to send audit events.
 > DNS resolver, not CoreDNS. If you use the DNS name, the apiserver will silently drop all
 > audit events with `dial tcp: lookup ... no such host`.
 >
-> - **ClusterIP mode:** Use the Service ClusterIP from Step 4 (e.g., `10.111.100.194`).
-> - **hostPort mode:** Use `127.0.0.1` — the webhook is exposed on the node's loopback.
+> Use the Service ClusterIP from Step 4 (e.g., `10.111.100.194`).
 
 Get the IP for your mode, then create the kubeconfig. Example templates are in the
 documentation:
@@ -494,8 +455,6 @@ cp webhook-server.crt /etc/kubernetes/pki/audicia-webhook-ca.crt
 > `helm install` (which recreates the Service), the ClusterIP may change — update the
 > kubeconfig and regenerate the TLS certificate. Pin it with
 > `--set webhook.service.clusterIP=<IP>` to avoid this.
->
-> **hostPort mode** avoids this problem entirely — the kubeconfig always uses `127.0.0.1`.
 
 ---
 
@@ -588,7 +547,6 @@ helm install audicia audicia/audicia-operator \
   --set webhook.port=8443 \
   --set webhook.tlsSecretName=audicia-webhook-tls \
   --set webhook.clientCASecretName=kube-apiserver-client-ca \
-  --set webhook.hostPort=true \
   --set nodeSelector."kubernetes\.io/hostname"=<CONTROL-PLANE-NODE> \
   --set tolerations[0].key="node-role.kubernetes.io/control-plane" \
   --set tolerations[0].operator="Exists" \
@@ -598,8 +556,9 @@ helm install audicia audicia/audicia-operator \
 ```
 
 > **Note:** Dual mode requires control plane scheduling because the file ingestor needs
-> hostPath access. `hostPort=true` is recommended in dual mode since the operator is already
-> on the control plane node.
+> hostPath access. On kube-proxy-free clusters, add `--set webhook.hostPort=true` since the
+> operator is already on the control plane node. See the
+> [Kube-Proxy-Free Guide](kube-proxy-free.md).
 
 Then apply both AudiciaSource CRs. See the [File Mode](../examples/audicia-source-file.md)
 and [Webhook Mode](../examples/audicia-source-webhook.md) example pages for the full manifests.

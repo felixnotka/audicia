@@ -129,11 +129,8 @@ When enabled, adds:
 - A ClusterIP or NodePort Service for the webhook endpoint
 - A NetworkPolicy (only when `webhook.networkPolicy.enabled` is true)
 
-**ClusterIP vs hostPort:** The kube-apiserver runs on hostNetwork and cannot resolve cluster DNS. In ClusterIP
-mode, the webhook kubeconfig uses the ClusterIP directly (`server: https://<IP>:8443`). In hostPort mode, the
-operator binds the webhook port directly on the node and the kubeconfig uses `server: https://127.0.0.1:8443`.
-hostPort mode is recommended when your CNI cannot route ClusterIP traffic from the host namespace (common with
-Cilium without kube-proxy).
+For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
+[Kube-Proxy-Free Guide](../guides/kube-proxy-free.md).
 
 ## Monitoring
 
@@ -164,20 +161,6 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set webhook.enabled=true \
   --set webhook.tlsSecretName=audicia-webhook-tls
-```
-
-## Example: Webhook Mode (hostPort)
-
-Recommended for Cilium or kube-proxy-free clusters where ClusterIP is unreachable from the host namespace:
-
-```bash
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set webhook.enabled=true \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.hostPort=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule
 ```
 
 ## Example: Webhook Mode with mTLS
