@@ -11,7 +11,7 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 ### Added
 - `webhook.hostPort` Helm value — exposes the webhook directly on the host, bypassing ClusterIP routing issues with Cilium and other kube-proxy-free CNIs
 - `webhook.service.nodePort` Helm value — optional NodePort service type for the webhook
-- Dedicated [Kube-Proxy-Free Guide](guides/kube-proxy-free.md) covering hostPort setup, NodePort, ClusterIP diagnostics, and real client IP preservation
+- Dedicated [Kube-Proxy-Free Guide](guides/kube-proxy-free.md) covering hostPort setup, NodePort, and ClusterIP diagnostics
 - [RBAC Policy Generation](concepts/rbac-generation.md) concept page — explains what gets generated, the observation-to-RBAC pipeline, safety guardrails, and how to use the output
 
 ### Fixed
