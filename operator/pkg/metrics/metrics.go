@@ -82,6 +82,57 @@ var (
 			Help:      "Controller reconciliation errors.",
 		},
 	)
+
+	// CloudMessagesReceivedTotal is the total number of cloud messages received.
+	CloudMessagesReceivedTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "audicia",
+			Name:      "cloud_messages_received_total",
+			Help:      "Total cloud messages received from the message bus.",
+		},
+		[]string{"provider", "partition"},
+	)
+
+	// CloudMessagesAckedTotal is the total number of cloud message batches acknowledged.
+	CloudMessagesAckedTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "audicia",
+			Name:      "cloud_messages_acked_total",
+			Help:      "Total cloud message batches acknowledged.",
+		},
+		[]string{"provider"},
+	)
+
+	// CloudReceiveErrorsTotal is the total number of cloud receive errors.
+	CloudReceiveErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "audicia",
+			Name:      "cloud_receive_errors_total",
+			Help:      "Total errors receiving from the cloud message bus.",
+		},
+		[]string{"provider"},
+	)
+
+	// CloudLagSeconds is the lag between message enqueue time and processing time.
+	CloudLagSeconds = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "audicia",
+			Name:      "cloud_lag_seconds",
+			Help:      "Lag between message enqueue time and processing time.",
+			Buckets:   []float64{0.1, 0.5, 1, 5, 10, 30, 60, 120, 300},
+		},
+		[]string{"provider"},
+	)
+
+	// CloudEnvelopeParseErrorsTotal is the total number of envelope parse errors.
+	CloudEnvelopeParseErrorsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "audicia",
+			Name:      "cloud_envelope_parse_errors_total",
+			Help:      "Total errors parsing cloud provider envelopes.",
+		},
+		[]string{"provider"},
+	)
 )
 
 func init() {
@@ -94,5 +145,10 @@ func init() {
 		CheckpointLagSeconds,
 		ReportRulesCount,
 		ReconcileErrorsTotal,
+		CloudMessagesReceivedTotal,
+		CloudMessagesAckedTotal,
+		CloudReceiveErrorsTotal,
+		CloudLagSeconds,
+		CloudEnvelopeParseErrorsTotal,
 	)
 }

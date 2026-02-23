@@ -252,7 +252,7 @@ func createIngestor(source audiciav1alpha1.AudiciaSource, logger logr.Logger) (i
 			}
 		}
 
-		return cloud.NewCloudIngestor(msgSource, parser, validator, startPos), nil
+		return cloud.NewCloudIngestor(msgSource, parser, validator, startPos, string(source.Spec.Cloud.Provider)), nil
 
 	default:
 		logger.Error(nil, "unknown source type", "sourceType", source.Spec.SourceType)

@@ -9,6 +9,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/felixnotka/audicia/operator/pkg/ingestor"
+	"github.com/felixnotka/audicia/operator/pkg/metrics"
 )
 
 var cloudLog = ctrl.Log.WithName("ingestor").WithName("cloud")
@@ -21,6 +22,9 @@ type CloudIngestor struct {
 	Parser   EnvelopeParser
 	Validator *ClusterIdentityValidator
 
+	// ProviderLabel is used as the "provider" label in Prometheus metrics.
+	ProviderLabel string
+
 	// ChannelBufferSize controls the internal event channel capacity.
 	ChannelBufferSize int
 
@@ -29,11 +33,12 @@ type CloudIngestor struct {
 }
 
 // NewCloudIngestor creates a cloud-based ingestor.
-func NewCloudIngestor(source MessageSource, parser EnvelopeParser, validator *ClusterIdentityValidator, startPos CloudPosition) *CloudIngestor {
+func NewCloudIngestor(source MessageSource, parser EnvelopeParser, validator *ClusterIdentityValidator, startPos CloudPosition, providerLabel string) *CloudIngestor {
 	return &CloudIngestor{
 		Source:            source,
 		Parser:            parser,
 		Validator:         validator,
+		ProviderLabel:     providerLabel,
 		ChannelBufferSize: 1000,
 		position:          startPos,
 	}
@@ -91,6 +96,7 @@ func (c *CloudIngestor) receiveLoop(ctx context.Context, ch chan<- auditv1.Event
 			if ctx.Err() != nil {
 				return // context cancelled, clean shutdown
 			}
+			metrics.CloudReceiveErrorsTotal.WithLabelValues(c.ProviderLabel).Inc()
 			cloudLog.Error(err, "error receiving messages, retrying in 5s")
 			select {
 			case <-ctx.Done():
@@ -103,10 +109,29 @@ func (c *CloudIngestor) receiveLoop(ctx context.Context, ch chan<- auditv1.Event
 			continue
 		}
 
+		// Track per-partition message counts.
+		partitionCounts := map[string]int{}
+		for _, msg := range msgs {
+			partitionCounts[msg.Partition]++
+		}
+		for partition, count := range partitionCounts {
+			metrics.CloudMessagesReceivedTotal.WithLabelValues(c.ProviderLabel, partition).Add(float64(count))
+		}
+
+		// Observe lag from the last message in the batch.
+		last := msgs[len(msgs)-1]
+		if last.EnqueuedTime != "" {
+			if enqueued, parseErr := time.Parse(time.RFC3339, last.EnqueuedTime); parseErr == nil {
+				lag := time.Since(enqueued).Seconds()
+				metrics.CloudLagSeconds.WithLabelValues(c.ProviderLabel).Observe(lag)
+			}
+		}
+
 		var emitted int
 		for _, msg := range msgs {
 			events, err := c.Parser.Parse(msg.Body)
 			if err != nil {
+				metrics.CloudEnvelopeParseErrorsTotal.WithLabelValues(c.ProviderLabel).Inc()
 				cloudLog.V(1).Info("skipping unparseable message",
 					"error", err, "partition", msg.Partition, "seq", msg.SequenceNumber)
 				continue
@@ -134,10 +159,11 @@ func (c *CloudIngestor) receiveLoop(ctx context.Context, ch chan<- auditv1.Event
 				return
 			}
 			cloudLog.Error(err, "failed to acknowledge messages")
+		} else {
+			metrics.CloudMessagesAckedTotal.WithLabelValues(c.ProviderLabel).Inc()
 		}
 
 		// Update checkpoint from the last message in the batch.
-		last := msgs[len(msgs)-1]
 		c.updatePosition(last)
 
 		cloudLog.V(1).Info("processed batch",

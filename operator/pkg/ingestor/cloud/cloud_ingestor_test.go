@@ -130,7 +130,7 @@ func TestCloudIngestor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			source := NewFakeSource(tt.batches...)
-			ing := NewCloudIngestor(source, tt.parser, tt.validator, CloudPosition{})
+			ing := NewCloudIngestor(source, tt.parser, tt.validator, CloudPosition{}, "test")
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
@@ -198,7 +198,7 @@ func TestCloudIngestor(t *testing.T) {
 func TestCloudIngestor_ContextCancellation(t *testing.T) {
 	// Source that never returns messages — tests clean shutdown.
 	source := NewFakeSource() // no batches
-	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{})
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -229,7 +229,7 @@ func TestCloudIngestor_ConnectError(t *testing.T) {
 	source := NewFakeSource()
 	source.ConnectErr = context.DeadlineExceeded
 
-	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{})
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
 
 	_, err := ing.Start(context.Background())
 	if err == nil {
@@ -248,7 +248,7 @@ func TestCloudIngestor_CheckpointRestore(t *testing.T) {
 			makeEvent("a1", "get", "pods"))},
 	)
 
-	ing := NewCloudIngestor(source, &fakeParser{}, nil, startPos)
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, startPos, "test")
 
 	// Verify initial checkpoint is the restored position.
 	cp := ing.CloudCheckpoint()
@@ -298,7 +298,7 @@ func TestCloudIngestor_PositionAdapter(t *testing.T) {
 			makeEvent("a1", "get", "pods"))},
 	)
 
-	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{})
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
