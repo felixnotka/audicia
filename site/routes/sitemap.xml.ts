@@ -18,7 +18,8 @@ export const handler = define.handlers({
 
     const urls = staticPages
       .map(
-        (page) => `  <url>
+        (page) =>
+          `  <url>
     <loc>${SITE_URL}${page.loc}</loc>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
@@ -26,9 +27,12 @@ export const handler = define.handlers({
       )
       .concat(
         publishedPosts.map(
-          (post) => `  <url>
+          (post) =>
+            `  <url>
     <loc>${SITE_URL}/blog/${post.slug}</loc>
-    <lastmod>${new Date(post.published_at).toISOString().split("T")[0]}</lastmod>
+    <lastmod>${
+              new Date(post.published_at).toISOString().split("T")[0]
+            }</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`,

@@ -13,8 +13,7 @@ export default function DocsSidebar({ currentPath }: Props) {
         className="docs-sidebar-toggle"
         aria-label="Toggle documentation menu"
       >
-        Menu
-        <span className="docs-sidebar-toggle-icon">+</span>
+        Menu <span className="docs-sidebar-toggle-icon">+</span>
       </button>
       <nav className="docs-sidebar-nav" aria-label="Documentation">
         <div className="docs-search-container">
@@ -49,7 +48,9 @@ export default function DocsSidebar({ currentPath }: Props) {
         </label>
         {DOCS_NAV.map((section: NavSection) => (
           <div
-            className={`docs-sidebar-section${section.expert ? " docs-expert-section" : ""}`}
+            className={`docs-sidebar-section${
+              section.expert ? " docs-expert-section" : ""
+            }`}
             key={section.slug || "_root"}
           >
             {section.section && (
@@ -67,7 +68,9 @@ export default function DocsSidebar({ currentPath }: Props) {
                   <li key={page.slug}>
                     <a
                       href={href}
-                      className={`docs-sidebar-link${isActive ? " active" : ""}`}
+                      className={`docs-sidebar-link${
+                        isActive ? " active" : ""
+                      }`}
                       aria-current={isActive ? "page" : undefined}
                     >
                       {page.title}

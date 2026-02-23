@@ -9,10 +9,10 @@ export default function Problem() {
             <h3 className="problem-card-title">The 403 Cycle</h3>
             <p className="problem-card-body">
               Your service returns 403 Forbidden. Someone escalates to
-              cluster-admin "just to unblock." It's never reverted. Multiply this
-              across every microservice, every team, every namespace. Your
-              cluster's RBAC is now a pile of overprivileged bindings that nobody
-              understands.
+              cluster-admin "just to unblock." It's never reverted. Multiply
+              this across every microservice, every team, every namespace. Your
+              cluster's RBAC is now a pile of overprivileged bindings that
+              nobody understands.
             </p>
           </div>
 

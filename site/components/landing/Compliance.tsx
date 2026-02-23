@@ -19,13 +19,15 @@ export default function Compliance() {
             <h3 className="compliance-column-title">With Audicia</h3>
             <ul>
               <li>Continuous compliance evidence as Kubernetes CRDs</li>
-              <li>Each report is timestamped, diffable, and version-controlled</li>
+              <li>
+                Each report is timestamped, diffable, and version-controlled
+              </li>
               <li>
                 Maps to SOC 2, ISO 27001, PCI DSS, and NIST controls
               </li>
               <li>
-                Evidence: AudiciaPolicyReport showing score, excess grants,
-                and sensitive resources
+                Evidence: AudiciaPolicyReport showing score, excess grants, and
+                sensitive resources
               </li>
             </ul>
           </div>

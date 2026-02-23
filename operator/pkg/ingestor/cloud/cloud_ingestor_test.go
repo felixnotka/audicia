@@ -42,6 +42,48 @@ func makeEvent(auditID, verb, resource string) auditv1.Event {
 	}
 }
 
+// collectEvents reads up to wantN events from ch within the given timeout.
+func collectEvents(ch <-chan auditv1.Event, wantN int, timeout time.Duration) []auditv1.Event {
+	var received []auditv1.Event
+	deadline := time.After(timeout)
+	for {
+		select {
+		case event, ok := <-ch:
+			if !ok {
+				return received
+			}
+			received = append(received, event)
+			if len(received) >= wantN {
+				return received
+			}
+		case <-deadline:
+			return received
+		}
+	}
+}
+
+// drainChannel consumes remaining events until the channel is closed.
+func drainChannel(ch <-chan auditv1.Event) {
+	for range ch {
+		// drain remaining events until channel closes
+	}
+}
+
+// assertPartitions checks that the checkpoint contains the expected partition offsets.
+func assertPartitions(t *testing.T, cp CloudPosition, want map[string]string) {
+	t.Helper()
+	for partition, wantSeq := range want {
+		gotSeq, ok := cp.PartitionOffsets[partition]
+		if !ok {
+			t.Errorf("missing partition %q in checkpoint", partition)
+			continue
+		}
+		if gotSeq != wantSeq {
+			t.Errorf("partition %q: got seq %q, want %q", partition, gotSeq, wantSeq)
+		}
+	}
+}
+
 func TestCloudIngestor(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -132,28 +174,9 @@ func TestCloudIngestor(t *testing.T) {
 				t.Fatalf("Start() error = %v", err)
 			}
 
-			var received []auditv1.Event
-			deadline := time.After(3 * time.Second)
-			for {
-				select {
-				case event, ok := <-ch:
-					if !ok {
-						goto done
-					}
-					received = append(received, event)
-					if len(received) >= tt.wantEvents {
-						goto done
-					}
-				case <-deadline:
-					goto done
-				}
-			}
-		done:
+			received := collectEvents(ch, tt.wantEvents, 3*time.Second)
 			cancel()
-
-			// Wait for channel to close (receiveLoop exits).
-			for range ch {
-			}
+			drainChannel(ch)
 
 			if len(received) != tt.wantEvents {
 				t.Errorf("got %d events, want %d", len(received), tt.wantEvents)
@@ -165,19 +188,10 @@ func TestCloudIngestor(t *testing.T) {
 			}
 
 			cp := ing.CloudCheckpoint()
-			for partition, wantSeq := range tt.wantPartitions {
-				gotSeq, ok := cp.PartitionOffsets[partition]
-				if !ok {
-					t.Errorf("missing partition %q in checkpoint", partition)
-				} else if gotSeq != wantSeq {
-					t.Errorf("partition %q: got seq %q, want %q", partition, gotSeq, wantSeq)
-				}
-			}
+			assertPartitions(t, cp, tt.wantPartitions)
 
-			if tt.wantTimestamp != "" {
-				if cp.LastTimestamp != tt.wantTimestamp {
-					t.Errorf("LastTimestamp = %q, want %q", cp.LastTimestamp, tt.wantTimestamp)
-				}
+			if tt.wantTimestamp != "" && cp.LastTimestamp != tt.wantTimestamp {
+				t.Errorf("LastTimestamp = %q, want %q", cp.LastTimestamp, tt.wantTimestamp)
 			}
 
 			if !source.Closed() {
@@ -267,8 +281,7 @@ func TestCloudIngestor_CheckpointRestore(t *testing.T) {
 	}
 
 	cancel()
-	for range ch {
-	}
+	drainChannel(ch)
 
 	// Verify checkpoint was updated for partition 0 but preserved for partition 1.
 	cp = ing.CloudCheckpoint()
@@ -307,8 +320,7 @@ func TestCloudIngestor_PositionAdapter(t *testing.T) {
 	}
 
 	cancel()
-	for range ch {
-	}
+	drainChannel(ch)
 
 	pos := ing.Checkpoint()
 	if pos.LastTimestamp != "2026-06-15T12:00:00Z" {

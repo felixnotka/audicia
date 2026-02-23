@@ -20,7 +20,8 @@ const faqStructuredData = {
       name: "Does Audicia work on managed Kubernetes (EKS, GKE, AKS)?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Managed Kubernetes services don't expose apiserver flags or audit log files directly. Audicia currently works with self-managed clusters where you control the audit log path or can configure a webhook backend. Cloud-specific log ingestors are on the roadmap.",
+        text:
+          "Managed Kubernetes services don't expose apiserver flags or audit log files directly. Audicia currently works with self-managed clusters where you control the audit log path or can configure a webhook backend. Cloud-specific log ingestors are on the roadmap.",
       },
     },
     {
@@ -28,7 +29,8 @@ const faqStructuredData = {
       name: "Will Audicia automatically apply RBAC policies to my cluster?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. Audicia never auto-applies policies. By design, it generates recommendations. A human or a reviewed pipeline applies them.",
+        text:
+          "No. Audicia never auto-applies policies. By design, it generates recommendations. A human or a reviewed pipeline applies them.",
       },
     },
     {
@@ -36,7 +38,8 @@ const faqStructuredData = {
       name: "How is Audicia different from audit2rbac?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "audit2rbac is a CLI tool for one-time analysis that re-reads the entire audit log on every run. Audicia is an operator that runs continuously with state management, checkpoint/resume, event normalization, and compliance scoring built in.",
+        text:
+          "audit2rbac is a CLI tool for one-time analysis that re-reads the entire audit log on every run. Audicia is an operator that runs continuously with state management, checkpoint/resume, event normalization, and compliance scoring built in.",
       },
     },
     {
@@ -44,7 +47,8 @@ const faqStructuredData = {
       name: "Can Audicia work alongside OPA/Gatekeeper?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, they're complementary. Audicia generates policy, OPA/Gatekeeper enforces policy. The ideal stack uses both.",
+        text:
+          "Yes, they're complementary. Audicia generates policy, OPA/Gatekeeper enforces policy. The ideal stack uses both.",
       },
     },
     {
@@ -52,7 +56,8 @@ const faqStructuredData = {
       name: "Is there a paid version?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. Audicia is Apache 2.0 licensed. The full operator, both ingestion modes, compliance scoring, and the complete Helm chart ship free. There is no paid tier, no enterprise edition, no feature gating.",
+        text:
+          "No. Audicia is Apache 2.0 licensed. The full operator, both ingestion modes, compliance scoring, and the complete Helm chart ship free. There is no paid tier, no enterprise edition, no feature gating.",
       },
     },
   ],

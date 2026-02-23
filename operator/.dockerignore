@@ -27,3 +27,12 @@ LICENSE
 examples/
 tests/
 hack/
+
+# Sensitive files — never include in build context
+.env
+.env.*
+*.pem
+*.key
+*.crt
+credentials/
+secrets/

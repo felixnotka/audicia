@@ -81,94 +81,130 @@ func (c *CloudIngestor) CloudCheckpoint() CloudPosition {
 }
 
 func (c *CloudIngestor) receiveLoop(ctx context.Context, ch chan<- auditv1.Event) {
-	defer func() {
-		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := c.Source.Close(closeCtx); err != nil {
-			cloudLog.Error(err, "error closing cloud message source")
-		}
-		close(ch)
-	}()
+	defer c.closeSource(ch)
 
 	for {
 		msgs, err := c.Source.Receive(ctx)
 		if err != nil {
-			if ctx.Err() != nil {
-				return // context cancelled, clean shutdown
-			}
-			metrics.CloudReceiveErrorsTotal.WithLabelValues(c.ProviderLabel).Inc()
-			cloudLog.Error(err, "error receiving messages, retrying in 5s")
-			select {
-			case <-ctx.Done():
+			if c.handleReceiveError(ctx, err) {
 				return
-			case <-time.After(5 * time.Second):
-				continue
 			}
+			continue
 		}
 		if len(msgs) == 0 {
 			continue
 		}
 
-		// Track per-partition message counts.
-		partitionCounts := map[string]int{}
-		for _, msg := range msgs {
-			partitionCounts[msg.Partition]++
-		}
-		for partition, count := range partitionCounts {
-			metrics.CloudMessagesReceivedTotal.WithLabelValues(c.ProviderLabel, partition).Add(float64(count))
+		c.recordBatchMetrics(msgs)
+
+		emitted, stopped := c.emitEvents(ctx, ch, msgs)
+		if stopped {
+			return
 		}
 
-		// Observe lag from the last message in the batch.
-		last := msgs[len(msgs)-1]
-		if last.EnqueuedTime != "" {
-			if enqueued, parseErr := time.Parse(time.RFC3339, last.EnqueuedTime); parseErr == nil {
-				lag := time.Since(enqueued).Seconds()
-				metrics.CloudLagSeconds.WithLabelValues(c.ProviderLabel).Observe(lag)
-			}
-		}
-
-		var emitted int
-		for _, msg := range msgs {
-			events, err := c.Parser.Parse(msg.Body)
-			if err != nil {
-				metrics.CloudEnvelopeParseErrorsTotal.WithLabelValues(c.ProviderLabel).Inc()
-				cloudLog.V(1).Info("skipping unparseable message",
-					"error", err, "partition", msg.Partition, "seq", msg.SequenceNumber)
-				continue
-			}
-
-			for _, event := range events {
-				if c.Validator != nil && !c.Validator.Matches(event) {
-					cloudLog.V(2).Info("dropping event from different cluster",
-						"auditID", event.AuditID)
-					continue
-				}
-
-				select {
-				case ch <- event:
-					emitted++
-				case <-ctx.Done():
-					return
-				}
-			}
-		}
-
-		// Acknowledge all messages in this batch after successful processing.
-		if err := c.Source.Acknowledge(ctx, msgs); err != nil {
-			if ctx.Err() != nil {
-				return
-			}
-			cloudLog.Error(err, "failed to acknowledge messages")
-		} else {
-			metrics.CloudMessagesAckedTotal.WithLabelValues(c.ProviderLabel).Inc()
-		}
-
-		// Update checkpoint from the last message in the batch.
-		c.updatePosition(last)
+		c.acknowledgeBatch(ctx, msgs)
+		c.updatePosition(msgs[len(msgs)-1])
 
 		cloudLog.V(1).Info("processed batch",
 			"messages", len(msgs), "events", emitted)
 	}
+}
+
+// closeSource shuts down the cloud message source and closes the event channel.
+func (c *CloudIngestor) closeSource(ch chan<- auditv1.Event) {
+	closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := c.Source.Close(closeCtx); err != nil {
+		cloudLog.Error(err, "error closing cloud message source")
+	}
+	close(ch)
+}
+
+// handleReceiveError handles a Receive error. Returns true if the loop should exit.
+func (c *CloudIngestor) handleReceiveError(ctx context.Context, err error) bool {
+	if ctx.Err() != nil {
+		return true // context cancelled, clean shutdown
+	}
+	metrics.CloudReceiveErrorsTotal.WithLabelValues(c.ProviderLabel).Inc()
+	cloudLog.Error(err, "error receiving messages, retrying in 5s")
+	select {
+	case <-ctx.Done():
+		return true
+	case <-time.After(5 * time.Second):
+		return false
+	}
+}
+
+// recordBatchMetrics records per-partition message counts and consumer lag.
+func (c *CloudIngestor) recordBatchMetrics(msgs []Message) {
+	partitionCounts := map[string]int{}
+	for _, msg := range msgs {
+		partitionCounts[msg.Partition]++
+	}
+	for partition, count := range partitionCounts {
+		metrics.CloudMessagesReceivedTotal.WithLabelValues(c.ProviderLabel, partition).Add(float64(count))
+	}
+
+	last := msgs[len(msgs)-1]
+	if last.EnqueuedTime == "" {
+		return
+	}
+	enqueued, parseErr := time.Parse(time.RFC3339, last.EnqueuedTime)
+	if parseErr != nil {
+		return
+	}
+	metrics.CloudLagSeconds.WithLabelValues(c.ProviderLabel).Observe(time.Since(enqueued).Seconds())
+}
+
+// emitEvents parses and emits audit events from a message batch.
+// Returns the number of emitted events and whether the context was cancelled.
+func (c *CloudIngestor) emitEvents(ctx context.Context, ch chan<- auditv1.Event, msgs []Message) (int, bool) {
+	var emitted int
+	for _, msg := range msgs {
+		n, stopped := c.emitMessageEvents(ctx, ch, msg)
+		emitted += n
+		if stopped {
+			return emitted, true
+		}
+	}
+	return emitted, false
+}
+
+// emitMessageEvents parses a single message and emits its events to the channel.
+func (c *CloudIngestor) emitMessageEvents(ctx context.Context, ch chan<- auditv1.Event, msg Message) (int, bool) {
+	events, err := c.Parser.Parse(msg.Body)
+	if err != nil {
+		metrics.CloudEnvelopeParseErrorsTotal.WithLabelValues(c.ProviderLabel).Inc()
+		cloudLog.V(1).Info("skipping unparseable message",
+			"error", err, "partition", msg.Partition, "seq", msg.SequenceNumber)
+		return 0, false
+	}
+
+	var emitted int
+	for _, event := range events {
+		if c.Validator != nil && !c.Validator.Matches(event) {
+			cloudLog.V(2).Info("dropping event from different cluster", "auditID", event.AuditID)
+			continue
+		}
+		select {
+		case ch <- event:
+			emitted++
+		case <-ctx.Done():
+			return emitted, true
+		}
+	}
+	return emitted, false
+}
+
+// acknowledgeBatch acknowledges a processed message batch.
+func (c *CloudIngestor) acknowledgeBatch(ctx context.Context, msgs []Message) {
+	if err := c.Source.Acknowledge(ctx, msgs); err != nil {
+		if ctx.Err() == nil {
+			cloudLog.Error(err, "failed to acknowledge messages")
+		}
+		return
+	}
+	metrics.CloudMessagesAckedTotal.WithLabelValues(c.ProviderLabel).Inc()
 }
 
 func (c *CloudIngestor) updatePosition(msg Message) {

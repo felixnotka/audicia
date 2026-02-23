@@ -9,8 +9,9 @@ WORKDIR /workspace
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code.
-COPY . .
+# Copy only Go source directories needed for compilation.
+COPY cmd/ cmd/
+COPY pkg/ pkg/
 
 # Build with static linking for alpine compatibility.
 # Set GO_BUILD_TAGS to include cloud provider adapters (e.g., "azure").

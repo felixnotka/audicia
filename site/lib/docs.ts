@@ -145,19 +145,22 @@ export function getFlatPages(): FlatPage[] {
 
 /** Transform relative markdown links to site-internal doc links */
 function transformLinks(markdown: string, category: string | null): string {
-  return markdown.replace(
-    /\[([^\]]+)\]\(((?:\.\.\/|\.\/)?[a-zA-Z0-9_./-]+)\.md(#[a-zA-Z0-9_-]*)?\)/g,
+  // Regex note: the path segment uses [a-zA-Z0-9_/-]+ with dots handled
+  // explicitly via (?:\.[a-zA-Z0-9_/-]+)* to prevent backtracking overlap
+  // between the character class and the literal "\.md" that follows.
+  return markdown.replaceAll(
+    /\[([^\]]+)\]\(((?:\.\.\/|\.\/)?[a-zA-Z0-9_/-]+(?:\.[a-zA-Z0-9_/-]+)*)\.md(#[a-zA-Z0-9_-]*)?\)/g,
     (_match, text, basePath, anchor) => {
       const fragment = anchor || "";
 
       // Handle cross-category links like ../guides/audit-policy
       if (basePath.startsWith("../")) {
-        const resolved = basePath.replace(/^\.\.\//g, "");
+        const resolved = basePath.replaceAll("../", "");
         return `[${text}](/docs/${resolved}${fragment})`;
       }
 
       // Handle ./file or file (same category)
-      const slug = basePath.replace(/^\.\//, "");
+      const slug = basePath.replaceAll("./", "");
       if (category) {
         return `[${text}](/docs/${category}/${slug}${fragment})`;
       }
@@ -189,8 +192,10 @@ export async function getDoc(
     const text = await Deno.readTextFile(filePath);
 
     // Extract title from first # heading
-    const titleMatch = text.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : slugParts[slugParts.length - 1];
+    const titleMatch = text.match(/^#\s+([^\n]+)$/m);
+    const title = titleMatch
+      ? titleMatch[1].trim()
+      : slugParts[slugParts.length - 1];
 
     const transformed = transformLinks(text, category);
 
@@ -258,13 +263,13 @@ export async function buildSearchIndex(): Promise<SearchEntry[]> {
         : `/docs/${page.slug}`;
 
       // Extract title
-      const titleMatch = text.match(/^#\s+(.+)$/m);
+      const titleMatch = text.match(/^#\s+([^\n]+)$/m);
       const title = titleMatch ? titleMatch[1].trim() : page.title;
 
       // Extract h2/h3 headings with anchor slugs
       slugger.reset();
       const headings: [string, string][] = [];
-      const headingRegex = /^#{2,3}\s+(.+)$/gm;
+      const headingRegex = /^#{2,3}\s+([^\n]+)$/gm;
       let match;
       while ((match = headingRegex.exec(text)) !== null) {
         const headingText = match[1].trim();
@@ -274,15 +279,15 @@ export async function buildSearchIndex(): Promise<SearchEntry[]> {
 
       // Generate plain-text snippet
       const snippet = text
-        .replace(/^#{1,6}\s+.+$/gm, "") // remove headings
-        .replace(/```[\s\S]*?```/g, "") // remove code blocks
-        .replace(/`[^`]+`/g, "") // remove inline code
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links → text
-        .replace(/[*_~]/g, "") // remove emphasis
-        .replace(/\|[^\n]+\|/g, "") // remove table rows
-        .replace(/---+/g, "") // remove hr
-        .replace(/\n{2,}/g, " ")
-        .replace(/\n/g, " ")
+        .replaceAll(/^#{1,6}\s+[^\n]+$/gm, "") // remove headings
+        .replaceAll(/```[^`]*(?:`(?!``)[^`]*)*```/g, "") // remove code blocks
+        .replaceAll(/`[^`]+`/g, "") // remove inline code
+        .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links → text
+        .replaceAll(/[*_~]/g, "") // remove emphasis
+        .replaceAll(/\|[^\n]+\|/g, "") // remove table rows
+        .replaceAll(/---+/g, "") // remove hr
+        .replaceAll(/\n{2,}/g, " ")
+        .replaceAll(/\n/g, " ")
         .trim()
         .slice(0, 160);
 
