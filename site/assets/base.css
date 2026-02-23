@@ -5,9 +5,24 @@
   font-weight: 400 700;
   font-display: swap;
   src: url("/fonts/inter/Inter-LatinExt.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
-    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
-    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range:
+    U+0100-02BA,
+    U+02BD-02C5,
+    U+02C7-02CC,
+    U+02CE-02D7,
+    U+02DD-02FF,
+    U+0304,
+    U+0308,
+    U+0329,
+    U+1D00-1DBF,
+    U+1E00-1E9F,
+    U+1EF2-1EFF,
+    U+2020,
+    U+20A0-20AB,
+    U+20AD-20C0,
+    U+2113,
+    U+2C60-2C7F,
+    U+A720-A7FF;
 }
 
 /* Inter — latin */
@@ -17,9 +32,26 @@
   font-weight: 400 700;
   font-display: swap;
   src: url("/fonts/inter/Inter-Latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
-    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF,
+    U+0131,
+    U+0152-0153,
+    U+02BB-02BC,
+    U+02C6,
+    U+02DA,
+    U+02DC,
+    U+0304,
+    U+0308,
+    U+0329,
+    U+2000-206F,
+    U+20AC,
+    U+2122,
+    U+2191,
+    U+2193,
+    U+2212,
+    U+2215,
+    U+FEFF,
+    U+FFFD;
 }
 
 /* JetBrains Mono — latin-ext */
@@ -28,10 +60,26 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/fonts/jetbrains-mono/JetBrainsMono-LatinExt.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
-    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
-    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-LatinExt.woff2")
+    format("woff2");
+  unicode-range:
+    U+0100-02BA,
+    U+02BD-02C5,
+    U+02C7-02CC,
+    U+02CE-02D7,
+    U+02DD-02FF,
+    U+0304,
+    U+0308,
+    U+0329,
+    U+1D00-1DBF,
+    U+1E00-1E9F,
+    U+1EF2-1EFF,
+    U+2020,
+    U+20A0-20AB,
+    U+20AD-20C0,
+    U+2113,
+    U+2C60-2C7F,
+    U+A720-A7FF;
 }
 
 /* JetBrains Mono — latin */
@@ -41,9 +89,26 @@
   font-weight: 400 700;
   font-display: swap;
   src: url("/fonts/jetbrains-mono/JetBrainsMono-Latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
-    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
-    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range:
+    U+0000-00FF,
+    U+0131,
+    U+0152-0153,
+    U+02BB-02BC,
+    U+02C6,
+    U+02DA,
+    U+02DC,
+    U+0304,
+    U+0308,
+    U+0329,
+    U+2000-206F,
+    U+20AC,
+    U+2122,
+    U+2191,
+    U+2193,
+    U+2212,
+    U+2215,
+    U+FEFF,
+    U+FFFD;
 }
 
 :root {
@@ -99,25 +164,26 @@
   --page-margin-v: 32px;
 
   /* Audicia color palette */
-  --color-bg: #0D1B2A;
-  --color-text: #E2E8F0;
-  --color-text-strong: #FFFFFF;
-  --color-muted: #94A3B8;
-  --color-border: #1B2838;
+  --color-bg: #0d1b2a;
+  --color-text: #e2e8f0;
+  --color-text-strong: #ffffff;
+  --color-muted: #94a3b8;
+  --color-border: #1b2838;
   --color-border-strong: #334155;
-  --color-link: #00C853;
-  --color-link-hover: #00E676;
+  --color-link: #00c853;
+  --color-link-hover: #00e676;
 
   /* Audicia brand colors */
-  --color-accent: #00C853;
-  --color-card-bg: #1B2838;
-  --color-score-red: #FF1744;
-  --color-score-yellow: #FFD600;
-  --color-score-green: #00C853;
-  --color-terminal-amber: #FFB300;
-  --color-k8s-blue: #326CE5;
+  --color-accent: #00c853;
+  --color-card-bg: #1b2838;
+  --color-score-red: #ff1744;
+  --color-score-yellow: #ffd600;
+  --color-score-green: #00c853;
+  --color-terminal-amber: #ffb300;
+  --color-k8s-blue: #326ce5;
 
-  --font-family-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  --font-family-mono:
+    "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
 
   --container-w: min(90%, var(--max-width-xl));
 }

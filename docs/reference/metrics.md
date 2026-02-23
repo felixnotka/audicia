@@ -18,6 +18,16 @@ All metrics use the `audicia_` namespace.
 | `audicia_report_rules_count`       | Gauge     | `report_name`      | Number of rules in each report. Useful for monitoring report growth.                                                      |
 | `audicia_reconcile_errors_total`   | Counter   | -                  | Controller reconciliation errors.                                                                                         |
 
+### Cloud Ingestion Metrics
+
+| Metric                                       | Type      | Labels                  | Description                                                                                               |
+|----------------------------------------------|-----------|-------------------------|-----------------------------------------------------------------------------------------------------------|
+| `audicia_cloud_messages_received_total`      | Counter   | `provider`, `partition` | Total cloud messages received from the message bus, per provider and partition.                            |
+| `audicia_cloud_messages_acked_total`         | Counter   | `provider`              | Total cloud message batches acknowledged after successful processing.                                     |
+| `audicia_cloud_receive_errors_total`         | Counter   | `provider`              | Total errors receiving from the cloud message bus. Sustained non-zero rate indicates connectivity issues.  |
+| `audicia_cloud_lag_seconds`                  | Histogram | `provider`              | Lag between message enqueue time and processing time. High values mean the consumer is falling behind.    |
+| `audicia_cloud_envelope_parse_errors_total`  | Counter   | `provider`              | Total errors parsing cloud provider envelopes. Non-zero values may indicate envelope format changes.      |
+
 ## Scrape Configuration
 
 ### ServiceMonitor (Prometheus Operator)
@@ -87,6 +97,21 @@ Alert when more than 10% of events are errors:
     severity: warning
   annotations:
     summary: "Audicia error rate above 10%"
+```
+
+### Cloud Consumer Lag
+
+Alert when cloud ingestion lag exceeds 2 minutes:
+
+```yaml
+- alert: AudiciaCloudLagHigh
+  expr: histogram_quantile(0.95, rate(audicia_cloud_lag_seconds_bucket[5m])) > 120
+  for: 10m
+  labels:
+    severity: warning
+  annotations:
+    summary: "Cloud ingestion lag above 2 minutes for provider {{ $labels.provider }}"
+    description: "p95 lag is {{ $value }}s. Check Event Hub consumer group lag."
 ```
 
 ### Report Growth

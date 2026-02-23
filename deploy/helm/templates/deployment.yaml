@@ -92,6 +92,11 @@ spec:
               mountPath: /etc/audicia/webhook-client-ca
               readOnly: true
             {{- end }}
+            {{- if and .Values.cloudAuditLog.enabled .Values.cloudAuditLog.credentialSecretName }}
+            - name: cloud-credentials
+              mountPath: /etc/audicia/cloud-credentials
+              readOnly: true
+            {{- end }}
       volumes:
         {{- if .Values.auditLog.enabled }}
         - name: audit-log
@@ -108,6 +113,11 @@ spec:
         - name: webhook-client-ca
           secret:
             secretName: {{ .Values.webhook.clientCASecretName }}
+        {{- end }}
+        {{- if and .Values.cloudAuditLog.enabled .Values.cloudAuditLog.credentialSecretName }}
+        - name: cloud-credentials
+          secret:
+            secretName: {{ .Values.cloudAuditLog.credentialSecretName }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

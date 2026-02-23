@@ -19,9 +19,23 @@ export default define.page(function App({ Component, url, state }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/favicon.ico" />
         <title>{title}</title>
-        <link rel="preload" href="/fonts/inter/Inter-Latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/jetbrains-mono/JetBrainsMono-Latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <style dangerouslySetInnerHTML={{ __html: `
+        <link
+          rel="preload"
+          href="/fonts/inter/Inter-Latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/jetbrains-mono/JetBrainsMono-Latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           @font-face {
             font-family: "Inter";
             font-style: normal;
@@ -42,7 +56,9 @@ export default define.page(function App({ Component, url, state }) {
             font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
           }
           .navbar { background-color: #0D1B2A; }
-        `}} />
+        `,
+          }}
+        />
         <meta name="description" content={description} />
         <meta name="author" content="Felix Notka" />
         <link rel="canonical" href={canonicalUrl} />

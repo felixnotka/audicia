@@ -132,6 +132,33 @@ When enabled, adds:
 For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
 [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md).
 
+## Cloud Audit Log (Cloud Mode)
+
+| Value                                       | Type    | Default    | Description                                                                                       |
+|---------------------------------------------|---------|------------|---------------------------------------------------------------------------------------------------|
+| `cloudAuditLog.enabled`                     | boolean | `false`    | Enable cloud-based audit log ingestion.                                                           |
+| `cloudAuditLog.provider`                    | string  | `""`       | Cloud provider: `AzureEventHub`, `AWSCloudWatch`, or `GCPPubSub`.                                |
+| `cloudAuditLog.credentialSecretName`        | string  | `""`       | Name of a Secret containing cloud credentials. Leave empty for managed/workload identity.          |
+| `cloudAuditLog.clusterIdentity`             | string  | `""`       | Cluster identity string for event validation (AKS resource ID, EKS ARN, GKE resource name).      |
+| `cloudAuditLog.azure.eventHubNamespace`     | string  | `""`       | Fully qualified Event Hub namespace (e.g., `myns.servicebus.windows.net`).                        |
+| `cloudAuditLog.azure.eventHubName`          | string  | `""`       | Event Hub instance name.                                                                          |
+| `cloudAuditLog.azure.consumerGroup`         | string  | `$Default` | Consumer group for partition reads.                                                               |
+| `cloudAuditLog.azure.storageAccountURL`     | string  | `""`       | Azure Blob Storage URL for checkpoint persistence. Empty uses in-status checkpoints only.          |
+| `cloudAuditLog.azure.storageContainerName`  | string  | `""`       | Blob container name for checkpoints.                                                              |
+
+When enabled with `credentialSecretName`, adds a `cloud-credentials` Secret volume + volumeMount at
+`/etc/audicia/cloud-credentials`. The operator image must be built with the appropriate build tag (e.g., `azure`).
+
+For workload identity (no credential Secret), annotate the ServiceAccount instead:
+
+```yaml
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
+```
+
+See the [AKS Setup Guide](../guides/aks-setup.md) for a complete walkthrough.
+
 ## Monitoring
 
 | Value                     | Type    | Default | Description                                                        |
@@ -177,3 +204,18 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 
 Replace `<CLUSTER-IP>` with a free IP from your service CIDR and `<CONTROL-PLANE-IP>` with your control plane
 node IP (`kubectl get nodes -o wide`).
+
+## Example: Cloud Mode (AKS)
+
+```bash
+helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+  --set cloudAuditLog.enabled=true \
+  --set cloudAuditLog.provider=AzureEventHub \
+  --set cloudAuditLog.credentialSecretName=cloud-credentials \
+  --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
+  --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
+  --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>"
+```
+
+Replace the Azure placeholders with your subscription, resource group, cluster name, Event Hub namespace, and
+Event Hub name. See the [AKS Setup Guide](../guides/aks-setup.md) for detailed instructions.

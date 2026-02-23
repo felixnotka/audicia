@@ -65,6 +65,19 @@ docker-build: ## Build the container image (multi-stage, no local Go needed).
 		--build-arg DATE=$(DATE) \
 		-f build/Dockerfile .
 
+.PHONY: build-azure
+build-azure: fmt vet ## Build with Azure Event Hub support.
+	go build -tags azure -ldflags "$(LDFLAGS)" -o bin/$(BINARY_NAME) ./cmd/audicia/
+
+.PHONY: docker-build-azure
+docker-build-azure: ## Build the container image with Azure support.
+	docker build -t $(IMG) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg DATE=$(DATE) \
+		--build-arg GO_BUILD_TAGS=azure \
+		-f build/Dockerfile .
+
 .PHONY: docker-push
 docker-push: ## Push the container image.
 	docker push $(IMG)
@@ -73,8 +86,8 @@ docker-push: ## Push the container image.
 
 .PHONY: generate
 generate: ## Generate DeepCopy methods and CRD manifests.
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/..."
-	controller-gen crd paths="./pkg/apis/..." output:crd:artifacts:config=../deploy/helm/crds
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/apis/audicia.io/v1alpha1"
+	controller-gen crd paths="./pkg/apis/audicia.io/v1alpha1" output:crd:artifacts:config=../deploy/helm/crds
 
 .PHONY: manifests
 manifests: generate ## Alias for generate.

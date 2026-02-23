@@ -5,8 +5,9 @@ export default function Comparison() {
         <h2 className="section-headline">Not Another Scanner</h2>
         <p className="section-subheadline">
           Kubernetes security tools fall into three categories: scanners (find
-          problems), enforcers (block violations), and generators (create correct
-          policies). Audicia is a continuous, operator-native policy generator.
+          problems), enforcers (block violations), and generators (create
+          correct policies). Audicia is a continuous, operator-native policy
+          generator.
         </p>
 
         <div className="comparison-quadrant-wrapper">

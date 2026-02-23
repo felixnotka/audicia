@@ -11,8 +11,8 @@ export default function HowItWorks() {
               Point Audicia at your audit log
             </h3>
             <p className="pipeline-step-body">
-              Create an AudiciaSource custom resource. Audicia starts tailing the
-              log file or receiving real-time events via webhook. Both modes
+              Create an AudiciaSource custom resource. Audicia starts tailing
+              the log file or receiving real-time events via webhook. Both modes
               support checkpoint/resume — no data is lost on restart.
             </p>
           </div>

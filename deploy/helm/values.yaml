@@ -122,6 +122,35 @@ webhook:
     # For a single node use /32 (e.g. 162.55.131.175/32).
     controlPlaneCIDR: ""
 
+# Cloud audit log ingestion configuration (AKS Event Hub, EKS CloudWatch, GKE Pub/Sub).
+cloudAuditLog:
+  # -- Enable cloud-based audit log ingestion.
+  enabled: false
+  # -- Cloud provider: AzureEventHub, AWSCloudWatch, or GCPPubSub.
+  provider: ""
+  # -- Name of a Secret containing cloud credentials (e.g., Event Hub connection string).
+  # The Secret must exist in the release namespace. Key: "connection-string".
+  # Leave empty for managed identity / workload identity.
+  credentialSecretName: ""
+  # -- Cluster identity string for event validation. Format varies by provider:
+  # AKS: resource ID (/subscriptions/.../managedClusters/<name>)
+  # EKS: cluster ARN
+  # GKE: cluster resource name
+  clusterIdentity: ""
+  # Azure Event Hub configuration.
+  azure:
+    # -- Fully qualified Event Hub namespace (e.g., "myns.servicebus.windows.net").
+    eventHubNamespace: ""
+    # -- Event Hub instance name.
+    eventHubName: ""
+    # -- Consumer group name.
+    consumerGroup: "$Default"
+    # -- Azure Blob Storage URL for checkpoint persistence.
+    # If empty, checkpoints are stored in AudiciaSource status only.
+    storageAccountURL: ""
+    # -- Blob container name for checkpoints.
+    storageContainerName: ""
+
 serviceMonitor:
   # -- Whether to create a Prometheus ServiceMonitor.
   enabled: false

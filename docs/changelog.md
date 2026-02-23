@@ -6,6 +6,29 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 
 ---
 
+## 0.2.0
+
+### Added
+- **Cloud audit log ingestion** — New `CloudAuditLog` source type for managed Kubernetes platforms that export audit logs through cloud-native pipelines
+- **Azure Event Hub adapter** — Full adapter for AKS audit logs via Azure Event Hub with Diagnostic Settings envelope parsing, partition-based checkpointing, and workload identity support
+- **`spec.cloud` CRD fields** — `CloudConfig`, `AzureEventHubConfig`, `AWSCloudWatchConfig` (placeholder), `GCPPubSubConfig` (placeholder) types added to AudiciaSource
+- **`status.cloudCheckpoint`** — Per-partition sequence number tracking for cloud source recovery
+- **Cluster identity validation** — Defense-in-depth filter for shared Event Hub scenarios, matching events against `clusterIdentity`
+- **`cloudAuditLog` Helm values** — Full configuration section for cloud provider, credentials, and Azure-specific settings
+- **Cloud credential volume mount** — Conditional `cloud-credentials` Secret volume in the Deployment template
+- **5 cloud Prometheus metrics** — `cloud_messages_received_total`, `cloud_messages_acked_total`, `cloud_receive_errors_total`, `cloud_lag_seconds`, `cloud_envelope_parse_errors_total`
+- **Go build tags** — `azure` build tag for conditional Azure SDK compilation; default binary remains cloud-free
+- **`build-azure` Make target** — Build and Docker targets for the Azure-enabled binary
+- **Cloud Ingestion concept page** — Architecture overview of MessageSource/EnvelopeParser abstractions and provider registry
+- **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration
+- **Cloud AKS example** — AudiciaSource YAML example for AKS Event Hub ingestion
+
+### Changed
+- Platform compatibility table updated across docs: AKS now shows "Full support" for Cloud Mode
+- Managed Kubernetes limitation updated: AKS addressed via cloud ingestion, EKS/GKE planned
+
+---
+
 ## 0.1.2
 
 ### Added

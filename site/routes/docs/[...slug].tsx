@@ -1,7 +1,7 @@
 import { Head } from "fresh/runtime";
 import { HttpError } from "fresh";
 import { define } from "../../utils.ts";
-import { getDoc, renderDoc, buildSearchIndex } from "../../lib/docs.ts";
+import { buildSearchIndex, getDoc, renderDoc } from "../../lib/docs.ts";
 import { CSS } from "@deno/gfm";
 import DocsSidebar from "../../components/DocsSidebar.tsx";
 

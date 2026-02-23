@@ -9,14 +9,18 @@ WORKDIR /workspace
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code.
-COPY . .
+# Copy only Go source directories needed for compilation.
+COPY cmd/ cmd/
+COPY pkg/ pkg/
 
 # Build with static linking for alpine compatibility.
+# Set GO_BUILD_TAGS to include cloud provider adapters (e.g., "azure").
 ARG VERSION=dev
 ARG COMMIT=none
 ARG DATE=unknown
+ARG GO_BUILD_TAGS=""
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -tags "${GO_BUILD_TAGS}" \
     -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
     -o /audicia \
     ./cmd/audicia/

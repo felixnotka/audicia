@@ -13,18 +13,23 @@ Audit Log → Ingestor → Filter → Normalizer → Aggregator → Strategy →
 
 The ingestor abstracts the audit log source into a unified event stream.
 
-| Source               | Mechanism                      | State Tracking                                 |
-|----------------------|--------------------------------|------------------------------------------------|
-| File (`K8sAuditLog`) | Tail with fsnotify, 1s polling | inode + fileOffset + lastTimestamp             |
-| Webhook              | HTTPS POST receiver            | auditID-based LRU dedup cache (10,000 entries) |
+| Source                     | Mechanism                      | State Tracking                                 |
+|----------------------------|--------------------------------|------------------------------------------------|
+| File (`K8sAuditLog`)       | Tail with fsnotify, 1s polling | inode + fileOffset + lastTimestamp             |
+| Webhook                    | HTTPS POST receiver            | auditID-based LRU dedup cache (10,000 entries) |
+| Cloud (`CloudAuditLog`)    | Cloud message bus consumer     | Per-partition sequence numbers + lastTimestamp |
 
-Both sources output raw `audit.k8s.io/v1.Event` structs. The ingestor knows nothing about RBAC.
+All sources output raw `audit.k8s.io/v1.Event` structs. The ingestor knows nothing about RBAC.
 
 **File ingestion** supports checkpoint/resume: on restart, it resumes from the last saved byte offset. Inode tracking
 (Linux-only) detects log rotation and resets the offset.
 
 **Webhook ingestion** is stateless — it handles deduplication via an in-memory LRU cache keyed by `auditID`. After
 restart, some duplicates may occur; the aggregator handles idempotent merging.
+
+**Cloud ingestion** connects to a cloud message bus (e.g., Azure Event Hub), receives batches of messages, parses
+audit events from provider-specific envelopes, and acknowledges processed messages. Checkpoints track per-partition
+offsets. See [Cloud Ingestion](cloud-ingestion.md) for architecture details.
 
 ## 2. Filtering
 

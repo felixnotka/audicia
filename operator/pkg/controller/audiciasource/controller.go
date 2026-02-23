@@ -28,6 +28,7 @@ import (
 	"github.com/felixnotka/audicia/operator/pkg/diff"
 	"github.com/felixnotka/audicia/operator/pkg/filter"
 	"github.com/felixnotka/audicia/operator/pkg/ingestor"
+	"github.com/felixnotka/audicia/operator/pkg/ingestor/cloud"
 	"github.com/felixnotka/audicia/operator/pkg/metrics"
 	"github.com/felixnotka/audicia/operator/pkg/normalizer"
 	"github.com/felixnotka/audicia/operator/pkg/rbac"
@@ -176,57 +177,100 @@ func (r *Reconciler) runPipeline(ctx context.Context, key types.NamespacedName, 
 
 // createIngestor builds the appropriate ingestor for the source type.
 func createIngestor(source audiciav1alpha1.AudiciaSource, logger logr.Logger) (ingestor.Ingestor, error) {
-	startPos := ingestor.Position{
-		FileOffset: source.Status.FileOffset,
-		Inode:      source.Status.Inode,
-	}
-
 	switch source.Spec.SourceType {
 	case audiciav1alpha1.SourceTypeK8sAuditLog:
-		if source.Spec.Location == nil {
-			logger.Error(nil, "K8sAuditLog source requires location config")
-			return nil, fmt.Errorf("K8sAuditLog source requires location config")
-		}
-		batchSize := int(source.Spec.Checkpoint.BatchSize)
-		if batchSize == 0 {
-			batchSize = 500
-		}
-		return ingestor.NewFileIngestor(source.Spec.Location.Path, startPos, batchSize), nil
-
+		return createFileIngestor(source, logger)
 	case audiciav1alpha1.SourceTypeWebhook:
-		if source.Spec.Webhook == nil {
-			logger.Error(nil, "Webhook source requires webhook config")
-			return nil, fmt.Errorf("webhook source requires webhook config")
-		}
-
-		// TLS cert/key are mounted by the Helm chart from the Secret named in
-		// spec.webhook.tlsSecretName. The mount path is a convention:
-		//   /etc/audicia/webhook-tls/tls.crt
-		//   /etc/audicia/webhook-tls/tls.key
-		const tlsMountPath = "/etc/audicia/webhook-tls"
-		tlsCertFile := path.Join(tlsMountPath, "tls.crt")
-		tlsKeyFile := path.Join(tlsMountPath, "tls.key")
-
-		wh := ingestor.NewWebhookIngestor(
-			source.Spec.Webhook.Port,
-			tlsCertFile, tlsKeyFile,
-		)
-		wh.MaxRequestBodyBytes = source.Spec.Webhook.MaxRequestBodyBytes
-		wh.RateLimitPerSecond = source.Spec.Webhook.RateLimitPerSecond
-
-		// Optional mTLS: if a client CA Secret is specified, mount its ca.crt
-		// and configure the webhook server to require client certificates.
-		if source.Spec.Webhook.ClientCASecretName != "" {
-			const clientCAMountPath = "/etc/audicia/webhook-client-ca"
-			wh.ClientCAFile = path.Join(clientCAMountPath, "ca.crt")
-		}
-
-		return wh, nil
-
+		return createWebhookIngestor(source, logger)
+	case audiciav1alpha1.SourceTypeCloudAuditLog:
+		return createCloudIngestor(source, logger)
 	default:
 		logger.Error(nil, "unknown source type", "sourceType", source.Spec.SourceType)
 		return nil, fmt.Errorf("unknown source type: %s", source.Spec.SourceType)
 	}
+}
+
+func createFileIngestor(source audiciav1alpha1.AudiciaSource, logger logr.Logger) (ingestor.Ingestor, error) {
+	if source.Spec.Location == nil {
+		logger.Error(nil, "K8sAuditLog source requires location config")
+		return nil, fmt.Errorf("K8sAuditLog source requires location config")
+	}
+	startPos := ingestor.Position{
+		FileOffset: source.Status.FileOffset,
+		Inode:      source.Status.Inode,
+	}
+	batchSize := int(source.Spec.Checkpoint.BatchSize)
+	if batchSize == 0 {
+		batchSize = 500
+	}
+	return ingestor.NewFileIngestor(source.Spec.Location.Path, startPos, batchSize), nil
+}
+
+func createWebhookIngestor(source audiciav1alpha1.AudiciaSource, logger logr.Logger) (ingestor.Ingestor, error) {
+	if source.Spec.Webhook == nil {
+		logger.Error(nil, "Webhook source requires webhook config")
+		return nil, fmt.Errorf("webhook source requires webhook config")
+	}
+
+	// TLS cert/key are mounted by the Helm chart from the Secret named in
+	// spec.webhook.tlsSecretName. The mount path is a convention:
+	//   /etc/audicia/webhook-tls/tls.crt
+	//   /etc/audicia/webhook-tls/tls.key
+	const tlsMountPath = "/etc/audicia/webhook-tls"
+	tlsCertFile := path.Join(tlsMountPath, "tls.crt")
+	tlsKeyFile := path.Join(tlsMountPath, "tls.key")
+
+	wh := ingestor.NewWebhookIngestor(
+		source.Spec.Webhook.Port,
+		tlsCertFile, tlsKeyFile,
+	)
+	wh.MaxRequestBodyBytes = source.Spec.Webhook.MaxRequestBodyBytes
+	wh.RateLimitPerSecond = source.Spec.Webhook.RateLimitPerSecond
+
+	// Optional mTLS: if a client CA Secret is specified, mount its ca.crt
+	// and configure the webhook server to require client certificates.
+	if source.Spec.Webhook.ClientCASecretName != "" {
+		const clientCAMountPath = "/etc/audicia/webhook-client-ca"
+		wh.ClientCAFile = path.Join(clientCAMountPath, "ca.crt")
+	}
+
+	return wh, nil
+}
+
+func createCloudIngestor(source audiciav1alpha1.AudiciaSource, logger logr.Logger) (ingestor.Ingestor, error) {
+	if source.Spec.Cloud == nil {
+		logger.Error(nil, "CloudAuditLog source requires cloud config")
+		return nil, fmt.Errorf("CloudAuditLog source requires cloud config")
+	}
+
+	msgSource, parser, err := cloud.BuildAdapter(source.Spec.Cloud)
+	if err != nil {
+		logger.Error(err, "failed to build cloud adapter", "provider", source.Spec.Cloud.Provider)
+		return nil, fmt.Errorf("building cloud adapter: %w", err)
+	}
+
+	startPos := restoreCloudCheckpoint(source)
+
+	var validator *cloud.ClusterIdentityValidator
+	if source.Spec.Cloud.ClusterIdentity != "" {
+		validator = &cloud.ClusterIdentityValidator{
+			ExpectedIdentity: source.Spec.Cloud.ClusterIdentity,
+		}
+	}
+
+	return cloud.NewCloudIngestor(msgSource, parser, validator, startPos, string(source.Spec.Cloud.Provider)), nil
+}
+
+// restoreCloudCheckpoint rebuilds CloudPosition from the AudiciaSource status.
+func restoreCloudCheckpoint(source audiciav1alpha1.AudiciaSource) cloud.CloudPosition {
+	pos := cloud.CloudPosition{}
+	if source.Status.CloudCheckpoint != nil && source.Status.CloudCheckpoint.PartitionOffsets != nil {
+		pos.PartitionOffsets = source.Status.CloudCheckpoint.PartitionOffsets
+	}
+	if source.Status.LastTimestamp != nil {
+		pos.LastTimestamp = source.Status.LastTimestamp.Format(time.RFC3339)
+	}
+	return pos
 }
 
 // eventLoop processes incoming audit events and periodically flushes reports.
@@ -511,6 +555,14 @@ func (r *Reconciler) populateReportStatus(
 // flushCheckpoint persists the ingestor checkpoint back to the AudiciaSource status.
 func (r *Reconciler) flushCheckpoint(ctx context.Context, key types.NamespacedName, ing ingestor.Ingestor) {
 	logger := ctrl.Log.WithName("pipeline").WithValues("source", key)
+
+	// Cloud ingestors have partition-based checkpoints.
+	if cloudIng, ok := ing.(*cloud.CloudIngestor); ok {
+		r.flushCloudCheckpoint(ctx, key, cloudIng, logger)
+		return
+	}
+
+	// File/webhook checkpoint path (unchanged).
 	pos := ing.Checkpoint()
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -534,6 +586,40 @@ func (r *Reconciler) flushCheckpoint(ctx context.Context, key types.NamespacedNa
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			logger.Error(err, "failed to update checkpoint")
+		}
+	} else {
+		metrics.CheckpointLagSeconds.WithLabelValues(key.String()).Set(0)
+	}
+}
+
+// flushCloudCheckpoint persists cloud-specific partition offsets to AudiciaSource status.
+func (r *Reconciler) flushCloudCheckpoint(ctx context.Context, key types.NamespacedName, ing *cloud.CloudIngestor, logger logr.Logger) {
+	cp := ing.CloudCheckpoint()
+
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var source audiciav1alpha1.AudiciaSource
+		if err := r.Get(ctx, key, &source); err != nil {
+			return err
+		}
+
+		if source.Status.CloudCheckpoint == nil {
+			source.Status.CloudCheckpoint = &audiciav1alpha1.CloudCheckpointStatus{}
+		}
+		source.Status.CloudCheckpoint.PartitionOffsets = cp.PartitionOffsets
+
+		if cp.LastTimestamp != "" {
+			t, err := time.Parse(time.RFC3339, cp.LastTimestamp)
+			if err == nil {
+				mt := metav1.NewTime(t)
+				source.Status.LastTimestamp = &mt
+			}
+		}
+
+		return r.Status().Update(ctx, &source)
+	})
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			logger.Error(err, "failed to update cloud checkpoint")
 		}
 	} else {
 		metrics.CheckpointLagSeconds.WithLabelValues(key.String()).Set(0)
