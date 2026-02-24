@@ -29,6 +29,8 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "quick-start-file", title: "Quick Start: File Mode" },
       { slug: "quick-start-webhook", title: "Quick Start: Webhook Mode" },
       { slug: "quick-start-aks", title: "Quick Start: AKS Cloud Ingestion" },
+      { slug: "quick-start-eks", title: "Quick Start: EKS Cloud Ingestion" },
+      { slug: "quick-start-gke", title: "Quick Start: GKE Cloud Ingestion" },
     ],
   },
   {
