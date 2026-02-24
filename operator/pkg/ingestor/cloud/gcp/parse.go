@@ -112,17 +112,14 @@ func parseLogEntry(body []byte) ([]auditv1.Event, error) {
 		return nil, nil
 	}
 
-	event, err := convertLogEntry(entry)
-	if err != nil {
-		return nil, fmt.Errorf("converting Cloud Logging entry: %w", err)
-	}
+	event := convertLogEntry(entry)
 
 	return []auditv1.Event{event}, nil
 }
 
 // convertLogEntry converts a single Cloud Logging LogEntry to a
 // Kubernetes audit event.
-func convertLogEntry(entry logEntry) (auditv1.Event, error) {
+func convertLogEntry(entry logEntry) auditv1.Event {
 	event := auditv1.Event{}
 	event.APIVersion = "audit.k8s.io/v1"
 	event.Kind = "Event"
@@ -204,7 +201,7 @@ func convertLogEntry(entry logEntry) (auditv1.Event, error) {
 		event.Annotations["gcp.audicia.io/insert-id"] = entry.InsertID
 	}
 
-	return event, nil
+	return event
 }
 
 // parseMethodName extracts verb, resource, API group, and API version from
