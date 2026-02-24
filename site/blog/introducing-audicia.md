@@ -1,7 +1,9 @@
 ---
 title: "Introducing Audicia: Stop Writing RBAC by Hand"
+seo_title: "Stop Writing RBAC by Hand — Introducing Audicia"
 published_at: 2026-02-20T08:00:00.000Z
 snippet: "Audicia is a Kubernetes Operator that watches your audit logs and generates least-privilege RBAC policies. Here's why I built it and how it works."
+description: "Audicia is a Kubernetes Operator that generates least-privilege RBAC policies from audit logs. Open source, Apache 2.0, never auto-applies."
 ---
 
 ## The Problem
@@ -28,7 +30,8 @@ Audicia is a Kubernetes Operator that:
 
 The compliance score compares what each subject _actually uses_ against what
 it's _allowed to use_. Red means significant overprivilege. Green means tight
-permissions.
+permissions. Learn more about how this works in
+[Understanding Compliance Scores](/blog/understanding-compliance-scores).
 
 ## How It Works
 
@@ -67,6 +70,9 @@ line of code.
 
 ## Get Started
 
-Check out the
-[documentation](https://github.com/felixnotka/audicia#getting-started) or head
-straight to [GitHub](https://github.com/felixnotka/audicia) to try it out.
+Check out the [getting started guide](/docs/getting-started/introduction) to
+install Audicia and generate your first policy reports. If you want to
+understand the internals, read
+[how the pipeline works](/blog/how-audicia-processes-audit-logs).
+
+View the source on [GitHub](https://github.com/felixnotka/audicia).

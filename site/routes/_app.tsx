@@ -62,6 +62,12 @@ export default define.page(function App({ Component, url, state }) {
         <meta name="description" content={description} />
         <meta name="author" content="Felix Notka" />
         <link rel="canonical" href={canonicalUrl} />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="Audicia Blog"
+          href="https://audicia.io/blog/feed.xml"
+        />
 
         {/* Open Graph */}
         <meta property="og:site_name" content={SITE_NAME} />

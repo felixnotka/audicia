@@ -7,8 +7,9 @@ export default function Hero() {
             Stop Writing RBAC by Hand
           </h1>
           <p className="hero-subheadline">
-            Audicia is a Kubernetes Operator that watches your audit logs and
-            generates least-privilege RBAC policies automatically. Open source.
+            Audicia is a <strong>Kubernetes RBAC generator</strong>{" "}
+            — an Operator that watches your audit logs and generates
+            least-privilege RBAC policies automatically. Open source.
             Operator-native. Never auto-applies.
           </p>
           <div className="hero-ctas">

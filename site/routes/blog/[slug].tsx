@@ -12,8 +12,9 @@ export const handler = define.handlers({
       throw new HttpError(404, "Post not found");
     }
 
-    ctx.state.title = `${post.title} — Audicia Blog`;
-    ctx.state.description = post.snippet;
+    const seoTitle = post.seo_title || post.title;
+    ctx.state.title = `${seoTitle} | Audicia Blog`;
+    ctx.state.description = post.description || post.snippet;
 
     return { data: { post } };
   },
@@ -23,19 +24,21 @@ export default define.page<typeof handler>(function Post(props) {
   const { post } = props.data;
   const postUrl = `https://audicia.io/blog/${post.slug}`;
   const publishedIso = new Date(post.published_at).toISOString();
+  const seoTitle = post.seo_title || post.title;
+  const metaDescription = post.description || post.snippet;
 
   return (
     <div>
       <Head>
         <meta property="og:type" content="article" />
-        <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.snippet} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={metaDescription} />
         <meta property="og:url" content={postUrl} />
         <meta property="article:published_time" content={publishedIso} />
         <meta property="article:author" content="Felix Notka" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content={post.title} />
-        <meta name="twitter:description" content={post.snippet} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={metaDescription} />
         <script
           type="application/ld+json"
           // deno-lint-ignore react-no-danger

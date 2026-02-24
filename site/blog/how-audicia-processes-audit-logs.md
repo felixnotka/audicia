@@ -1,7 +1,9 @@
 ---
 title: "How Audicia Turns Audit Logs into RBAC Policies"
+seo_title: "How Audicia's Pipeline Turns 10,000 Events into 50 Rules"
 published_at: 2026-02-21T08:00:00.000Z
 snippet: "A look inside Audicia's six-stage pipeline: from raw kube-apiserver audit events to ready-to-apply Roles and ClusterRoles."
+description: "How Audicia processes 10,000 raw Kubernetes audit events into 50 compacted RBAC rules per subject through a six-stage pipeline."
 ---
 
 ## From Noise to Signal
@@ -89,7 +91,8 @@ Configuration knobs include:
 The final output is an `AudiciaPolicyReport` — a CRD containing:
 
 - The suggested Role/ClusterRole/Binding YAML, ready to `kubectl apply`
-- A compliance score comparing observed permissions vs. granted permissions
+- A [compliance score](/blog/understanding-compliance-scores) comparing observed
+  permissions vs. granted permissions
 - Metadata like firstSeen/lastSeen timestamps and event counts
 
 ## Why a Pipeline?
@@ -106,4 +109,5 @@ transformed, or aggregated.
 ## Try It
 
 The [quick start guide](/docs/getting-started/quick-start-file) gets you from
-zero to policy reports in under five minutes.
+zero to policy reports in under five minutes. For a deeper look at the
+architecture, see the [architecture docs](/docs/concepts/architecture).
