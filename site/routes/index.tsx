@@ -7,9 +7,7 @@ import HowItWorks from "../components/landing/HowItWorks.tsx";
 import Features from "../components/landing/Features.tsx";
 import Compliance from "../components/landing/Compliance.tsx";
 import Comparison from "../components/landing/Comparison.tsx";
-import QuickStart from "../components/landing/QuickStart.tsx";
 import FAQ from "../components/landing/FAQ.tsx";
-import BlogHighlights from "../components/landing/BlogHighlights.tsx";
 import OpenSource from "../components/landing/OpenSource.tsx";
 
 const faqStructuredData = {
@@ -123,9 +121,7 @@ export default define.page(function Home({ state }) {
         <Features />
         <Compliance />
         <Comparison />
-        <QuickStart />
         <FAQ />
-        <BlogHighlights />
         <OpenSource />
       </main>
     </div>

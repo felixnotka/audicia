@@ -35,19 +35,29 @@ permissions. Learn more about how this works in
 
 ## How It Works
 
+```yaml
+# values.yaml — enable file-based audit log ingestion
+auditLog:
+  enabled: true
+  hostPath: /var/log/kubernetes/audit/audit.log
+```
+
 ```bash
-# Install
-helm install audicia ./deploy/helm -n audicia-system --create-namespace
+# Install the operator
+helm install audicia oci://ghcr.io/felixnotka/audicia/charts/audicia-operator \
+  -f values.yaml -n audicia-system --create-namespace
 
 # Point at your audit log
 kubectl apply -f audicia-source.yaml
 
 # Check reports
-kubectl get apreport --all-namespaces
+kubectl get apreport --all-namespaces -o wide
 ```
 
-That's it. Three commands to start generating least-privilege RBAC policies from
-real cluster behavior.
+Create a `values.yaml` with your ingestion mode, install, apply an AudiciaSource
+CR, and check the reports. The
+[getting started guide](/docs/getting-started/introduction) walks through every
+step.
 
 ## What Makes Audicia Different
 

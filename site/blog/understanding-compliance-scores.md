@@ -86,9 +86,9 @@ kubectl get apreport --all-namespaces -o wide
 ```
 
 ```
-NAMESPACE   NAME             SUBJECT   KIND             COMPLIANCE   SCORE   USED   TOTAL   SENSITIVE   AGE
-my-team     report-backend   backend   ServiceAccount   Red          25      2      8       true        15m
-my-team     report-worker    worker    ServiceAccount   Green        88      7      8       false       15m
+NAMESPACE   NAME             SUBJECT   KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS
+my-team     report-backend   backend   ServiceAccount   Red          25      15m   2        6        0           true        1500
+my-team     report-worker    worker    ServiceAccount   Green        88      15m   7        1        0           false       3200
 ```
 
 The [quick start guide](/docs/getting-started/quick-start-file) takes about five

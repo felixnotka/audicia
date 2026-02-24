@@ -43,10 +43,10 @@ export default function Hero() {
             </span>
             {"\n\n"}
             <span className="prompt">$</span>{" "}
-            kubectl get apreport -n my-team{"\n"}
+            kubectl get apreport -n my-team -o wide{"\n"}
             <span className="output">
-              NAME             SUBJECT   KIND             COMPLIANCE   SCORE   AGE{"\n"}
-              report-backend   backend   ServiceAccount   <span className="severity-red">Red</span>          25      5m
+              NAME             SUBJECT   KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS{"\n"}
+              report-backend   backend   ServiceAccount   <span className="severity-red">Red</span>          25      5m    2        6        0           true        1500
             </span>
             <span className="hero-terminal-collapsible">
             {"\n\n"}
