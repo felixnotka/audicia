@@ -138,7 +138,7 @@ func convertLogEntry(entry logEntry) (auditv1.Event, error) {
 		if err == nil {
 			mt := metav1.NewMicroTime(t)
 			event.RequestReceivedTimestamp = mt
-			event.StageTimestamp = &mt
+			event.StageTimestamp = mt
 		}
 	}
 
