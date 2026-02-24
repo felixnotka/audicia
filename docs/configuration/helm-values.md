@@ -138,7 +138,6 @@ For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
 |---------------------------------------------|---------|------------|---------------------------------------------------------------------------------------------------|
 | `cloudAuditLog.enabled`                     | boolean | `false`    | Enable cloud-based audit log ingestion.                                                           |
 | `cloudAuditLog.provider`                    | string  | `""`       | Cloud provider: `AzureEventHub`, `AWSCloudWatch`, or `GCPPubSub`.                                |
-| `cloudAuditLog.credentialSecretName`        | string  | `""`       | Name of a Secret containing cloud credentials. Leave empty for managed/workload identity.          |
 | `cloudAuditLog.clusterIdentity`             | string  | `""`       | Cluster identity string for event validation (AKS resource ID, EKS ARN, GKE resource name).      |
 | `cloudAuditLog.azure.eventHubNamespace`     | string  | `""`       | Fully qualified Event Hub namespace (e.g., `myns.servicebus.windows.net`).                        |
 | `cloudAuditLog.azure.eventHubName`          | string  | `""`       | Event Hub instance name.                                                                          |
@@ -146,16 +145,21 @@ For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
 | `cloudAuditLog.azure.storageAccountURL`     | string  | `""`       | Azure Blob Storage URL for checkpoint persistence. Empty uses in-status checkpoints only.          |
 | `cloudAuditLog.azure.storageContainerName`  | string  | `""`       | Blob container name for checkpoints.                                                              |
 
-When enabled with `credentialSecretName`, adds a `cloud-credentials` Secret volume + volumeMount at
-`/etc/audicia/cloud-credentials`. The operator image must be built with the appropriate build tag (e.g., `azure`).
-
-For workload identity (no credential Secret), annotate the ServiceAccount instead:
+Authentication uses workload identity (managed identity). Annotate the ServiceAccount with provider-specific
+identity bindings:
 
 ```yaml
 serviceAccount:
   annotations:
+    # AKS:
     azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
+    # EKS:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT>:role/<ROLE>"
+    # GKE:
+    iam.gke.io/gcp-service-account: "<SA>@<PROJECT>.iam.gserviceaccount.com"
 ```
+
+The operator image must be built with the appropriate build tag (e.g., `azure`, `aws`, `gcp`).
 
 See the [AKS Setup Guide](../guides/aks-setup.md) for a complete walkthrough.
 
@@ -211,7 +215,6 @@ node IP (`kubectl get nodes -o wide`).
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
-  --set cloudAuditLog.credentialSecretName=cloud-credentials \
   --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
   --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
   --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>"

@@ -33,9 +33,5 @@ func buildAzureAdapter(cfg *audiciav1alpha1.CloudConfig) (cloud.MessageSource, c
 		StorageContainerName: cfg.Azure.StorageContainerName,
 	}
 
-	// CredentialSecretName handling is done by the controller which reads the
-	// secret and sets ConnectionStr before Connect() is called. The adapter
-	// factory only wires the config fields here.
-
 	return source, &EnvelopeParser{}, nil
 }

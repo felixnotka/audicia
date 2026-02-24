@@ -128,10 +128,6 @@ cloudAuditLog:
   enabled: false
   # -- Cloud provider: AzureEventHub, AWSCloudWatch, or GCPPubSub.
   provider: ""
-  # -- Name of a Secret containing cloud credentials (e.g., Event Hub connection string).
-  # The Secret must exist in the release namespace. Key: "connection-string".
-  # Leave empty for managed identity / workload identity.
-  credentialSecretName: ""
   # -- Cluster identity string for event validation. Format varies by provider:
   # AKS: resource ID (/subscriptions/.../managedClusters/<name>)
   # EKS: cluster ARN
@@ -150,6 +146,20 @@ cloudAuditLog:
     storageAccountURL: ""
     # -- Blob container name for checkpoints.
     storageContainerName: ""
+  # AWS CloudWatch configuration.
+  aws:
+    # -- AWS region for CloudWatch API calls. If empty, uses AWS_REGION from environment.
+    region: ""
+    # -- CloudWatch Logs group name containing EKS audit logs.
+    logGroupName: ""
+    # -- Optional log stream name prefix filter.
+    logStreamPrefix: ""
+  # GCP Pub/Sub configuration.
+  gcp:
+    # -- GCP project ID.
+    projectID: ""
+    # -- Pub/Sub subscription name.
+    subscriptionID: ""
 
 serviceMonitor:
   # -- Whether to create a Prometheus ServiceMonitor.

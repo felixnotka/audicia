@@ -8,7 +8,7 @@ Index of all features supported by Audicia. Each entry links to the relevant dee
 
 - **File-based ingestion** — Tail a Kubernetes audit log file with checkpoint/resume and log rotation detection. [Ingestor](../components/ingestor.md)
 - **Webhook ingestion** — Receive real-time audit events via HTTPS with TLS, mTLS, rate limiting, and deduplication. [Ingestor](../components/ingestor.md) | [Webhook Setup](../guides/webhook-setup.md)
-- **Cloud ingestion** — Connect to cloud message buses (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub) for managed Kubernetes audit logs. [Ingestor](../components/ingestor.md) | [Cloud Ingestion](../concepts/cloud-ingestion.md) | [AKS Setup](../guides/aks-setup.md)
+- **Cloud ingestion** — Connect to cloud message buses (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub) for managed Kubernetes audit logs. [Ingestor](../components/ingestor.md) | [Cloud Ingestion](../concepts/cloud-ingestion.md) | [AKS Setup](../guides/aks-setup.md) | [EKS Setup](../guides/eks-setup.md) | [GKE Setup](../guides/gke-setup.md)
 - **Multi-mode** — Run file, webhook, and cloud ingestion simultaneously. Each AudiciaSource gets its own pipeline.
 
 ## Processing
@@ -59,7 +59,8 @@ Index of all features supported by Audicia. Each entry links to the relevant dee
 | kubeadm (bare metal) | Full support | Full support | N/A          |
 | k3s / RKE2           | Full support | Full support | N/A          |
 | AKS                  | Not supported | Not supported | Full support |
-| EKS / GKE            | Not supported | Not supported | Planned      |
+| EKS                  | Not supported | Not supported | Full support |
+| GKE                  | Not supported | Not supported | Full support |
 
 Inode-based log rotation detection uses `syscall.Stat_t` on Linux. On non-Linux platforms, inode detection is
 disabled — rotation falls back to file-not-found handling.

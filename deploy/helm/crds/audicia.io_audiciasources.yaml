@@ -124,12 +124,6 @@ spec:
                       the cluster where this operator is running. Format varies by provider
                       (e.g., AKS resource ID, EKS cluster ARN, GKE resource name).
                     type: string
-                  credentialSecretName:
-                    description: |-
-                      CredentialSecretName is the name of a Kubernetes Secret containing cloud
-                      credentials (e.g., connection string). The Secret must exist in the same
-                      namespace as the AudiciaSource. Leave empty for managed identity / workload identity.
-                    type: string
                   gcp:
                     description: GCP contains GCP Pub/Sub-specific configuration.
                     properties:

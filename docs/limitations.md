@@ -35,8 +35,8 @@ Current limitations of Audicia, organized by area.
 
 | Limitation | Impact |
 |------------|--------|
-| **Managed Kubernetes (EKS, GKE)** | EKS and GKE cloud ingestion adapters are planned but not yet implemented. AKS is supported via Azure Event Hub. See [Cloud Ingestion](concepts/cloud-ingestion.md). |
+| **Managed Kubernetes** | All three major managed platforms are supported: AKS via Azure Event Hub, EKS via CloudWatch Logs, GKE via Cloud Pub/Sub. See [Cloud Ingestion](concepts/cloud-ingestion.md). |
 | **Cloud: at-least-once delivery** | Cloud message buses provide at-least-once delivery. Duplicate events may be processed after restart; the aggregator handles idempotent merging. |
-| **Cloud: build tags required** | Cloud adapters require a binary built with the appropriate Go build tag (e.g., `-tags azure`). The default binary does not include cloud SDKs. |
+| **Cloud: build tags required** | Cloud adapters require a binary built with the appropriate Go build tags (e.g., `-tags azure,aws,gcp`). The default binary does not include cloud SDKs. |
 | **TLS cert rotation** | `ListenAndServeTLS` loads certificates at startup. For rotation without pod restart, `tls.Config.GetCertificate` would be needed (not yet implemented). |
 | **Inode detection** | Log rotation detection uses `syscall.Stat_t` on Linux. On non-Linux platforms, inode detection is disabled — rotation falls back to file-not-found handling. |

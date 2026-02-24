@@ -205,12 +205,6 @@ type CloudConfig struct {
 	// +kubebuilder:validation:Required
 	Provider CloudProvider `json:"provider"`
 
-	// CredentialSecretName is the name of a Kubernetes Secret containing cloud
-	// credentials (e.g., connection string). The Secret must exist in the same
-	// namespace as the AudiciaSource. Leave empty for managed identity / workload identity.
-	// +optional
-	CredentialSecretName string `json:"credentialSecretName,omitempty"`
-
 	// ClusterIdentity is used to verify that received audit events belong to
 	// the cluster where this operator is running. Format varies by provider
 	// (e.g., AKS resource ID, EKS cluster ARN, GKE resource name).
@@ -257,8 +251,13 @@ type AzureEventHubConfig struct {
 	StorageContainerName string `json:"storageContainerName,omitempty"`
 }
 
-// AWSCloudWatchConfig configures AWS CloudWatch-based ingestion (placeholder).
+// AWSCloudWatchConfig configures AWS CloudWatch-based ingestion.
 type AWSCloudWatchConfig struct {
+	// Region is the AWS region for CloudWatch API calls.
+	// If empty, uses AWS_REGION from environment (set by IRSA).
+	// +optional
+	Region string `json:"region,omitempty"`
+
 	// LogGroupName is the CloudWatch Logs group containing audit logs.
 	// +kubebuilder:validation:Required
 	LogGroupName string `json:"logGroupName"`

@@ -47,3 +47,12 @@ type EnvelopeParser interface {
 	// (e.g., diagnostic metadata messages in Event Hub).
 	Parse(body []byte) ([]auditv1.Event, error)
 }
+
+// CheckpointRestorer is an optional interface that a MessageSource can
+// implement to restore internal state from a saved CloudPosition before
+// Connect() is called. Pull-based sources (e.g., CloudWatch) use this to
+// set their start offset on restart. Push-based sources (e.g., Event Hub)
+// manage their own checkpoint stores and don't need this.
+type CheckpointRestorer interface {
+	RestoreCheckpoint(pos CloudPosition)
+}

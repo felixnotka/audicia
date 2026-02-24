@@ -224,10 +224,10 @@ Audit events are written to the CloudWatch log group
 `/aws/eks/my-cluster/cluster`. You can process them with a Lambda function or
 stream them to an external system.
 
-**For Audicia:** EKS audit logs require a cloud-specific ingestor. Audicia
-currently supports file and webhook ingestion directly. For EKS, you can export
-audit logs from CloudWatch to a file or use a sidecar to forward webhook events.
-Cloud-native EKS ingestion is on the roadmap.
+**For Audicia:** Audicia natively supports EKS via the CloudWatch Logs adapter.
+Configure an `AudiciaSource` with `provider: AWSCloudWatch` and point it at
+your cluster's log group. Authentication uses IRSA (IAM Roles for Service
+Accounts). See the [EKS setup guide](/docs/guides/eks-setup) for details.
 
 ### Google GKE
 
@@ -247,8 +247,10 @@ gcloud logging sinks create gke-audit-sink \
   --log-filter='resource.type="k8s_cluster" logName:"cloudaudit.googleapis.com"'
 ```
 
-**For Audicia:** GKE audit log integration works through file export or webhook
-forwarding. Cloud-native GKE ingestion is planned.
+**For Audicia:** Audicia natively supports GKE via the Cloud Pub/Sub adapter.
+Route audit logs to a Pub/Sub topic using a Cloud Logging sink, then configure
+an `AudiciaSource` with `provider: GCPPubSub`. Authentication uses Workload
+Identity Federation. See the [GKE setup guide](/docs/guides/gke-setup) for details.
 
 ### Azure AKS
 
@@ -273,7 +275,6 @@ spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/.../managedClusters/my-cluster"
     azure:
       eventHubNamespace: "myns.servicebus.windows.net"

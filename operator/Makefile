@@ -78,6 +78,32 @@ docker-build-azure: ## Build the container image with Azure support.
 		--build-arg GO_BUILD_TAGS=azure \
 		-f build/Dockerfile .
 
+.PHONY: build-aws
+build-aws: fmt vet ## Build with AWS CloudWatch support.
+	go build -tags aws -ldflags "$(LDFLAGS)" -o bin/$(BINARY_NAME) ./cmd/audicia/
+
+.PHONY: docker-build-aws
+docker-build-aws: ## Build the container image with AWS support.
+	docker build -t $(IMG) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg DATE=$(DATE) \
+		--build-arg GO_BUILD_TAGS=aws \
+		-f build/Dockerfile .
+
+.PHONY: build-gcp
+build-gcp: fmt vet ## Build with GCP Pub/Sub support.
+	go build -tags gcp -ldflags "$(LDFLAGS)" -o bin/$(BINARY_NAME) ./cmd/audicia/
+
+.PHONY: docker-build-gcp
+docker-build-gcp: ## Build the container image with GCP support.
+	docker build -t $(IMG) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg DATE=$(DATE) \
+		--build-arg GO_BUILD_TAGS=gcp \
+		-f build/Dockerfile .
+
 .PHONY: docker-push
 docker-push: ## Push the container image.
 	docker push $(IMG)

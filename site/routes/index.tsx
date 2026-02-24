@@ -20,7 +20,7 @@ const faqStructuredData = {
       acceptedAnswer: {
         "@type": "Answer",
         text:
-          "Managed Kubernetes services don't expose apiserver flags or audit log files directly. Audicia currently works with self-managed clusters where you control the audit log path or can configure a webhook backend. Cloud-specific log ingestors are on the roadmap.",
+          "Yes. Audicia supports all three major managed Kubernetes platforms: AKS (via Azure Event Hub), EKS (via CloudWatch Logs), and GKE (via Cloud Pub/Sub). Each adapter uses workload identity for authentication — no static credentials needed. See the setup guides for AKS, EKS, and GKE.",
       },
     },
     {
@@ -56,7 +56,7 @@ const faqStructuredData = {
       acceptedAnswer: {
         "@type": "Answer",
         text:
-          "No. Audicia is Apache 2.0 licensed. The full operator, both ingestion modes, compliance scoring, and the complete Helm chart ship free. There is no paid tier, no enterprise edition, no feature gating.",
+          "No. Audicia is Apache 2.0 licensed. The full operator, all three ingestion modes (file, webhook, cloud), compliance scoring, and the complete Helm chart ship free. There is no paid tier, no enterprise edition, no feature gating.",
       },
     },
   ],

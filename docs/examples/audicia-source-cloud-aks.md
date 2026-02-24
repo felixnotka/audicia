@@ -12,7 +12,6 @@ spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-rg/providers/Microsoft.ContainerService/managedClusters/my-cluster"
     azure:
       eventHubNamespace: "my-namespace.servicebus.windows.net"
@@ -44,24 +43,22 @@ spec:
 |-------|-------|-------|
 | `sourceType` | `CloudAuditLog` | Selects the cloud ingestion path |
 | `cloud.provider` | `AzureEventHub` | Azure Event Hub adapter |
-| `cloud.credentialSecretName` | `cloud-credentials` | Secret with `connection-string` key. Omit for workload identity |
 | `cloud.clusterIdentity` | AKS resource ID | Used to filter events from shared Event Hubs |
 | `cloud.azure.eventHubNamespace` | FQDN | Fully qualified Event Hub namespace |
 | `cloud.azure.eventHubName` | Hub name | Event Hub instance receiving diagnostic logs |
 | `cloud.azure.consumerGroup` | `$Default` | Consumer group for partition reads |
 
-## Credential Secret
+## Authentication
+
+Authentication uses Azure Workload Identity. Annotate the operator ServiceAccount:
 
 ```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: cloud-credentials
-  namespace: audicia-system
-type: Opaque
-stringData:
-  connection-string: "Endpoint=sb://my-namespace.servicebus.windows.net/;SharedAccessKeyName=audicia-reader;SharedAccessKey=...;EntityPath=aks-audit-logs"
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
 ```
+
+The managed identity needs the `Azure Event Hubs Data Receiver` role on the Event Hub namespace.
 
 ## Related
 

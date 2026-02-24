@@ -89,22 +89,21 @@ managed Kubernetes platforms (AKS, EKS, GKE) where apiserver flags and audit log
 
 | Behavior                        | Details                                                                                                  |
 |---------------------------------|----------------------------------------------------------------------------------------------------------|
-| **Message bus consumer**        | Connects via `MessageSource` interface. Azure Event Hub uses the Processor pattern for partition balancing. |
-| **Envelope parsing**            | `EnvelopeParser` unwraps provider-specific JSON. Azure: `records[].properties.log` contains audit JSON.  |
+| **Message bus consumer**        | Connects via `MessageSource` interface. Azure uses Processor pattern, AWS uses FilterLogEvents polling, GCP uses Pub/Sub streaming. |
+| **Envelope parsing**            | `EnvelopeParser` unwraps provider-specific JSON. Azure: `records[].properties.log`; AWS: raw audit JSON; GCP: Cloud Logging `LogEntry` conversion. |
 | **Cluster identity validation** | Optional `clusterIdentity` check prevents ingesting events from other clusters sharing the same bus.     |
 | **Batch processing**            | Receives message batches, parses all events, then acknowledges the entire batch.                         |
 | **Per-partition checkpointing** | Tracks sequence numbers per partition in `AudiciaSource.status.cloudCheckpoint.partitionOffsets`.        |
 | **Error resilience**            | Receive errors trigger a 5-second backoff and retry. Unparseable messages are skipped and logged.        |
 | **Graceful shutdown**           | Source is closed with a 10-second timeout on context cancellation. Channel is closed after cleanup.      |
 
-**CRD configuration:**
+**CRD configuration (AKS):**
 
 ```yaml
 spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/.../managedClusters/my-cluster"
     azure:
       eventHubNamespace: "myns.servicebus.windows.net"
@@ -112,11 +111,37 @@ spec:
       consumerGroup: "$Default"
 ```
 
-**Helm requirement:** `cloudAuditLog.enabled=true`, `cloudAuditLog.provider=AzureEventHub`. Requires the operator
-image built with the `azure` build tag. Does NOT need control plane scheduling.
+**CRD configuration (EKS):**
 
-**Build tags:** Cloud adapters are compiled conditionally (`-tags azure`). The default binary includes no cloud SDKs.
-See [Cloud Ingestion](../concepts/cloud-ingestion.md) for details.
+```yaml
+spec:
+  sourceType: CloudAuditLog
+  cloud:
+    provider: AWSCloudWatch
+    clusterIdentity: "arn:aws:eks:us-west-2:123456789012:cluster/my-cluster"
+    aws:
+      logGroupName: "/aws/eks/my-cluster/cluster"
+      region: "us-west-2"
+```
+
+**CRD configuration (GKE):**
+
+```yaml
+spec:
+  sourceType: CloudAuditLog
+  cloud:
+    provider: GCPPubSub
+    clusterIdentity: "projects/my-project/locations/us-central1/clusters/my-cluster"
+    gcp:
+      projectID: "my-project"
+      subscriptionID: "audicia-audit-sub"
+```
+
+**Helm requirement:** `cloudAuditLog.enabled=true`, `cloudAuditLog.provider=<provider>`. Requires the operator
+image built with the matching build tag (`azure`, `aws`, or `gcp`). Does NOT need control plane scheduling.
+
+**Build tags:** Cloud adapters are compiled conditionally (`-tags azure,aws,gcp`). The default binary includes no
+cloud SDKs. See [Cloud Ingestion](../concepts/cloud-ingestion.md) for details.
 
 ---
 
@@ -153,3 +178,5 @@ See [Cloud Ingestion](../concepts/cloud-ingestion.md) for details.
 - [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full field reference
 - [Cloud Ingestion](../concepts/cloud-ingestion.md) — Cloud ingestion architecture and design
 - [AKS Setup Guide](../guides/aks-setup.md) — Azure Event Hub configuration walkthrough
+- [EKS Setup Guide](../guides/eks-setup.md) — AWS CloudWatch configuration walkthrough
+- [GKE Setup Guide](../guides/gke-setup.md) — GCP Pub/Sub configuration walkthrough

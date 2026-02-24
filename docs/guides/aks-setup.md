@@ -28,19 +28,7 @@ Use `kube-audit-admin` to reduce volume (excludes read-only events) or `kube-aud
 
 ## Step 2: Create a Credential Secret
 
-### Option A: Connection String
-
-Create a Secret containing the Event Hub connection string:
-
-```bash
-kubectl create secret generic cloud-credentials \
-  --from-literal=connection-string="Endpoint=sb://<NAMESPACE>.servicebus.windows.net/;SharedAccessKeyName=...;SharedAccessKey=...;EntityPath=<EVENT_HUB_NAME>" \
-  -n audicia-system
-```
-
-### Option B: Workload Identity (Recommended)
-
-For production, use Azure Workload Identity. No credential Secret is needed — annotate the ServiceAccount instead:
+Audicia uses Azure Workload Identity for authentication. Annotate the operator ServiceAccount:
 
 ```yaml
 serviceAccount:
@@ -56,7 +44,6 @@ The managed identity needs the `Azure Event Hubs Data Receiver` role on the Even
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
-  --set cloudAuditLog.credentialSecretName=cloud-credentials \
   --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
   --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
   --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>"
@@ -74,7 +61,6 @@ spec:
   sourceType: CloudAuditLog
   cloud:
     provider: AzureEventHub
-    credentialSecretName: cloud-credentials
     clusterIdentity: "/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>"
     azure:
       eventHubNamespace: "<NAMESPACE>.servicebus.windows.net"

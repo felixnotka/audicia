@@ -17,11 +17,11 @@ const faqs = [
   },
   {
     q: "What does Audicia need to run?",
-    a: "A Kubernetes cluster (1.27+) with audit logging enabled. Audicia supports two ingestion modes: tailing the audit log file from a hostPath mount, or receiving events via a webhook backend. The Helm chart handles the rest.",
+    a: "A Kubernetes cluster (1.27+) with audit logging enabled. Audicia supports three ingestion modes: tailing the audit log file, receiving events via a webhook backend, or consuming from a cloud message bus (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub). The Helm chart handles the rest.",
   },
   {
     q: "Is there a paid version?",
-    a: "No. Audicia is Apache 2.0 licensed. The full operator, both ingestion modes, compliance scoring, and the complete Helm chart ship free. There is no paid tier, no enterprise edition, no feature gating.",
+    a: "No. Audicia is Apache 2.0 licensed. The full operator, all three ingestion modes (file, webhook, cloud), compliance scoring, and the complete Helm chart ship free. There is no paid tier, no enterprise edition, no feature gating.",
   },
 ];
 
