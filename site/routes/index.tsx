@@ -7,7 +7,6 @@ import HowItWorks from "../components/landing/HowItWorks.tsx";
 import Features from "../components/landing/Features.tsx";
 import Compliance from "../components/landing/Compliance.tsx";
 import Comparison from "../components/landing/Comparison.tsx";
-import QuickStart from "../components/landing/QuickStart.tsx";
 import FAQ from "../components/landing/FAQ.tsx";
 import OpenSource from "../components/landing/OpenSource.tsx";
 
@@ -63,15 +62,26 @@ const faqStructuredData = {
   ],
 };
 
-export default define.page(function Home() {
+export default define.page(function Home({ state }) {
+  state.title =
+    "Audicia — Kubernetes RBAC Generator | Least-Privilege Policies from Audit Logs";
+  state.description =
+    "Open-source Kubernetes Operator that generates least-privilege RBAC policies from audit logs. Compliance scoring, CRD-native output, never auto-applies. Apache 2.0.";
+
   return (
     <div>
       <Head>
-        <meta property="og:title" content="Stop Writing RBAC by Hand" />
+        <meta
+          property="og:title"
+          content="Audicia — Kubernetes RBAC Generator"
+        />
         <meta
           property="og:description"
-          content="Audicia observes your Kubernetes audit logs and generates the minimal RBAC policies your workloads actually need. Open source. Apache 2.0."
+          content="Open-source Kubernetes Operator that generates least-privilege RBAC policies from audit logs."
         />
+        <meta property="og:image" content="https://audicia.io/og-image.png" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
         <script
           type="application/ld+json"
           // deno-lint-ignore react-no-danger
@@ -83,7 +93,7 @@ export default define.page(function Home() {
               applicationCategory: "DeveloperApplication",
               operatingSystem: "Kubernetes",
               description:
-                "Kubernetes Operator that watches audit logs and generates least-privilege RBAC policies automatically.",
+                "Kubernetes Operator that generates least-privilege RBAC policies from audit logs",
               url: "https://audicia.io/",
               license: "https://www.apache.org/licenses/LICENSE-2.0",
               isAccessibleForFree: true,
@@ -111,7 +121,6 @@ export default define.page(function Home() {
         <Features />
         <Compliance />
         <Comparison />
-        <QuickStart />
         <FAQ />
         <OpenSource />
       </main>

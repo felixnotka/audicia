@@ -652,62 +652,6 @@
   background-color: var(--color-accent);
 }
 
-/* ── Quick Start ── */
-
-.quickstart-terminal {
-  background-color: var(--color-bg);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--color-border-strong);
-  overflow: hidden;
-  max-width: 800px;
-  margin: 0 auto var(--spacing-xl);
-}
-
-.quickstart-terminal-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  background-color: #111827;
-}
-
-.quickstart-terminal-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--border-radius-full);
-}
-
-.quickstart-terminal-dot:nth-child(1) {
-  background-color: var(--color-score-red);
-}
-.quickstart-terminal-dot:nth-child(2) {
-  background-color: var(--color-score-yellow);
-}
-.quickstart-terminal-dot:nth-child(3) {
-  background-color: var(--color-score-green);
-}
-
-.quickstart-terminal-body {
-  padding: var(--spacing-lg);
-  font-family: var(--font-family-mono);
-  font-size: 0.875rem;
-  line-height: 1.8;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-}
-
-.quickstart-terminal-body .comment {
-  color: var(--color-muted);
-}
-
-.quickstart-terminal-body .prompt {
-  color: var(--color-terminal-amber);
-}
-
-.quickstart-cta {
-  text-align: center;
-}
-
 /* ── Open Source ── */
 
 .opensource-body {
@@ -773,6 +717,44 @@
   font-size: var(--font-size-base);
   color: var(--color-muted);
   line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Blog Highlights ── */
+
+.blog-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-xl);
+}
+
+.blog-highlight-card {
+  background-color: var(--color-card-bg);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-xl);
+  border: 1px solid var(--color-border-strong);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.blog-highlight-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-color: var(--color-accent);
+  text-decoration: none;
+}
+
+.blog-highlight-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.blog-highlight-snippet {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -873,6 +855,10 @@
 
   .compliance-frameworks {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .blog-highlights {
+    grid-template-columns: 1fr;
   }
 
   .comparison-quadrant-wrapper {

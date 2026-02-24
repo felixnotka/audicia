@@ -2,6 +2,7 @@
 title: "Understanding Compliance Scores: Red, Yellow, Green"
 published_at: 2026-02-22T08:00:00.000Z
 snippet: "Audicia scores every service account's RBAC permissions. Here's how the scoring works and what to do about a Red rating."
+description: "Audicia scores every service account's RBAC permissions 0-100. Learn how compliance scoring works and what Red, Yellow, and Green mean."
 ---
 
 ## The Question Auditors Ask
@@ -85,11 +86,13 @@ kubectl get apreport --all-namespaces -o wide
 ```
 
 ```
-NAMESPACE   NAME             SUBJECT   KIND             COMPLIANCE   SCORE   USED   TOTAL   SENSITIVE   AGE
-my-team     report-backend   backend   ServiceAccount   Red          25      2      8       true        15m
-my-team     report-worker    worker    ServiceAccount   Green        88      7      8       false       15m
+NAMESPACE   NAME             SUBJECT   KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS
+my-team     report-backend   backend   ServiceAccount   Red          25      15m   2        6        0           true        1500
+my-team     report-worker    worker    ServiceAccount   Green        88      15m   7        1        0           false       3200
 ```
 
 The [quick start guide](/docs/getting-started/quick-start-file) takes about five
 minutes to set up, and you'll see scores for every service account in your
-cluster.
+cluster. For technical details on how the scoring algorithm works, see the
+[compliance scoring docs](/docs/concepts/compliance-scoring). You can also see a
+live compliance score demo on the [homepage](/).

@@ -1,7 +1,9 @@
 ---
 title: "Introducing Audicia: Stop Writing RBAC by Hand"
+seo_title: "Stop Writing RBAC by Hand — Introducing Audicia"
 published_at: 2026-02-20T08:00:00.000Z
 snippet: "Audicia is a Kubernetes Operator that watches your audit logs and generates least-privilege RBAC policies. Here's why I built it and how it works."
+description: "Audicia is a Kubernetes Operator that generates least-privilege RBAC policies from audit logs. Open source, Apache 2.0, never auto-applies."
 ---
 
 ## The Problem
@@ -28,23 +30,34 @@ Audicia is a Kubernetes Operator that:
 
 The compliance score compares what each subject _actually uses_ against what
 it's _allowed to use_. Red means significant overprivilege. Green means tight
-permissions.
+permissions. Learn more about how this works in
+[Understanding Compliance Scores](/blog/understanding-compliance-scores).
 
 ## How It Works
 
+```yaml
+# values.yaml — enable file-based audit log ingestion
+auditLog:
+  enabled: true
+  hostPath: /var/log/kubernetes/audit/audit.log
+```
+
 ```bash
-# Install
-helm install audicia ./deploy/helm -n audicia-system --create-namespace
+# Install the operator
+helm install audicia oci://ghcr.io/felixnotka/audicia/charts/audicia-operator \
+  -f values.yaml -n audicia-system --create-namespace
 
 # Point at your audit log
 kubectl apply -f audicia-source.yaml
 
 # Check reports
-kubectl get apreport --all-namespaces
+kubectl get apreport --all-namespaces -o wide
 ```
 
-That's it. Three commands to start generating least-privilege RBAC policies from
-real cluster behavior.
+Create a `values.yaml` with your ingestion mode, install, apply an AudiciaSource
+CR, and check the reports. The
+[getting started guide](/docs/getting-started/introduction) walks through every
+step.
 
 ## What Makes Audicia Different
 
@@ -67,6 +80,9 @@ line of code.
 
 ## Get Started
 
-Check out the
-[documentation](https://github.com/felixnotka/audicia#getting-started) or head
-straight to [GitHub](https://github.com/felixnotka/audicia) to try it out.
+Check out the [getting started guide](/docs/getting-started/introduction) to
+install Audicia and generate your first policy reports. If you want to
+understand the internals, read
+[how the pipeline works](/blog/how-audicia-processes-audit-logs).
+
+View the source on [GitHub](https://github.com/felixnotka/audicia).

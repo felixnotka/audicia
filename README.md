@@ -1,7 +1,9 @@
 # Audicia
 
-**Automated RBAC policy generation for Kubernetes.** Audicia is a Kubernetes Operator that watches audit logs, learns
-what your workloads actually do, and generates least-privilege Roles — so you never have to write RBAC by hand again.
+**Audicia** is an open-source **Kubernetes RBAC generator** — a Kubernetes Operator that watches
+audit logs and generates least-privilege RBAC policies automatically.
+
+🌐 [audicia.io](https://audicia.io) · 📖 [Documentation](https://audicia.io/docs) · 🚀 [Quick Start](https://audicia.io/docs/getting-started/introduction)
 
 ```
 403 Forbidden → Audit Event → Audicia → Role + RoleBinding → 200 OK
@@ -178,7 +180,7 @@ what's next.
 
 ## Contributing
 
-We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 ## Security
 

@@ -50,10 +50,10 @@ export default function ComplianceScore() {
         <div className="score-output">
           <pre>
             <span className="prompt">$</span> kubectl get apreport --all-namespaces -o wide{"\n"}
-            NAMESPACE   NAME             SUBJECT    KIND             COMPLIANCE   SCORE   NEEDED   EXCESS   SENSITIVE   EVENTS{"\n"}
-            my-team     report-backend   backend    ServiceAccount   <span className="severity-red">Red</span>          25      2        6        true        1500{"\n"}
-            my-team     report-frontend  frontend   ServiceAccount   <span className="severity-yellow">Yellow</span>       55      5        4        false       3200{"\n"}
-            my-team     report-api-gw    api-gw     ServiceAccount   <span className="severity-green">Green</span>        92      11       1        false       8400
+            NAMESPACE   NAME             SUBJECT    KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS{"\n"}
+            my-team     report-backend   backend    ServiceAccount   <span className="severity-red">Red</span>          25      5m    2        6        0           true        1500{"\n"}
+            my-team     report-frontend  frontend   ServiceAccount   <span className="severity-yellow">Yellow</span>       55      5m    5        4        0           false       3200{"\n"}
+            my-team     report-api-gw    api-gw     ServiceAccount   <span className="severity-green">Green</span>        92      5m    11       1        0           false       8400
           </pre>
         </div>
       </div>

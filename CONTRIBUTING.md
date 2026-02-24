@@ -106,7 +106,7 @@ deno task dev      # Serves at http://localhost:8000
 3. **Write tests.** New features need unit tests. Bug fixes need regression tests.
 4. **Run checks locally.** `make test && make lint` must pass before submitting.
 5. **Write a clear description.** Explain *what* changed and *why*. Link to the issue if one exists.
-6. **Sign your commits.** We require DCO (Developer Certificate of Origin). Use `git commit -s`.
+6. **Write a clear commit message.** Follow the format below.
 
 ### Commit Messages
 
@@ -115,8 +115,6 @@ component: short description of change
 
 Longer explanation of why this change is needed, what it does,
 and any important design decisions.
-
-Signed-off-by: Your Name <your@email.com>
 ```
 
 Examples of good component prefixes: `ingestor:`, `normalizer:`, `aggregator:`, `helm:`, `docs:`, `ci:`, `site:`, `controller:`.
@@ -158,7 +156,7 @@ All submissions require review before merging. Reviewers will look for:
 
 ## Code of Conduct
 
-We follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md). Be respectful,
+This project follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md). Be respectful,
 constructive, and inclusive.
 
 ## License
