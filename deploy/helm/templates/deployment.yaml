@@ -20,6 +20,9 @@ spec:
       {{- end }}
       labels:
         {{- include "audicia.selectorLabels" . | nindent 8 }}
+        {{- if and .Values.cloudAuditLog.enabled (eq .Values.cloudAuditLog.provider "AzureEventHub") }}
+        azure.workload.identity/use: "true"
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

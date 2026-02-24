@@ -145,8 +145,9 @@ For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
 | `cloudAuditLog.azure.storageAccountURL`     | string  | `""`       | Azure Blob Storage URL for checkpoint persistence. Empty uses in-status checkpoints only.          |
 | `cloudAuditLog.azure.storageContainerName`  | string  | `""`       | Blob container name for checkpoints.                                                              |
 
-Authentication uses workload identity (managed identity). Annotate the ServiceAccount with provider-specific
-identity bindings:
+Authentication uses workload identity (managed identity). When using the `AzureEventHub` provider, the Helm chart
+automatically adds the `azure.workload.identity/use: "true"` pod label so the Workload Identity webhook injects the
+required environment variables. Annotate the ServiceAccount with provider-specific identity bindings:
 
 ```yaml
 serviceAccount:
@@ -217,8 +218,9 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set cloudAuditLog.provider=AzureEventHub \
   --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
   --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
-  --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>"
+  --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>" \
+  --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
 ```
 
-Replace the Azure placeholders with your subscription, resource group, cluster name, Event Hub namespace, and
-Event Hub name. See the [AKS Setup Guide](../guides/aks-setup.md) for detailed instructions.
+Replace the Azure placeholders with your Event Hub namespace, Event Hub name, and managed identity client ID.
+See the [AKS Setup Guide](../guides/aks-setup.md) for detailed instructions including Workload Identity setup.

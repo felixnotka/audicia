@@ -44,21 +44,16 @@ type EventHubSource struct {
 }
 
 func (s *EventHubSource) Connect(ctx context.Context) error {
-	var (
-		client *azeventhubs.ConsumerClient
-		err    error
-	)
-
 	consumerGroup := s.ConsumerGroup
 	if consumerGroup == "" {
 		consumerGroup = azeventhubs.DefaultConsumerGroup
 	}
 
-	cred, credErr := azidentity.NewDefaultAzureCredential(nil)
-	if credErr != nil {
-		return fmt.Errorf("creating Azure credential: %w", credErr)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return fmt.Errorf("creating Azure credential: %w", err)
 	}
-	client, err = azeventhubs.NewConsumerClient(
+	client, err := azeventhubs.NewConsumerClient(
 		s.Namespace, s.EventHub, consumerGroup, cred, nil)
 	if err != nil {
 		return fmt.Errorf("creating Event Hub consumer client: %w", err)

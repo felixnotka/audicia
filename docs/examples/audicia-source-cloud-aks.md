@@ -1,6 +1,6 @@
 # AudiciaSource: Cloud (AKS)
 
-An AudiciaSource configured for cloud-based ingestion from an AKS cluster via Azure Event Hub.
+An AudiciaSource configured for cloud-based ingestion from an AKS cluster via Azure Event Hub using Workload Identity.
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -50,7 +50,8 @@ spec:
 
 ## Authentication
 
-Authentication uses Azure Workload Identity. Annotate the operator ServiceAccount:
+Authentication uses Azure Workload Identity. The Helm chart adds the `azure.workload.identity/use: "true"` pod label
+automatically, and the ServiceAccount must be annotated with the managed identity client ID:
 
 ```yaml
 serviceAccount:
@@ -59,6 +60,9 @@ serviceAccount:
 ```
 
 The managed identity needs the `Azure Event Hubs Data Receiver` role on the Event Hub namespace.
+
+See the [AKS Setup Guide](../guides/aks-setup.md) for full Workload Identity setup including managed identity creation
+and federated credential configuration.
 
 ## Related
 

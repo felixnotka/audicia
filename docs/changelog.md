@@ -14,18 +14,26 @@ The project uses automatic patch-level versioning: `version.json` defines Major.
 - **`spec.cloud` CRD fields** — `CloudConfig`, `AzureEventHubConfig`, `AWSCloudWatchConfig` (placeholder), `GCPPubSubConfig` (placeholder) types added to AudiciaSource
 - **`status.cloudCheckpoint`** — Per-partition sequence number tracking for cloud source recovery
 - **Cluster identity validation** — Defense-in-depth filter for shared Event Hub scenarios, matching events against `clusterIdentity`
-- **`cloudAuditLog` Helm values** — Full configuration section for cloud provider, credentials, and Azure-specific settings
-- **Cloud credential volume mount** — Conditional `cloud-credentials` Secret volume in the Deployment template
+- **`cloudAuditLog` Helm values** — Full configuration section for cloud provider and Azure-specific settings
+- **Azure Workload Identity pod label** — Helm chart auto-adds `azure.workload.identity/use: "true"` pod label for AzureEventHub provider
 - **5 cloud Prometheus metrics** — `cloud_messages_received_total`, `cloud_messages_acked_total`, `cloud_receive_errors_total`, `cloud_lag_seconds`, `cloud_envelope_parse_errors_total`
 - **Go build tags** — `azure` build tag for conditional Azure SDK compilation; default binary remains cloud-free
 - **`build-azure` Make target** — Build and Docker targets for the Azure-enabled binary
 - **Cloud Ingestion concept page** — Architecture overview of MessageSource/EnvelopeParser abstractions and provider registry
-- **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration
+- **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration with Workload Identity
+- **AKS Quick Start** — Streamlined getting-started guide for AKS cloud ingestion via Workload Identity
 - **Cloud AKS example** — AudiciaSource YAML example for AKS Event Hub ingestion
+- **Multi-arch Docker images** — CI now builds `linux/amd64` and `linux/arm64` images for ARM-based AKS node pools
+- **Azure build tag in CI** — Lint, test, and Docker build pipelines include `-tags azure` so the Azure adapter is compiled, tested, and shipped
 
 ### Changed
 - Platform compatibility table updated across docs: AKS now shows "Full support" for Cloud Mode
 - Managed Kubernetes limitation updated: AKS addressed via cloud ingestion, EKS/GKE planned
+- Dockerfile uses `TARGETARCH` from Buildx instead of hardcoded `GOARCH=amd64`
+- AKS guide now includes full Workload Identity setup steps (managed identity, role assignment, federated credential)
+- Helm install commands in AKS docs include `helm repo add` and Workload Identity ServiceAccount annotation
+- Removed connection string authentication — Azure Event Hub now uses Workload Identity exclusively
+- Removed `credentialSecretName` from CRD, Helm values, and deployment template
 
 ---
 
