@@ -74,6 +74,7 @@ helm repo add audicia https://charts.audicia.io
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
+  --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
   --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
   --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>" \
   --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"

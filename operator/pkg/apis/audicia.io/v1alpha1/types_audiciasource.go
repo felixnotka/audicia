@@ -251,8 +251,13 @@ type AzureEventHubConfig struct {
 	StorageContainerName string `json:"storageContainerName,omitempty"`
 }
 
-// AWSCloudWatchConfig configures AWS CloudWatch-based ingestion (placeholder).
+// AWSCloudWatchConfig configures AWS CloudWatch-based ingestion.
 type AWSCloudWatchConfig struct {
+	// Region is the AWS region for CloudWatch API calls.
+	// If empty, uses AWS_REGION from environment (set by IRSA).
+	// +optional
+	Region string `json:"region,omitempty"`
+
 	// LogGroupName is the CloudWatch Logs group containing audit logs.
 	// +kubebuilder:validation:Required
 	LogGroupName string `json:"logGroupName"`

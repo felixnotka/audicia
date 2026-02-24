@@ -23,6 +23,7 @@ var log = ctrl.Log.WithName("ingestor").WithName("cloud").WithName("azure")
 
 // EventHubSource implements cloud.MessageSource using the Azure Event Hub Processor.
 // It uses the load-balanced Processor pattern for distributed consumption.
+// Authentication is via Azure Workload Identity (DefaultAzureCredential).
 type EventHubSource struct {
 	Namespace     string // Fully qualified namespace (e.g., "myns.servicebus.windows.net")
 	EventHub      string

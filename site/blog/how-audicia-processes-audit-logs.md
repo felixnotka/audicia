@@ -26,7 +26,7 @@ nothing loops back.
 
 ### 1. Ingest
 
-Audicia supports two ingestion modes:
+Audicia supports three ingestion modes:
 
 - **File mode** — tails the kube-apiserver audit log file directly from a
   hostPath mount. Includes checkpoint/resume via inode tracking so restarts
@@ -34,8 +34,11 @@ Audicia supports two ingestion modes:
 - **Webhook mode** — runs a TLS (or mTLS) server that receives audit events
   pushed by the kube-apiserver's webhook backend. Includes rate limiting and
   deduplication.
+- **Cloud mode** — connects to a cloud message bus (Azure Event Hub, AWS
+  CloudWatch, GCP Pub/Sub) for managed Kubernetes platforms where apiserver
+  flags are not accessible.
 
-Both modes produce the same internal event struct. Everything downstream is
+All three modes produce the same internal event struct. Everything downstream is
 agnostic to the source.
 
 ### 2. Filter

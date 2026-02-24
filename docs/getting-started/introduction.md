@@ -60,11 +60,12 @@ It also flags sensitive excess — unused grants on high-risk resources like sec
 | kubeadm (bare metal) | Full support | Full support | N/A          |
 | k3s / RKE2           | Full support | Full support | N/A          |
 | AKS                  | Not supported | Not supported | Full support |
-| EKS / GKE            | Not supported | Not supported | Planned      |
+| EKS                  | Not supported | Not supported | Full support |
+| GKE                  | Not supported | Not supported | Full support |
 
 Managed Kubernetes platforms do not expose apiserver flags or audit log files. Cloud mode connects to the platform's
-native audit pipeline instead. See the [Cloud Ingestion](../concepts/cloud-ingestion.md) concept and the
-[AKS Setup Guide](../guides/aks-setup.md) for details.
+native audit pipeline instead. See the [Cloud Ingestion](../concepts/cloud-ingestion.md) concept and the setup guides
+for [AKS](../guides/aks-setup.md), [EKS](../guides/eks-setup.md), and [GKE](../guides/gke-setup.md).
 
 ## What's Next
 

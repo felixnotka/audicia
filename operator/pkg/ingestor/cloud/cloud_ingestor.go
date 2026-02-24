@@ -46,6 +46,12 @@ func NewCloudIngestor(source MessageSource, parser EnvelopeParser, validator *Cl
 
 // Start connects to the cloud message bus and begins emitting parsed audit events.
 func (c *CloudIngestor) Start(ctx context.Context) (<-chan auditv1.Event, error) {
+	// Restore checkpoint state for pull-based sources (e.g., CloudWatch)
+	// before connecting so they can resume from the last saved position.
+	if restorer, ok := c.Source.(CheckpointRestorer); ok {
+		restorer.RestoreCheckpoint(c.position)
+	}
+
 	if err := c.Source.Connect(ctx); err != nil {
 		return nil, err
 	}

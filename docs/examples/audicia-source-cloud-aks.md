@@ -53,14 +53,13 @@ spec:
 Authentication uses Azure Workload Identity. The Helm chart adds the `azure.workload.identity/use: "true"` pod label
 automatically, and the ServiceAccount must be annotated with the managed identity client ID:
 
-```bash
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=AzureEventHub \
-  --set cloudAuditLog.azure.eventHubNamespace="my-namespace.servicebus.windows.net" \
-  --set cloudAuditLog.azure.eventHubName="aks-audit-logs" \
-  --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
+```yaml
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
 ```
+
+The managed identity needs the `Azure Event Hubs Data Receiver` role on the Event Hub namespace.
 
 See the [AKS Setup Guide](../guides/aks-setup.md) for full Workload Identity setup including managed identity creation
 and federated credential configuration.

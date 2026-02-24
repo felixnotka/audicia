@@ -25,7 +25,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.10.1
-          args: --timeout=5m --build-tags=azure
+          args: --timeout=5m --build-tags=azure,aws,gcp
           working-directory: operator
 
   test:
@@ -44,7 +44,7 @@ jobs:
 
       - name: Run tests (with coverage)
         working-directory: operator
-        run: go test -race -tags azure -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -race -tags azure,aws,gcp -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v6

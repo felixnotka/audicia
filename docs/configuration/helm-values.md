@@ -145,18 +145,23 @@ For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
 | `cloudAuditLog.azure.storageAccountURL`     | string  | `""`       | Azure Blob Storage URL for checkpoint persistence. Empty uses in-status checkpoints only.          |
 | `cloudAuditLog.azure.storageContainerName`  | string  | `""`       | Blob container name for checkpoints.                                                              |
 
-When enabled with the `AzureEventHub` provider, the Helm chart automatically adds the
-`azure.workload.identity/use: "true"` pod label so the Workload Identity webhook injects the required environment
-variables (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`) and federated token volume. Annotate the ServiceAccount with the
-managed identity client ID:
+Authentication uses workload identity (managed identity). When using the `AzureEventHub` provider, the Helm chart
+automatically adds the `azure.workload.identity/use: "true"` pod label so the Workload Identity webhook injects the
+required environment variables. Annotate the ServiceAccount with provider-specific identity bindings:
 
 ```yaml
 serviceAccount:
   annotations:
+    # AKS:
     azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
+    # EKS:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT>:role/<ROLE>"
+    # GKE:
+    iam.gke.io/gcp-service-account: "<SA>@<PROJECT>.iam.gserviceaccount.com"
 ```
 
-The operator image must be built with the appropriate build tag (e.g., `azure`).
+The operator image must be built with the appropriate build tag (e.g., `azure`, `aws`, `gcp`).
+
 See the [AKS Setup Guide](../guides/aks-setup.md) for a complete walkthrough.
 
 ## Monitoring
@@ -211,6 +216,7 @@ node IP (`kubectl get nodes -o wide`).
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
+  --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \
   --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
   --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>" \
   --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"

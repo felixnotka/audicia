@@ -296,6 +296,92 @@ func TestCloudIngestor_CheckpointRestore(t *testing.T) {
 	}
 }
 
+func TestCloudIngestor_CheckpointRestoredToSource(t *testing.T) {
+	// This test verifies that Start() passes the saved checkpoint to sources
+	// that implement CheckpointRestorer, and does so BEFORE calling Connect().
+	// Without this, pull-based sources (CloudWatch) would start from a default
+	// lookback instead of the saved checkpoint after a restart.
+	startPos := CloudPosition{
+		PartitionOffsets: map[string]string{"0": "50"},
+		LastTimestamp:    "2026-01-01T00:00:00Z",
+	}
+
+	source := NewFakeCheckpointSource(
+		[]Message{makeMessage("0", "51", "2026-01-01T01:00:00Z",
+			makeEvent("a1", "get", "pods"))},
+	)
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, startPos, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	select {
+	case <-ch:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for event")
+	}
+
+	cancel()
+	drainChannel(ch)
+
+	// Verify RestoreCheckpoint was called with the right position.
+	restored := source.RestoredPosition()
+	if restored == nil {
+		t.Fatal("RestoreCheckpoint was never called")
+	}
+	if restored.LastTimestamp != "2026-01-01T00:00:00Z" {
+		t.Errorf("restored LastTimestamp = %q, want %q", restored.LastTimestamp, "2026-01-01T00:00:00Z")
+	}
+	if restored.PartitionOffsets["0"] != "50" {
+		t.Errorf("restored partition 0 = %q, want %q", restored.PartitionOffsets["0"], "50")
+	}
+
+	// Verify RestoreCheckpoint was called BEFORE Connect.
+	if !source.RestoreCalledBeforeConnect() {
+		t.Error("RestoreCheckpoint must be called before Connect, but was called after")
+	}
+}
+
+func TestCloudIngestor_NoCheckpointRestore_WithoutInterface(t *testing.T) {
+	// Verify that sources NOT implementing CheckpointRestorer (like Azure's
+	// EventHubSource) still work fine — Start() simply skips the restore call.
+	source := NewFakeSource(
+		[]Message{makeMessage("0", "1", "2026-01-01T00:00:00Z",
+			makeEvent("a1", "get", "pods"))},
+	)
+
+	startPos := CloudPosition{
+		LastTimestamp: "2025-12-31T00:00:00Z",
+	}
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, startPos, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	select {
+	case <-ch:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for event")
+	}
+
+	cancel()
+	drainChannel(ch)
+
+	// Should still work fine — no panic, no error.
+}
+
 func TestCloudIngestor_PositionAdapter(t *testing.T) {
 	// Verify Checkpoint() returns ingestor.Position with LastTimestamp.
 	source := NewFakeSource(

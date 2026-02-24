@@ -72,8 +72,8 @@ step.
 ## Open Source
 
 Audicia is Apache 2.0 licensed. No paid tier, no enterprise edition, no feature
-gating. The full operator, both ingestion modes, compliance scoring, and the
-complete Helm chart ship free.
+gating. The full operator, all three ingestion modes (file, webhook, cloud),
+compliance scoring, and the complete Helm chart ship free.
 
 I believe security tools should be transparent and auditable. You can read every
 line of code.

@@ -29,6 +29,8 @@ Everything below is implemented, tested, and running in production.
 | **Prometheus Metrics**         | 13 operator metrics (events processed, filtered, rules generated, pipeline latency, cloud ingestion) |
 | **mTLS Webhook Security**      | Client certificate verification with configurable CA bundle                              |
 | **Cloud Ingestion (AKS)**      | Azure Event Hub adapter for AKS audit logs with cluster identity validation              |
+| **Cloud Ingestion (EKS)**      | AWS CloudWatch Logs adapter for EKS audit logs with IRSA authentication                  |
+| **Cloud Ingestion (GKE)**      | GCP Pub/Sub adapter for GKE audit logs with Workload Identity Federation                 |
 | **Cloud Metrics**              | 5 dedicated cloud ingestion metrics (messages received, acked, errors, lag, parse errors) |
 
 ---
@@ -48,7 +50,6 @@ Everything below is implemented, tested, and running in production.
 
 | Feature                | Description                                                                    |
 |------------------------|--------------------------------------------------------------------------------|
-| **Cloud Ingestion (EKS, GKE)** | AWS CloudWatch and GCP Pub/Sub adapters for EKS and GKE audit logs           |
 | **Dashboard UI**       | Web interface for browsing reports, compliance posture, and policy suggestions |
 | **GitOps Integration** | AudiciaPolicyReport triggers a PR to your policy repo with suggested changes   |
 | **Historical Diffing** | Structured diffs on observedRules between report versions                      |
