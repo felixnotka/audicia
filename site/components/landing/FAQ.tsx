@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "What does Audicia need to run?",
-    a: "A Kubernetes cluster (1.27+) with audit logging enabled. Audicia supports three ingestion modes: tailing the audit log file, receiving events via a webhook backend, or consuming from a cloud message bus (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub). The Helm chart handles the rest.",
+    a: "A Kubernetes cluster (1.32+) with audit logging enabled. Audicia supports three ingestion modes: tailing the audit log file, receiving events via a webhook backend, or consuming from a cloud message bus (Azure Event Hub, AWS CloudWatch, GCP Pub/Sub). The Helm chart handles the rest.",
   },
   {
     q: "Is there a paid version?",

@@ -53,6 +53,8 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "filter-recipes", title: "Filter Recipes" },
       { slug: "kube-proxy-free", title: "Kube-Proxy-Free Clusters" },
       { slug: "aks-setup", title: "AKS Setup (Event Hub)" },
+      { slug: "eks-setup", title: "EKS Setup (CloudWatch Logs)" },
+      { slug: "gke-setup", title: "GKE Setup (Pub/Sub)" },
       { slug: "demo-walkthrough", title: "Demo Walkthrough" },
     ],
   },
