@@ -1,8 +1,10 @@
 # AudiciaSource: File Mode
 
-AudiciaSource for file-based audit log ingestion. Reads from a hostPath volume on a control plane node.
+AudiciaSource for file-based audit log ingestion. Reads from a hostPath volume
+on a control plane node.
 
-**See also:** [Quick Start: File Mode](../getting-started/quick-start-file.md) | [Ingestor](../components/ingestor.md)
+**See also:** [Quick Start: File Mode](../getting-started/quick-start-file.md) |
+[Ingestor](../components/ingestor.md)
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -29,6 +31,9 @@ spec:
 
 ## Customization
 
-- **`location.path`** — Must match the `--audit-log-path` flag on the kube-apiserver.
-- **Filters** — Adjust to match your environment. See [Filter Recipes](../guides/filter-recipes.md).
-- **Helm requirement:** `auditLog.enabled=true` and control plane scheduling (nodeSelector + tolerations).
+- **`location.path`** — Must match the `--audit-log-path` flag on the
+  kube-apiserver.
+- **Filters** — Adjust to match your environment. See
+  [Filter Recipes](../guides/filter-recipes.md).
+- **Helm requirement:** `auditLog.enabled=true` and control plane scheduling
+  (nodeSelector + tolerations).

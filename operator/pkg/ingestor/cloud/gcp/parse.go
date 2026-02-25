@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
 // logEntry represents a Cloud Logging LogEntry as received from a
@@ -27,7 +27,7 @@ type logEntry struct {
 type protoPayload struct {
 	Type               string              `json:"@type"`
 	Status             *rpcStatus          `json:"status"`
-	AuthenticationInfo *authenticationInfo  `json:"authenticationInfo"`
+	AuthenticationInfo *authenticationInfo `json:"authenticationInfo"`
 	RequestMetadata    *requestMetadata    `json:"requestMetadata"`
 	ServiceName        string              `json:"serviceName"`
 	MethodName         string              `json:"methodName"`
@@ -130,14 +130,7 @@ func convertLogEntry(entry logEntry) auditv1.Event {
 	event.AuditID = types.UID(entry.InsertID)
 
 	// Timestamp.
-	if entry.Timestamp != "" {
-		t, err := time.Parse(time.RFC3339Nano, entry.Timestamp)
-		if err == nil {
-			mt := metav1.NewMicroTime(t)
-			event.RequestReceivedTimestamp = mt
-			event.StageTimestamp = mt
-		}
-	}
+	setTimestamp(&event, entry.Timestamp)
 
 	pp := entry.ProtoPayload
 
@@ -183,25 +176,48 @@ func convertLogEntry(entry logEntry) auditv1.Event {
 	}
 
 	// Response status.
-	if pp.Status != nil {
-		event.ResponseStatus = &metav1.Status{
-			Code: mapStatusCode(pp.Status.Code),
-		}
-		if pp.Status.Message != "" {
-			event.ResponseStatus.Message = pp.Status.Message
-		}
-	}
+	setResponseStatus(&event, pp.Status)
 
 	// Annotations for traceability.
-	event.Annotations = map[string]string{}
-	if entry.LogName != "" {
-		event.Annotations["gcp.audicia.io/log-name"] = entry.LogName
-	}
-	if entry.InsertID != "" {
-		event.Annotations["gcp.audicia.io/insert-id"] = entry.InsertID
-	}
+	setAnnotations(&event, entry.LogName, entry.InsertID)
 
 	return event
+}
+
+// setTimestamp parses a RFC3339Nano timestamp string and sets it on the event.
+func setTimestamp(event *auditv1.Event, ts string) {
+	if ts == "" {
+		return
+	}
+	t, err := time.Parse(time.RFC3339Nano, ts)
+	if err != nil {
+		return
+	}
+	mt := metav1.NewMicroTime(t)
+	event.RequestReceivedTimestamp = mt
+	event.StageTimestamp = mt
+}
+
+// setResponseStatus maps a gRPC status to a Kubernetes response status.
+func setResponseStatus(event *auditv1.Event, status *rpcStatus) {
+	if status == nil {
+		return
+	}
+	event.ResponseStatus = &metav1.Status{Code: mapStatusCode(status.Code)}
+	if status.Message != "" {
+		event.ResponseStatus.Message = status.Message
+	}
+}
+
+// setAnnotations adds GCP traceability annotations to the event.
+func setAnnotations(event *auditv1.Event, logName, insertID string) {
+	event.Annotations = map[string]string{}
+	if logName != "" {
+		event.Annotations["gcp.audicia.io/log-name"] = logName
+	}
+	if insertID != "" {
+		event.Annotations["gcp.audicia.io/insert-id"] = insertID
+	}
 }
 
 // parseMethodName extracts verb, resource, API group, and API version from

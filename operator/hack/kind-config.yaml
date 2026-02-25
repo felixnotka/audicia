@@ -23,6 +23,7 @@ nodes:
             - name: audit-log
               hostPath: /var/log/kube-audit.log
               mountPath: /var/log/kube-audit.log
+              pathType: FileOrCreate
     extraMounts:
       - hostPath: ./operator/hack/audit-policy.yaml
         containerPath: /etc/kubernetes/audit-policy.yaml

@@ -1,13 +1,14 @@
 # Quick Start: AKS Cloud Ingestion
 
-This tutorial walks you through setting up Audicia to ingest audit logs from an Azure Kubernetes Service (AKS) cluster
-via Azure Event Hub. Unlike file or webhook mode, cloud ingestion works without control plane access — AKS streams
+This tutorial walks you through setting up Audicia to ingest audit logs from an
+Azure Kubernetes Service (AKS) cluster via Azure Event Hub. Unlike file or
+webhook mode, cloud ingestion works without control plane access — AKS streams
 audit logs to Event Hub, and Audicia consumes them.
 
 ## Prerequisites
 
-- An Azure Event Hub namespace and instance receiving the diagnostic logs
-- The Audicia operator image built with the `azure` build tag
+- An AKS cluster
+- An Azure Event Hub namespace and instance
 - Helm 3
 
 ## Step 1: Enable AKS Diagnostic Settings
@@ -23,11 +24,13 @@ az monitor diagnostic-settings create \
   --logs '[{"category": "kube-audit-admin", "enabled": true}]'
 ```
 
-> **Tip:** Use `kube-audit-admin` to reduce volume (excludes read-only events) or `kube-audit` for complete coverage.
+> **Tip:** Use `kube-audit-admin` to reduce volume (excludes read-only events)
+> or `kube-audit` for complete coverage.
 
 ## Step 2: Set Up Workload Identity
 
-Create a managed identity, grant it access to the Event Hub, and federate it with the Kubernetes ServiceAccount:
+Create a managed identity, grant it access to the Event Hub, and federate it
+with the Kubernetes ServiceAccount:
 
 ```bash
 # Create managed identity
@@ -58,8 +61,8 @@ az identity federated-credential create \
   --audiences api://AzureADTokenExchange
 ```
 
-> **Note:** The `--subject` must match the namespace and ServiceAccount name used by the Helm chart
-> (`audicia-system:audicia-operator` by default).
+> **Note:** The `--subject` must match the namespace and ServiceAccount name
+> used by the Helm chart (`audicia-system:audicia-operator` by default).
 
 ## Step 3: Install Audicia
 
@@ -73,6 +76,9 @@ cloudAuditLog:
   azure:
     eventHubNamespace: "<NAMESPACE>.servicebus.windows.net"
     eventHubName: "<EVENT_HUB_NAME>"
+
+image:
+  tag: "<VERSION>-azure"
 
 serviceAccount:
   annotations:
@@ -90,11 +96,13 @@ helm install audicia audicia/audicia-operator \
   -f values-aks.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
-> Check in `values-aks.yaml` alongside your other infrastructure config.
+> **Tip:** Pin `--version` to a specific chart version for reproducible
+> deployments. Check in `values-aks.yaml` alongside your other infrastructure
+> config.
 
-The Helm chart automatically adds the `azure.workload.identity/use: "true"` pod label when the Azure provider is
-configured, which causes the Workload Identity webhook to inject the required credentials into the pod.
+The Helm chart automatically adds the `azure.workload.identity/use: "true"` pod
+label when the Azure provider is configured, which causes the Workload Identity
+webhook to inject the required credentials into the pod.
 
 ## Step 4: Create an AudiciaSource
 
@@ -139,8 +147,8 @@ kubectl get audiciasource aks-cloud-audit -n audicia-system
 kubectl logs -l app.kubernetes.io/name=audicia -n audicia-system --tail=20
 ```
 
-You should see `audicia_cloud_messages_received_total` incrementing. After a flush cycle, policy reports start
-appearing:
+You should see `audicia_cloud_messages_received_total` incrementing. After a
+flush cycle, policy reports start appearing:
 
 ```bash
 kubectl get audiciapolicyreports --all-namespaces
@@ -148,8 +156,13 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [AKS Setup Guide](../guides/aks-setup.md) — Full guide with blob checkpoints, production hardening, and troubleshooting
-- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia network access
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
-- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
-- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works
+- [AKS Setup Guide](../guides/aks-setup.md) — Full guide with blob checkpoints,
+  production hardening, and troubleshooting
+- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia
+  network access
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+  design
+- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations
+  for production
+- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift
+  detection works

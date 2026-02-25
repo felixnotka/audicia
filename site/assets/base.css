@@ -269,6 +269,15 @@ a:focus-visible {
   width: 100%;
   max-width: var(--container-w);
   margin-inline: auto;
+  height: var(--component-height-md);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--spacing-md);
+  overflow-y: hidden;
+  position: relative;
+  z-index: 10;
+  background: var(--color-bg);
 }
 
 .navbar {
@@ -356,18 +365,6 @@ a:focus-visible {
 
 .navbar-burger.active .burger-line:nth-child(3) {
   transform: rotate(45deg) translate(-5px, -6px);
-}
-
-.footer {
-  height: var(--component-height-md);
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--spacing-md);
-  overflow-y: hidden;
-  position: relative;
-  z-index: 10;
-  background: var(--color-bg);
 }
 
 .footer-copyright,

@@ -1,17 +1,21 @@
 # Quick Start: File-Based Ingestion
 
-This tutorial walks you through setting up Audicia to tail a Kubernetes audit log file, observe API access patterns,
-and generate your first RBAC policy report.
+This tutorial walks you through setting up Audicia to tail a Kubernetes audit
+log file, observe API access patterns, and generate your first RBAC policy
+report.
 
 ## Prerequisites
 
-- Audicia installed with `auditLog.enabled=true` (see [Installation](installation.md))
+- Audicia installed with `auditLog.enabled=true` (see
+  [Installation](installation.md))
 - Audit logging enabled on your cluster
 - `kubectl` configured
 
 ## Step 1: Create an AudiciaSource
 
-Apply the following manifest (see the [File Mode Example](../examples/audicia-source-file.md) for customization options):
+Apply the following manifest (see the
+[File Mode Example](../examples/audicia-source-file.md) for customization
+options):
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -100,19 +104,19 @@ status:
   suggestedPolicy:
     manifests:
       - |
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: Role
-        metadata:
-          name: suggested-demo-app-role
-          namespace: demo
-        rules:
-          - apiGroups: [""]
-            resources: ["pods"]
-            verbs: ["list"]
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: Role
+          metadata:
+            name: suggested-demo-app-role
+            namespace: demo
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["list"]
       - |
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: RoleBinding
-        ...
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          ...
 ```
 
 ## Step 4: Apply the Suggested Policy
@@ -132,6 +136,7 @@ kubectl get audiciapolicyreport report-demo-app -n demo \
 ```
 
 > **Tip:** For GitOps workflows, pipe the output to a file in your policy repo:
+>
 > ```bash
 > kubectl get audiciapolicyreport report-demo-app -n demo \
 >   -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
@@ -150,6 +155,8 @@ If the applied RBAC matches usage, you'll see a Green compliance score.
 
 ## What's Next
 
-- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
-- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works
+- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations
+  for production
+- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift
+  detection works
 - [Feature Reference](../reference/features.md) — Full configuration options

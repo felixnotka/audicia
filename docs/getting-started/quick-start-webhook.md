@@ -1,21 +1,25 @@
 # Quick Start: Webhook Ingestion
 
-This tutorial walks you through setting up Audicia to receive real-time audit events via the kube-apiserver's webhook
-backend. This is the recommended mode for production — it provides sub-second event delivery and doesn't require
+This tutorial walks you through setting up Audicia to receive real-time audit
+events via the kube-apiserver's webhook backend. This is the recommended mode
+for production — it provides sub-second event delivery and doesn't require
 control plane node scheduling.
 
-> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from the host namespace.
-> See the dedicated [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) instead.
+> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from
+> the host namespace. See the dedicated
+> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) instead.
 
 ## Prerequisites
 
-- Audicia installed with `webhook.enabled=true` (see [Installation](installation.md))
+- Audicia installed with `webhook.enabled=true` (see
+  [Installation](installation.md))
 - `kubectl` configured
 - Access to the control plane node (for apiserver configuration)
 
 ## Step 1: Create TLS Certificates
 
-The webhook receiver requires TLS. For production, use certificates from your PKI. For testing:
+The webhook receiver requires TLS. For production, use certificates from your
+PKI. For testing:
 
 ```bash
 # Get the webhook Service ClusterIP
@@ -82,7 +86,8 @@ EOF
 
 ## Step 5: Configure the kube-apiserver
 
-Create the webhook kubeconfig on the control plane node. Use the ClusterIP from Step 1:
+Create the webhook kubeconfig on the control plane node. Use the ClusterIP from
+Step 1:
 
 ```bash
 echo $CLUSTER_IP
@@ -109,8 +114,8 @@ current-context: audicia
 EOF
 ```
 
-> **Important:** You must use an IP address, not a DNS name. The kube-apiserver uses `hostNetwork: true` and cannot
-> resolve `.svc.cluster.local` names.
+> **Important:** You must use an IP address, not a DNS name. The kube-apiserver
+> uses `hostNetwork: true` and cannot resolve `.svc.cluster.local` names.
 
 Copy the webhook CA certificate:
 
@@ -129,7 +134,8 @@ Add the webhook flag to the apiserver manifest:
 
 The apiserver will restart automatically.
 
-See the [Webhook Kubeconfig](../examples/webhook-kubeconfig.md) example for the complete template.
+See the [Webhook Kubeconfig](../examples/webhook-kubeconfig.md) example for the
+complete template.
 
 ## Step 6: Verify Events Flow
 
@@ -155,12 +161,16 @@ Reports should start appearing for active subjects.
 
 ## Optional: Enable mTLS
 
-For production, enable mTLS so only the kube-apiserver (presenting a valid client certificate) can send events.
-See the [mTLS Setup Guide](../guides/mtls-setup.md) or the
-[Webhook Setup Guide](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls) for the full walkthrough.
+For production, enable mTLS so only the kube-apiserver (presenting a valid
+client certificate) can send events. See the
+[mTLS Setup Guide](../guides/mtls-setup.md) or the
+[Webhook Setup Guide](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls)
+for the full walkthrough.
 
 ## What's Next
 
 - [mTLS Setup](../guides/mtls-setup.md) — Harden the webhook with mutual TLS
-- [Webhook Setup Guide](../guides/webhook-setup.md) — Complete reference for webhook configuration
-- [Filter Recipes](../guides/filter-recipes.md) — Production filter configurations
+- [Webhook Setup Guide](../guides/webhook-setup.md) — Complete reference for
+  webhook configuration
+- [Filter Recipes](../guides/filter-recipes.md) — Production filter
+  configurations

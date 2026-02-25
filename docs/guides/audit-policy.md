@@ -1,19 +1,20 @@
 # Audit Policy Configuration
 
-This guide explains how to configure Kubernetes audit logging for optimal Audicia usage.
+This guide explains how to configure Kubernetes audit logging for optimal
+Audicia usage.
 
 ## Why Audit Logging?
 
-Audicia needs audit events to observe API access patterns. Without audit logging, the kube-apiserver doesn't record
-who accessed what.
+Audicia needs audit events to observe API access patterns. Without audit
+logging, the kube-apiserver doesn't record who accessed what.
 
 ## Recommended Audit Level
 
-Audicia requires **`Metadata` level** at minimum. This provides the fields Audicia needs without the overhead of full
-request/response bodies:
+Audicia requires **`Metadata` level** at minimum. This provides the fields
+Audicia needs without the overhead of full request/response bodies:
 
 | Field                   | Purpose                                |
-|-------------------------|----------------------------------------|
+| ----------------------- | -------------------------------------- |
 | `user.username`         | Subject identity                       |
 | `user.groups`           | Group metadata                         |
 | `verb`                  | The API verb (get, list, create, etc.) |
@@ -25,12 +26,13 @@ request/response bodies:
 | `responseStatus.code`   | To distinguish allowed vs. denied      |
 | `auditID`               | For webhook deduplication              |
 
-`RequestResponse` level works but generates significantly more data (request/response bodies) that Audicia does not
-use.
+`RequestResponse` level works but generates significantly more data
+(request/response bodies) that Audicia does not use.
 
 ## The Example Audit Policy
 
-Audicia includes a ready-to-use audit policy (see [Audit Policy Example](../examples/audit-policy.md)):
+Audicia includes a ready-to-use audit policy (see
+[Audit Policy Example](../examples/audit-policy.md)):
 
 ```yaml
 apiVersion: audit.k8s.io/v1
@@ -56,10 +58,13 @@ rules:
 
 ### Why These Rules?
 
-- **Health endpoints** generate enormous volume and are never useful for RBAC analysis.
-- **system:apiserver** is internal plumbing — filtering it at the audit level reduces log volume by ~30%.
-- **`omitStages: [RequestReceived]`** skips the initial "request received" stage, halving the number of events per
-  API call while keeping the "ResponseComplete" event with the status code.
+- **Health endpoints** generate enormous volume and are never useful for RBAC
+  analysis.
+- **system:apiserver** is internal plumbing — filtering it at the audit level
+  reduces log volume by ~30%.
+- **`omitStages: [RequestReceived]`** skips the initial "request received"
+  stage, halving the number of events per API call while keeping the
+  "ResponseComplete" event with the status code.
 
 ## Installing the Audit Policy
 
@@ -100,57 +105,60 @@ Add specific `None` rules for high-volume, low-value endpoints:
 ```yaml
 rules:
   - level: None
-    nonResourceURLs: [ "/healthz*", "/livez*", "/readyz*" ]
+    nonResourceURLs: ["/healthz*", "/livez*", "/readyz*"]
 
   - level: None
-    users: [ "system:apiserver" ]
+    users: ["system:apiserver"]
 
   # Skip high-volume read-only requests to well-known resources
   - level: None
-    verbs: [ "get", "list", "watch" ]
+    verbs: ["get", "list", "watch"]
     resources:
       - group: ""
-        resources: [ "events" ]  # Events generate massive audit volume
+        resources: ["events"] # Events generate massive audit volume
 
   - level: Metadata
-    omitStages: [ RequestReceived ]
+    omitStages: [RequestReceived]
 ```
 
 ### Namespace-Scoped Policies
 
-If you only care about specific namespaces, use the audit policy to reduce volume:
+If you only care about specific namespaces, use the audit policy to reduce
+volume:
 
 ```yaml
 rules:
   - level: None
-    nonResourceURLs: [ "/healthz*", "/livez*", "/readyz*" ]
+    nonResourceURLs: ["/healthz*", "/livez*", "/readyz*"]
   - level: None
-    users: [ "system:apiserver" ]
+    users: ["system:apiserver"]
 
   # Only log events in target namespaces
   - level: Metadata
-    namespaces: [ "production", "staging" ]
-    omitStages: [ RequestReceived ]
+    namespaces: ["production", "staging"]
+    omitStages: [RequestReceived]
 
   # Skip everything else
   - level: None
 ```
 
-> **Note:** This is complementary to Audicia's filter chain. The audit policy controls what the apiserver logs;
-> Audicia's filters control what gets processed into reports. Use both for maximum efficiency.
+> **Note:** This is complementary to Audicia's filter chain. The audit policy
+> controls what the apiserver logs; Audicia's filters control what gets
+> processed into reports. Use both for maximum efficiency.
 
 ## Log Rotation
 
 For file-based ingestion, configure log rotation to prevent disk exhaustion:
 
 ```yaml
-- --audit-log-maxsize=100       # Max size in MB per file
-- --audit-log-maxbackup=3       # Number of old files to retain
-- --audit-log-maxage=7          # Max days to retain old files
+- --audit-log-maxsize=100 # Max size in MB per file
+- --audit-log-maxbackup=3 # Number of old files to retain
+- --audit-log-maxage=7 # Max days to retain old files
 ```
 
-Audicia handles rotation automatically via inode tracking (Linux) — when it detects the file was rotated, it resets
-the offset and starts reading the new file.
+Audicia handles rotation automatically via inode tracking (Linux) — when it
+detects the file was rotated, it resets the offset and starts reading the new
+file.
 
 ## Verify It's Working
 

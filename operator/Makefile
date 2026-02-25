@@ -45,7 +45,7 @@ test: ## Run unit tests.
 
 .PHONY: test-e2e
 test-e2e: ## Run end-to-end tests (requires running cluster).
-	go test -tags=e2e -race ./tests/e2e/...
+	go test -tags=e2e -race -timeout 20m ./tests/e2e/...
 
 ##@ Build
 

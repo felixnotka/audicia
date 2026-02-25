@@ -225,9 +225,9 @@ Audit events are written to the CloudWatch log group
 stream them to an external system.
 
 **For Audicia:** Audicia natively supports EKS via the CloudWatch Logs adapter.
-Configure an `AudiciaSource` with `provider: AWSCloudWatch` and point it at
-your cluster's log group. Authentication uses IRSA (IAM Roles for Service
-Accounts). See the [EKS setup guide](/docs/guides/eks-setup) for details.
+Configure an `AudiciaSource` with `provider: AWSCloudWatch` and point it at your
+cluster's log group. Authentication uses IRSA (IAM Roles for Service Accounts).
+See the [EKS setup guide](/docs/guides/eks-setup) for details.
 
 ### Google GKE
 
@@ -250,7 +250,8 @@ gcloud logging sinks create gke-audit-sink \
 **For Audicia:** Audicia natively supports GKE via the Cloud Pub/Sub adapter.
 Route audit logs to a Pub/Sub topic using a Cloud Logging sink, then configure
 an `AudiciaSource` with `provider: GCPPubSub`. Authentication uses Workload
-Identity Federation. See the [GKE setup guide](/docs/guides/gke-setup) for details.
+Identity Federation. See the [GKE setup guide](/docs/guides/gke-setup) for
+details.
 
 ### Azure AKS
 

@@ -4,10 +4,9 @@ Complete field reference for the AudiciaPolicyReport Custom Resource Definition.
 
 ---
 
-**API Group:** `audicia.io/v1alpha1`
-**Scope:** Namespaced
-**Short names:** `apr`, `apreport`
-**kubectl columns:** Subject, Kind, Compliance, Score, Used, Events, Age
+**API Group:** `audicia.io/v1alpha1` **Scope:** Namespaced **Short names:**
+`apr`, `apreport` **kubectl columns:** Subject, Kind, Compliance, Score, Used,
+Events, Age
 
 ## Example
 
@@ -49,14 +48,15 @@ status:
       status: "True"
 ```
 
-For a full example with suggested policy manifests, see [Policy Report Example](../examples/policy-report.md).
+For a full example with suggested policy manifests, see
+[Policy Report Example](../examples/policy-report.md).
 
 ---
 
 ## spec.subject
 
 | Field               | Type   | Required | Description                              |
-|---------------------|--------|----------|------------------------------------------|
+| ------------------- | ------ | -------- | ---------------------------------------- |
 | `subject.kind`      | string | Yes      | `ServiceAccount`, `User`, or `Group`     |
 | `subject.name`      | string | Yes      | Name of the subject                      |
 | `subject.namespace` | string | No       | Namespace (relevant for ServiceAccounts) |
@@ -64,7 +64,7 @@ For a full example with suggested policy manifests, see [Policy Report Example](
 ## status.observedRules[]
 
 | Field                             | Type      | Description                               |
-|-----------------------------------|-----------|-------------------------------------------|
+| --------------------------------- | --------- | ----------------------------------------- |
 | `observedRules[].apiGroups`       | string[]  | API groups (e.g., `""`, `apps`)           |
 | `observedRules[].resources`       | string[]  | Resources (e.g., `pods`, `deployments`)   |
 | `observedRules[].verbs`           | string[]  | Observed verbs (e.g., `get`, `list`)      |
@@ -77,26 +77,26 @@ For a full example with suggested policy manifests, see [Policy Report Example](
 ## status.suggestedPolicy
 
 | Field                       | Type     | Description                                                                  |
-|-----------------------------|----------|------------------------------------------------------------------------------|
+| --------------------------- | -------- | ---------------------------------------------------------------------------- |
 | `suggestedPolicy.manifests` | string[] | Rendered YAML manifests (Role, ClusterRole, RoleBinding, ClusterRoleBinding) |
 
 ## status.compliance
 
-| Field                          | Type      | Description                                        |
-|--------------------------------|-----------|----------------------------------------------------|
-| `compliance.score`             | int32     | Compliance score (0-100, higher is better)         |
-| `compliance.severity`          | string    | `Green` (>= 80), `Yellow` (>= 50), `Red` (< 50)    |
-| `compliance.usedCount`         | int32     | Effective rules that were observed in use          |
-| `compliance.excessCount`       | int32     | Effective rules never observed (overprivilege)     |
-| `compliance.uncoveredCount`    | int32     | Observed actions not covered by any effective rule |
-| `compliance.hasSensitiveExcess` | bool     | True when excess grants include sensitive resources |
-| `compliance.sensitiveExcess`   | string[]  | Sensitive resources with unused grants (detail)    |
-| `compliance.lastEvaluatedTime` | date-time | When compliance was last evaluated                 |
+| Field                           | Type      | Description                                         |
+| ------------------------------- | --------- | --------------------------------------------------- |
+| `compliance.score`              | int32     | Compliance score (0-100, higher is better)          |
+| `compliance.severity`           | string    | `Green` (>= 80), `Yellow` (>= 50), `Red` (< 50)     |
+| `compliance.usedCount`          | int32     | Effective rules that were observed in use           |
+| `compliance.excessCount`        | int32     | Effective rules never observed (overprivilege)      |
+| `compliance.uncoveredCount`     | int32     | Observed actions not covered by any effective rule  |
+| `compliance.hasSensitiveExcess` | bool      | True when excess grants include sensitive resources |
+| `compliance.sensitiveExcess`    | string[]  | Sensitive resources with unused grants (detail)     |
+| `compliance.lastEvaluatedTime`  | date-time | When compliance was last evaluated                  |
 
 ## status (top-level)
 
 | Field                      | Type        | Description                                  |
-|----------------------------|-------------|----------------------------------------------|
+| -------------------------- | ----------- | -------------------------------------------- |
 | `status.eventsProcessed`   | int64       | Total audit events processed for this report |
 | `status.lastProcessedTime` | date-time   | Timestamp of the most recent processed event |
 | `status.conditions[]`      | Condition[] | Standard Kubernetes conditions (`Ready`)     |

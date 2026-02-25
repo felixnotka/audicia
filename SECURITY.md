@@ -6,7 +6,7 @@ If you discover a security vulnerability in Audicia, **please report it responsi
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, email: **security@audicia.io**
+Instead, email: **info@audicia.io**
 
 You will receive an acknowledgment within 48 hours and a detailed response within 7 days indicating next steps.
 

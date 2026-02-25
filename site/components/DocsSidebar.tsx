@@ -5,7 +5,7 @@ interface Props {
   currentPath: string;
 }
 
-export default function DocsSidebar({ currentPath }: Props) {
+export default function DocsSidebar({ currentPath }: Readonly<Props>) {
   return (
     <aside className="docs-sidebar">
       <button
@@ -31,7 +31,6 @@ export default function DocsSidebar({ currentPath }: Props) {
           </div>
           <div
             className="docs-search-results"
-            role="listbox"
             aria-label="Search results"
           />
         </div>

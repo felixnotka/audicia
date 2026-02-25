@@ -39,7 +39,7 @@ type CloudWatchSource struct {
 
 	mu        sync.Mutex
 	client    *cloudwatchlogs.Client
-	startTime int64  // Millis since epoch — exclusive lower bound for FilterLogEvents.
+	startTime int64 // Millis since epoch — exclusive lower bound for FilterLogEvents.
 	nextToken *string
 }
 

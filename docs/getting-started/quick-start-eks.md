@@ -1,23 +1,25 @@
 # Quick Start: EKS Cloud Ingestion
 
-This tutorial walks you through setting up Audicia to ingest audit logs from an Amazon EKS cluster via
-CloudWatch Logs. Unlike file or webhook mode, cloud ingestion works without control plane access — once
-enabled, EKS streams audit logs to CloudWatch, and Audicia consumes them.
+This tutorial walks you through setting up Audicia to ingest audit logs from an
+Amazon EKS cluster via CloudWatch Logs. Unlike file or webhook mode, cloud
+ingestion works without control plane access — once enabled, EKS streams audit
+logs to CloudWatch, and Audicia consumes them.
 
 ## Prerequisites
 
-- An EKS cluster with [audit logging enabled](#step-1-enable-eks-audit-logging) (disabled by default)
-- The Audicia operator image built with the `aws` build tag
+- An EKS cluster
 - Helm 3
 - `eksctl` or `aws` CLI for IAM/OIDC setup
 
 ## Step 1: Enable EKS Audit Logging
 
-EKS control plane logging is **disabled by default**. You must explicitly enable the `audit` log type,
-which streams API server audit events to CloudWatch Logs under `/aws/eks/<CLUSTER_NAME>/cluster`.
+EKS control plane logging is **disabled by default**. You must explicitly enable
+the `audit` log type, which streams API server audit events to CloudWatch Logs
+under `/aws/eks/<CLUSTER_NAME>/cluster`.
 
-> **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges. Consider setting a
-> retention policy on the log group to control costs (e.g., 30 or 90 days).
+> **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges.
+> Consider setting a retention policy on the log group to control costs (e.g.,
+> 30 or 90 days).
 
 ```bash
 # Enable audit logging
@@ -101,6 +103,9 @@ cloudAuditLog:
     logGroupName: "/aws/eks/<CLUSTER_NAME>/cluster"
     region: "<REGION>"
 
+image:
+  tag: "<VERSION>-aws"
+
 serviceAccount:
   annotations:
     eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT_ID>:role/audicia-operator"
@@ -117,13 +122,15 @@ helm install audicia audicia/audicia-operator \
   -f values-eks.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
-> Check in `values-eks.yaml` alongside your other infrastructure config.
+> **Tip:** Pin `--version` to a specific chart version for reproducible
+> deployments. Check in `values-eks.yaml` alongside your other infrastructure
+> config.
 
 The `eks.amazonaws.com/role-arn` ServiceAccount annotation is used by
-[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) (IAM Roles
-for Service Accounts). The IRSA mutating webhook injects `AWS_ROLE_ARN` and
-`AWS_WEB_IDENTITY_TOKEN_FILE` into the pod, which the AWS SDK picks up automatically.
+[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)
+(IAM Roles for Service Accounts). The IRSA mutating webhook injects
+`AWS_ROLE_ARN` and `AWS_WEB_IDENTITY_TOKEN_FILE` into the pod, which the AWS SDK
+picks up automatically.
 
 ## Step 4: Create an AudiciaSource
 
@@ -168,8 +175,8 @@ kubectl get audiciasource eks-cloud-audit -n audicia-system
 kubectl logs -l app.kubernetes.io/name=audicia -n audicia-system --tail=20
 ```
 
-You should see `audicia_cloud_messages_received_total` incrementing. After a flush cycle, policy reports start
-appearing:
+You should see `audicia_cloud_messages_received_total` incrementing. After a
+flush cycle, policy reports start appearing:
 
 ```bash
 kubectl get audiciapolicyreports --all-namespaces
@@ -177,8 +184,13 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [EKS Setup Guide](../guides/eks-setup.md) — Full guide with IRSA manual setup, production hardening, and troubleshooting
-- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia network access
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
-- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
-- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works
+- [EKS Setup Guide](../guides/eks-setup.md) — Full guide with IRSA manual setup,
+  production hardening, and troubleshooting
+- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia
+  network access
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+  design
+- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations
+  for production
+- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift
+  detection works

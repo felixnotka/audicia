@@ -69,6 +69,34 @@ jobs:
       - name: Template chart
         run: helm template audicia deploy/helm/ > /dev/null
 
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+          cache-dependency-path: operator/go.sum
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Run E2E tests
+        working-directory: operator
+        run: go test -tags=e2e -timeout 20m -v ./tests/e2e/...
+
   sonarqube:
     name: SonarQube Analyze
     runs-on: ubuntu-latest
@@ -84,6 +112,13 @@ jobs:
         with:
           name: go-coverage
 
+      - name: Read project version
+        id: version
+        run: |
+          major=$(jq -r '.Major' version.json)
+          minor=$(jq -r '.Minor' version.json)
+          echo "value=${major}.${minor}" >> "$GITHUB_OUTPUT"
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:
@@ -92,3 +127,11 @@ jobs:
         with:
           args: >
             -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.projectVersion=${{ steps.version.outputs.value }}
+
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

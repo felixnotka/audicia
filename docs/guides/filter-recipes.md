@@ -1,7 +1,8 @@
 # Filter Recipes
 
-Audicia's filter chain controls which audit events are processed into policy reports. Filters are evaluated as an
-ordered allow/deny chain — **first match wins**. If no rule matches, the event is **allowed** by default.
+Audicia's filter chain controls which audit events are processed into policy
+reports. Filters are evaluated as an ordered allow/deny chain — **first match
+wins**. If no rule matches, the event is **allowed** by default.
 
 ## How Filters Work
 
@@ -9,16 +10,19 @@ Each filter rule has:
 
 - **`action`**: `Allow` or `Deny`
 - **`userPattern`**: Regex matched against `event.User.Username` (optional)
-- **`namespacePattern`**: Regex matched against `event.ObjectRef.Namespace` (optional)
+- **`namespacePattern`**: Regex matched against `event.ObjectRef.Namespace`
+  (optional)
 
-Rules are evaluated top-to-bottom. The first matching rule determines the outcome.
+Rules are evaluated top-to-bottom. The first matching rule determines the
+outcome.
 
-Additionally, `ignoreSystemUsers: true` (the default) automatically drops all `system:*` users except service
-accounts (`system:serviceaccount:*`).
+Additionally, `ignoreSystemUsers: true` (the default) automatically drops all
+`system:*` users except service accounts (`system:serviceaccount:*`).
 
 ## Recipe: Block System Noise Only
 
-The simplest production filter. Blocks noisy system components while allowing everything else:
+The simplest production filter. Blocks noisy system components while allowing
+everything else:
 
 ```yaml
 spec:
@@ -34,7 +38,8 @@ spec:
 
 **What flows through:** All service accounts, all human users, all namespaces.
 
-**Best for:** Development clusters, initial exploration, understanding what Audicia sees.
+**Best for:** Development clusters, initial exploration, understanding what
+Audicia sees.
 
 ## Recipe: Namespace Allowlist
 
@@ -54,7 +59,8 @@ spec:
       userPattern: ".*"
 ```
 
-**What flows through:** Only events in namespaces matching `production-*` or `staging-*`.
+**What flows through:** Only events in namespaces matching `production-*` or
+`staging-*`.
 
 **Best for:** Multi-tenant clusters where you want reports for specific teams.
 
@@ -99,14 +105,16 @@ spec:
       namespacePattern: "^kube-"
 ```
 
-**What flows through:** All non-system users in non-system namespaces. Service accounts in application namespaces
-are included.
+**What flows through:** All non-system users in non-system namespaces. Service
+accounts in application namespaces are included.
 
-**Best for:** Production clusters where you want comprehensive coverage without system noise.
+**Best for:** Production clusters where you want comprehensive coverage without
+system noise.
 
 ## Recipe: Exclude Specific Service Accounts
 
-If a particular service account generates too much noise (e.g., a monitoring agent):
+If a particular service account generates too much noise (e.g., a monitoring
+agent):
 
 ```yaml
 spec:
@@ -123,15 +131,16 @@ spec:
 
 ## Filter vs. Audit Policy
 
-Both the Kubernetes audit policy and Audicia's filters control what gets processed, but at different layers:
+Both the Kubernetes audit policy and Audicia's filters control what gets
+processed, but at different layers:
 
 | Layer               | Controls                | When                     |
-|---------------------|-------------------------|--------------------------|
+| ------------------- | ----------------------- | ------------------------ |
 | **Audit policy**    | What the apiserver logs | At event generation time |
 | **Audicia filters** | What Audicia processes  | At event ingestion time  |
 
-Use the audit policy to reduce log volume at the source. Use Audicia's filters for fine-grained control over which
-subjects and namespaces generate reports.
+Use the audit policy to reduce log volume at the source. Use Audicia's filters
+for fine-grained control over which subjects and namespaces generate reports.
 
 ## Debugging Filters
 

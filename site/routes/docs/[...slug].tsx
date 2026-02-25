@@ -47,7 +47,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
       <script
         // deno-lint-ignore react-no-danger
         dangerouslySetInnerHTML={{
-          __html: `
+          __html: String.raw`
           document.addEventListener('DOMContentLoaded', function() {
             var sidebar = document.querySelector('.docs-sidebar');
 
@@ -57,7 +57,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
             if (toggle && nav) {
               toggle.addEventListener('click', function() {
                 var open = nav.classList.toggle('open');
-                toggle.querySelector('.docs-sidebar-toggle-icon').textContent = open ? '\\u2212' : '+';
+                toggle.querySelector('.docs-sidebar-toggle-icon').textContent = open ? '\u2212' : '+';
               });
             }
 
@@ -99,12 +99,13 @@ export default define.page<typeof handler>(function DocsPage(props) {
             var shortcutKey = document.querySelector('.docs-search-shortcut-key');
 
             if (searchEl && searchInput && searchResults) {
+              searchResults.setAttribute('role', 'listbox');
               var searchIndex = JSON.parse(searchEl.textContent);
               var selectedIdx = -1;
 
               // Platform-appropriate shortcut hint
               if (shortcutKey) {
-                shortcutKey.textContent = navigator.platform.indexOf('Mac') > -1 ? '\\u2318' : 'Ctrl+';
+                shortcutKey.textContent = navigator.platform.indexOf('Mac') > -1 ? '\u2318' : 'Ctrl+';
               }
 
               function doSearch(query) {
@@ -114,7 +115,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
                   searchResults.classList.remove('visible');
                   return;
                 }
-                var tokens = query.toLowerCase().split(/\\s+/).filter(Boolean);
+                var tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
                 var scored = [];
 
                 for (var i = 0; i < searchIndex.length; i++) {

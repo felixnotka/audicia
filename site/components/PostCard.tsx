@@ -1,6 +1,6 @@
 import type { Post } from "../lib/posts.ts";
 
-export default function PostCard({ post }: { post: Post }) {
+export default function PostCard({ post }: Readonly<{ post: Post }>) {
   const date = post.published_at instanceof Date
     ? post.published_at
     : new Date(post.published_at);

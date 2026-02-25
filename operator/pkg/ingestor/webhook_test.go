@@ -2,10 +2,20 @@ package ingestor
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -177,10 +187,205 @@ func TestRateLimiter_DeniesOverLimit(t *testing.T) {
 	}
 }
 
+func TestHandleAuditRequest_BodyTooLarge(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 10} // Tiny limit.
+	ch := make(chan auditv1.Event, 10)
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(100)
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	// Build a body larger than 10 bytes.
+	body := bytes.Repeat([]byte("x"), 100)
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	handler(rr, req)
+
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusRequestEntityTooLarge)
+	}
+}
+
+func TestHandleAuditRequest_RateLimited(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 1048576}
+	ch := make(chan auditv1.Event, 10)
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(1) // Allow only 1 request per second.
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	eventList := auditv1.EventList{
+		Items: []auditv1.Event{{AuditID: "rl-1", Verb: "get"}},
+	}
+	body, _ := json.Marshal(eventList)
+
+	// First request should succeed.
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("first request: status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	// Second request should be rate limited.
+	req = httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr = httptest.NewRecorder()
+	handler(rr, req)
+	if rr.Code != http.StatusTooManyRequests {
+		t.Errorf("second request: status = %d, want %d", rr.Code, http.StatusTooManyRequests)
+	}
+}
+
+func TestHandleAuditRequest_ChannelFull(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 1048576}
+	ch := make(chan auditv1.Event, 1) // Only room for 1 event.
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(100)
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	// Send 3 events — channel can only hold 1, so eventually the handler
+	// should return 429 when it cannot send.
+	eventList := auditv1.EventList{
+		Items: []auditv1.Event{
+			{AuditID: "cf-1", Verb: "get"},
+			{AuditID: "cf-2", Verb: "list"},
+			{AuditID: "cf-3", Verb: "create"},
+		},
+	}
+	body, _ := json.Marshal(eventList)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+
+	if rr.Code != http.StatusTooManyRequests {
+		t.Errorf("status = %d, want %d (channel full)", rr.Code, http.StatusTooManyRequests)
+	}
+}
+
+func TestHandleAuditRequest_EmptyAuditID(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 1048576}
+	ch := make(chan auditv1.Event, 10)
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(100)
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	// Events with empty AuditID should bypass deduplication.
+	eventList := auditv1.EventList{
+		Items: []auditv1.Event{
+			{AuditID: "", Verb: "get"},
+			{AuditID: "", Verb: "list"},
+		},
+	}
+	body, _ := json.Marshal(eventList)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	close(ch)
+	var count int
+	for range ch {
+		count++
+	}
+	if count != 2 {
+		t.Errorf("got %d events, want 2 (empty AuditID bypasses dedup)", count)
+	}
+}
+
 func TestWebhookIngestor_Checkpoint(t *testing.T) {
 	w := NewWebhookIngestor(8443, "", "")
 	pos := w.Checkpoint()
 	if pos.FileOffset != 0 || pos.Inode != 0 || pos.LastTimestamp != "" {
 		t.Errorf("webhook checkpoint should be empty, got %+v", pos)
 	}
+}
+
+// --- buildMTLSConfig ---
+
+func TestBuildMTLSConfig(t *testing.T) {
+	certPEM := generateTestCACert(t)
+
+	tmpFile := writeTempFile(t, certPEM)
+
+	w := &WebhookIngestor{ClientCAFile: tmpFile}
+	tlsConfig, err := w.buildMTLSConfig()
+	if err != nil {
+		t.Fatalf("buildMTLSConfig: %v", err)
+	}
+
+	if tlsConfig.ClientAuth != tls.RequireAndVerifyClientCert {
+		t.Errorf("ClientAuth = %v, want RequireAndVerifyClientCert", tlsConfig.ClientAuth)
+	}
+	if tlsConfig.ClientCAs == nil {
+		t.Error("expected non-nil ClientCAs pool")
+	}
+	if tlsConfig.MinVersion != tls.VersionTLS12 {
+		t.Errorf("MinVersion = %d, want TLS 1.2 (%d)", tlsConfig.MinVersion, tls.VersionTLS12)
+	}
+}
+
+func TestBuildMTLSConfig_FileNotFound(t *testing.T) {
+	w := &WebhookIngestor{ClientCAFile: "/nonexistent/path/ca.pem"}
+	_, err := w.buildMTLSConfig()
+	if err == nil {
+		t.Error("expected error for nonexistent CA file")
+	}
+}
+
+func TestBuildMTLSConfig_InvalidPEM(t *testing.T) {
+	tmpFile := writeTempFile(t, []byte("not a valid PEM certificate"))
+
+	w := &WebhookIngestor{ClientCAFile: tmpFile}
+	_, err := w.buildMTLSConfig()
+	if err == nil {
+		t.Error("expected error for invalid PEM data")
+	}
+}
+
+func generateTestCACert(t *testing.T) []byte {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-1 * time.Hour),
+		NotAfter:              time.Now().Add(1 * time.Hour),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+}
+
+func writeTempFile(t *testing.T, data []byte) string {
+	t.Helper()
+	f, err := os.CreateTemp("", "test-ca-*.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(f.Name()) })
+	if _, err := f.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	_ = f.Close()
+	return f.Name()
 }

@@ -1,0 +1,77 @@
+name: Nightly
+
+on:
+  schedule:
+    # 02:00 UTC every day
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+          cache-dependency-path: operator/go.sum
+
+      - name: Run tests (with coverage)
+        working-directory: operator
+        run: go test -race -tags azure,aws,gcp -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: go-coverage
+          path: operator/coverage.out
+          if-no-files-found: error
+
+  sonarqube:
+    name: SonarQube Analyze
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Check Out Repo (full history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: go-coverage
+
+      - name: Read project version
+        id: version
+        run: |
+          major=$(jq -r '.Major' version.json)
+          minor=$(jq -r '.Minor' version.json)
+          echo "value=${major}.${minor}" >> "$GITHUB_OUTPUT"
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.projectVersion=${{ steps.version.outputs.value }}
+
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
