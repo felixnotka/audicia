@@ -31,7 +31,6 @@ export default function DocsSidebar({ currentPath }: Readonly<Props>) {
           </div>
           <div
             className="docs-search-results"
-            role="listbox"
             aria-label="Search results"
           />
         </div>

@@ -99,6 +99,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
             var shortcutKey = document.querySelector('.docs-search-shortcut-key');
 
             if (searchEl && searchInput && searchResults) {
+              searchResults.setAttribute('role', 'listbox');
               var searchIndex = JSON.parse(searchEl.textContent);
               var selectedIdx = -1;
 
