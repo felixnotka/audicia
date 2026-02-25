@@ -202,7 +202,7 @@ export async function getDoc(
     const titleMatch = /^#\s+([^\n]+)$/m.exec(text);
     const title = titleMatch
       ? titleMatch[1].trim()
-      : slugParts.at(-1)!;
+      : slugParts.at(-1);
 
     const transformed = transformLinks(text, category);
 
@@ -211,7 +211,7 @@ export async function getDoc(
       : `/docs/${slugParts[0]}`;
 
     return {
-      slug: slugParts.at(-1)!,
+      slug: slugParts.at(-1),
       category,
       title,
       content: transformed,

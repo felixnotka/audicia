@@ -148,7 +148,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
                 var results = scored.slice(0, 8);
 
                 if (results.length === 0) {
-                  searchResults.innerHTML = '<li class="docs-search-empty">No results found</li>';
+                  searchResults.innerHTML = '<div class="docs-search-empty">No results found</div>';
                   searchResults.classList.add('visible');
                   return;
                 }
@@ -157,20 +157,17 @@ export default define.page<typeof handler>(function DocsPage(props) {
                   var item = results[r];
                   var href = item.entry.p;
                   if (item.heading) href += '#' + item.heading[1];
-                  var li = document.createElement('li');
-                  li.className = 'docs-search-result-li';
-                  var a = document.createElement('a');
-                  a.href = href;
-                  a.className = 'docs-search-result-item';
-                  a.setAttribute('role', 'option');
-                  a.innerHTML =
+                  var div = document.createElement('a');
+                  div.href = href;
+                  div.className = 'docs-search-result-item';
+                  div.setAttribute('role', 'option');
+                  div.innerHTML =
                     '<span class="docs-search-result-section">' + item.entry.s + '</span>' +
                     '<span class="docs-search-result-title">' + item.entry.t + '</span>' +
                     (item.heading
                       ? '<span class="docs-search-result-heading"># ' + item.heading[0] + '</span>'
                       : '');
-                  li.appendChild(a);
-                  searchResults.appendChild(li);
+                  searchResults.appendChild(div);
                 }
                 searchResults.classList.add('visible');
               }

@@ -29,7 +29,7 @@ export default function DocsSidebar({ currentPath }: Readonly<Props>) {
               <span className="docs-search-shortcut-key" />K
             </kbd>
           </div>
-          <ul
+          <div
             className="docs-search-results"
             role="listbox"
             aria-label="Search results"
