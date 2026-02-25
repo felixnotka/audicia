@@ -1,6 +1,6 @@
 # Binaries
 bin/
-/audicia
+audicia
 *.exe
 *.exe~
 *.dll

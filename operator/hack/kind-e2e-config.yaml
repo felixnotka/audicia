@@ -1,10 +1,11 @@
-# kind cluster with audit logging enabled.
-# Usage: kind create cluster --config operator/hack/kind-config.yaml --name audicia-dev
-# See: docs/getting-started/installation.md
+# Kind cluster for E2E tests.
+# Usage: kind create cluster --config hack/kind-e2e-config.yaml --name audicia-e2e
+# Run from operator/ directory.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane
+    image: kindest/node:v1.32.2@sha256:142f543559cc55d64e1ab9341df08e5ced84bd2e893736da8f51320f26f5950b
     kubeadmConfigPatches:
       - |
         kind: ClusterConfiguration
@@ -25,6 +26,6 @@ nodes:
               mountPath: /var/log/kube-audit.log
               pathType: FileOrCreate
     extraMounts:
-      - hostPath: ./operator/hack/audit-policy.yaml
+      - hostPath: ./hack/audit-policy.yaml
         containerPath: /etc/kubernetes/audit-policy.yaml
         readOnly: true

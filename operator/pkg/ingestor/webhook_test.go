@@ -2,10 +2,20 @@ package ingestor
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -183,4 +193,86 @@ func TestWebhookIngestor_Checkpoint(t *testing.T) {
 	if pos.FileOffset != 0 || pos.Inode != 0 || pos.LastTimestamp != "" {
 		t.Errorf("webhook checkpoint should be empty, got %+v", pos)
 	}
+}
+
+// --- buildMTLSConfig ---
+
+func TestBuildMTLSConfig(t *testing.T) {
+	certPEM := generateTestCACert(t)
+
+	tmpFile := writeTempFile(t, certPEM)
+
+	w := &WebhookIngestor{ClientCAFile: tmpFile}
+	tlsConfig, err := w.buildMTLSConfig()
+	if err != nil {
+		t.Fatalf("buildMTLSConfig: %v", err)
+	}
+
+	if tlsConfig.ClientAuth != tls.RequireAndVerifyClientCert {
+		t.Errorf("ClientAuth = %v, want RequireAndVerifyClientCert", tlsConfig.ClientAuth)
+	}
+	if tlsConfig.ClientCAs == nil {
+		t.Error("expected non-nil ClientCAs pool")
+	}
+	if tlsConfig.MinVersion != tls.VersionTLS12 {
+		t.Errorf("MinVersion = %d, want TLS 1.2 (%d)", tlsConfig.MinVersion, tls.VersionTLS12)
+	}
+}
+
+func TestBuildMTLSConfig_FileNotFound(t *testing.T) {
+	w := &WebhookIngestor{ClientCAFile: "/nonexistent/path/ca.pem"}
+	_, err := w.buildMTLSConfig()
+	if err == nil {
+		t.Error("expected error for nonexistent CA file")
+	}
+}
+
+func TestBuildMTLSConfig_InvalidPEM(t *testing.T) {
+	tmpFile := writeTempFile(t, []byte("not a valid PEM certificate"))
+
+	w := &WebhookIngestor{ClientCAFile: tmpFile}
+	_, err := w.buildMTLSConfig()
+	if err == nil {
+		t.Error("expected error for invalid PEM data")
+	}
+}
+
+func generateTestCACert(t *testing.T) []byte {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-1 * time.Hour),
+		NotAfter:              time.Now().Add(1 * time.Hour),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+}
+
+func writeTempFile(t *testing.T, data []byte) string {
+	t.Helper()
+	f, err := os.CreateTemp("", "test-ca-*.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Remove(f.Name()) })
+	if _, err := f.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	return f.Name()
 }
