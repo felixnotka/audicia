@@ -187,6 +187,119 @@ func TestRateLimiter_DeniesOverLimit(t *testing.T) {
 	}
 }
 
+func TestHandleAuditRequest_BodyTooLarge(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 10} // Tiny limit.
+	ch := make(chan auditv1.Event, 10)
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(100)
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	// Build a body larger than 10 bytes.
+	body := bytes.Repeat([]byte("x"), 100)
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	handler(rr, req)
+
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusRequestEntityTooLarge)
+	}
+}
+
+func TestHandleAuditRequest_RateLimited(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 1048576}
+	ch := make(chan auditv1.Event, 10)
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(1) // Allow only 1 request per second.
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	eventList := auditv1.EventList{
+		Items: []auditv1.Event{{AuditID: "rl-1", Verb: "get"}},
+	}
+	body, _ := json.Marshal(eventList)
+
+	// First request should succeed.
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("first request: status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	// Second request should be rate limited.
+	req = httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr = httptest.NewRecorder()
+	handler(rr, req)
+	if rr.Code != http.StatusTooManyRequests {
+		t.Errorf("second request: status = %d, want %d", rr.Code, http.StatusTooManyRequests)
+	}
+}
+
+func TestHandleAuditRequest_ChannelFull(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 1048576}
+	ch := make(chan auditv1.Event, 1) // Only room for 1 event.
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(100)
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	// Send 3 events — channel can only hold 1, so eventually the handler
+	// should return 429 when it cannot send.
+	eventList := auditv1.EventList{
+		Items: []auditv1.Event{
+			{AuditID: "cf-1", Verb: "get"},
+			{AuditID: "cf-2", Verb: "list"},
+			{AuditID: "cf-3", Verb: "create"},
+		},
+	}
+	body, _ := json.Marshal(eventList)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+
+	if rr.Code != http.StatusTooManyRequests {
+		t.Errorf("status = %d, want %d (channel full)", rr.Code, http.StatusTooManyRequests)
+	}
+}
+
+func TestHandleAuditRequest_EmptyAuditID(t *testing.T) {
+	w := &WebhookIngestor{MaxRequestBodyBytes: 1048576}
+	ch := make(chan auditv1.Event, 10)
+	dedup := newDeduplicationCache(100)
+	limiter := newRateLimiter(100)
+
+	handler := w.handleAuditRequest(ch, dedup, limiter)
+
+	// Events with empty AuditID should bypass deduplication.
+	eventList := auditv1.EventList{
+		Items: []auditv1.Event{
+			{AuditID: "", Verb: "get"},
+			{AuditID: "", Verb: "list"},
+		},
+	}
+	body, _ := json.Marshal(eventList)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	handler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	close(ch)
+	var count int
+	for range ch {
+		count++
+	}
+	if count != 2 {
+		t.Errorf("got %d events, want 2 (empty AuditID bypasses dedup)", count)
+	}
+}
+
 func TestWebhookIngestor_Checkpoint(t *testing.T) {
 	w := NewWebhookIngestor(8443, "", "")
 	pos := w.Checkpoint()

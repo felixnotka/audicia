@@ -16,6 +16,12 @@ type FakeSource struct {
 
 	// ConnectErr is returned by Connect if set.
 	ConnectErr error
+
+	// AckErr is returned by Acknowledge if set.
+	AckErr error
+
+	// CloseErr is returned by Close if set.
+	CloseErr error
 }
 
 // NewFakeSource creates a FakeSource with pre-loaded batches.
@@ -50,6 +56,9 @@ func (f *FakeSource) Receive(ctx context.Context) ([]Message, error) {
 func (f *FakeSource) Acknowledge(ctx context.Context, msgs []Message) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.AckErr != nil {
+		return f.AckErr
+	}
 	f.acked = append(f.acked, msgs)
 	return nil
 }
@@ -58,6 +67,9 @@ func (f *FakeSource) Close(ctx context.Context) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.closed = true
+	if f.CloseErr != nil {
+		return f.CloseErr
+	}
 	return nil
 }
 

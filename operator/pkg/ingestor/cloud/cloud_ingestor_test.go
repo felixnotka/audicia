@@ -523,3 +523,198 @@ func TestCloudIngestor_PositionAdapter(t *testing.T) {
 		t.Errorf("Position.Inode = %d, want 0", pos.Inode)
 	}
 }
+
+func TestCloudIngestor_AcknowledgeError(t *testing.T) {
+	source := NewFakeSource(
+		[]Message{makeMessage("0", "1", "2026-01-01T00:00:00Z",
+			makeEvent("a1", "get", "pods"))},
+	)
+	source.AckErr = fmt.Errorf("ack failed")
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	// Should still receive the event even though ack fails.
+	received := collectEvents(ch, 1, 3*time.Second)
+	cancel()
+	drainChannel(ch)
+
+	if len(received) != 1 {
+		t.Errorf("got %d events, want 1", len(received))
+	}
+
+	// Ack should have been attempted but failed — no batches recorded.
+	if len(source.AckedBatches()) != 0 {
+		t.Errorf("got %d acked batches, want 0 (ack should fail)", len(source.AckedBatches()))
+	}
+}
+
+func TestCloudIngestor_AcknowledgeError_ContextCancelled(t *testing.T) {
+	source := NewFakeSource(
+		[]Message{makeMessage("0", "1", "2026-01-01T00:00:00Z",
+			makeEvent("a1", "get", "pods"))},
+	)
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	// Consume the event.
+	select {
+	case <-ch:
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for event")
+	}
+
+	// Cancel context — acknowledgeBatch should not log an error when ctx is cancelled.
+	cancel()
+	drainChannel(ch)
+
+	// Source should still be closed cleanly.
+	if !source.Closed() {
+		t.Error("source was not closed")
+	}
+}
+
+func TestCloudIngestor_CloseError(t *testing.T) {
+	source := NewFakeSource(
+		[]Message{makeMessage("0", "1", "2026-01-01T00:00:00Z",
+			makeEvent("a1", "get", "pods"))},
+	)
+	source.CloseErr = fmt.Errorf("close failed")
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	received := collectEvents(ch, 1, 3*time.Second)
+	cancel()
+	drainChannel(ch)
+
+	if len(received) != 1 {
+		t.Errorf("got %d events, want 1", len(received))
+	}
+
+	// Close was called (even though it returned an error).
+	if !source.Closed() {
+		t.Error("source should have been closed")
+	}
+}
+
+func TestCloudIngestor_ValidatorPassesMatchingEvents(t *testing.T) {
+	validator := &ClusterIdentityValidator{ExpectedIdentity: "cluster-a"}
+
+	// Create events: one with matching annotation, one without any match.
+	// The validator defaults to allow (defense-in-depth), so both events
+	// should pass through, but the validator code path is exercised.
+	matchEvent := makeEvent("a1", "get", "pods")
+	matchEvent.Annotations = map[string]string{"cluster": "cluster-a"}
+
+	noAnnotationEvent := makeEvent("a2", "list", "pods")
+
+	body1, _ := json.Marshal([]auditv1.Event{matchEvent, noAnnotationEvent})
+	msgs := []Message{{Body: body1, Partition: "0", SequenceNumber: "1", EnqueuedTime: "2026-01-01T00:00:00Z"}}
+
+	source := NewFakeSource(msgs)
+	ing := NewCloudIngestor(source, &fakeParser{}, validator, CloudPosition{}, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	// Both events should pass (validator defaults to allow).
+	received := collectEvents(ch, 2, 3*time.Second)
+	cancel()
+	drainChannel(ch)
+
+	if len(received) != 2 {
+		t.Errorf("got %d events, want 2 (validator allows by default)", len(received))
+	}
+}
+
+func TestCloudIngestor_RecordBatchMetrics_NoEnqueuedTime(t *testing.T) {
+	// Message with empty EnqueuedTime — should not panic.
+	source := NewFakeSource(
+		[]Message{{
+			Body:           mustMarshal([]auditv1.Event{makeEvent("a1", "get", "pods")}),
+			Partition:      "0",
+			SequenceNumber: "1",
+			EnqueuedTime:   "", // empty
+		}},
+	)
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	received := collectEvents(ch, 1, 3*time.Second)
+	cancel()
+	drainChannel(ch)
+
+	if len(received) != 1 {
+		t.Errorf("got %d events, want 1", len(received))
+	}
+}
+
+func TestCloudIngestor_RecordBatchMetrics_InvalidEnqueuedTime(t *testing.T) {
+	// Message with malformed EnqueuedTime — should not panic.
+	source := NewFakeSource(
+		[]Message{{
+			Body:           mustMarshal([]auditv1.Event{makeEvent("a1", "get", "pods")}),
+			Partition:      "0",
+			SequenceNumber: "1",
+			EnqueuedTime:   "not-a-timestamp",
+		}},
+	)
+
+	ing := NewCloudIngestor(source, &fakeParser{}, nil, CloudPosition{}, "test")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ch, err := ing.Start(ctx)
+	if err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	received := collectEvents(ch, 1, 3*time.Second)
+	cancel()
+	drainChannel(ch)
+
+	if len(received) != 1 {
+		t.Errorf("got %d events, want 1", len(received))
+	}
+}
+
+func mustMarshal(v interface{}) []byte {
+	b, _ := json.Marshal(v)
+	return b
+}

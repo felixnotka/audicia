@@ -990,10 +990,10 @@ func TestProcessEvent_ExplicitTimestamp(t *testing.T) {
 
 	ts := metav1.NewMicroTime(time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC))
 	event := auditv1.Event{
-		Verb:                      "list",
-		User:                      authnv1.UserInfo{Username: "system:serviceaccount:default:ts-sa"},
-		ObjectRef:                 &auditv1.ObjectReference{Resource: "pods", Namespace: "default"},
-		RequestReceivedTimestamp:  ts,
+		Verb:                     "list",
+		User:                     authnv1.UserInfo{Username: "system:serviceaccount:default:ts-sa"},
+		ObjectRef:                &auditv1.ObjectReference{Resource: "pods", Namespace: "default"},
+		RequestReceivedTimestamp: ts,
 	}
 
 	r.processEvent(event, source, chain, aggregators, subjects)
@@ -1082,7 +1082,7 @@ func TestFlushCheckpoint(t *testing.T) {
 	// Note: Inode (uint64) causes a panic in the fake client's structured-merge-diff,
 	// so we only test FileOffset and LastTimestamp here.
 	ing := &fakeIngestor{pos: ingestor.Position{
-		FileOffset:   42000,
+		FileOffset:    42000,
 		LastTimestamp: "2025-06-15T12:00:00Z",
 	}}
 
