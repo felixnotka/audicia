@@ -199,7 +199,7 @@ func buildAuditEvents(username, namespace string, actions []auditAction) auditv1
 			},
 			RequestReceivedTimestamp: now,
 			StageTimestamp:           now,
-			SourceIPs:               []string{"10.0.0.1"},
+			SourceIPs:                []string{"10.0.0.1"},
 		})
 	}
 

@@ -11,20 +11,20 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 
 ## Deployment
 
-| Value              | Type    | Default                       | Description                                                        |
-|--------------------|---------|-------------------------------|--------------------------------------------------------------------|
-| `replicaCount`     | integer | `1`                           | Number of replicas. Only 1 is needed (leader election handles HA). |
-| `image.repository` | string  | `felixnotka/audicia-operator` | Container image repository.                                        |
-| `image.pullPolicy` | string  | `Always`                      | Image pull policy.                                                 |
+| Value              | Type    | Default                       | Description                                                                                 |
+| ------------------ | ------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `replicaCount`     | integer | `1`                           | Number of replicas. Only 1 is needed (leader election handles HA).                          |
+| `image.repository` | string  | `felixnotka/audicia-operator` | Container image repository.                                                                 |
+| `image.pullPolicy` | string  | `Always`                      | Image pull policy.                                                                          |
 | `image.tag`        | string  | `""`                          | Image tag override. When empty, defaults to chart `appVersion`. Does **not** pull `latest`. |
-| `imagePullSecrets` | list    | `[]`                          | Image pull secrets for private registries.                         |
-| `nameOverride`     | string  | `""`                          | Override the release name.                                         |
-| `fullnameOverride` | string  | `""`                          | Override the full release name.                                    |
+| `imagePullSecrets` | list    | `[]`                          | Image pull secrets for private registries.                                                  |
+| `nameOverride`     | string  | `""`                          | Override the release name.                                                                  |
+| `fullnameOverride` | string  | `""`                          | Override the full release name.                                                             |
 
 ## Service Account
 
 | Value                        | Type    | Default | Description                                                  |
-|------------------------------|---------|---------|--------------------------------------------------------------|
+| ---------------------------- | ------- | ------- | ------------------------------------------------------------ |
 | `serviceAccount.create`      | boolean | `true`  | Whether to create a ServiceAccount.                          |
 | `serviceAccount.annotations` | object  | `{}`    | Annotations to add to the ServiceAccount.                    |
 | `serviceAccount.name`        | string  | `""`    | Name of the ServiceAccount. If not set, a name is generated. |
@@ -32,7 +32,7 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 ## Pod Configuration
 
 | Value                                      | Type    | Default | Description                    |
-|--------------------------------------------|---------|---------|--------------------------------|
+| ------------------------------------------ | ------- | ------- | ------------------------------ |
 | `podAnnotations`                           | object  | `{}`    | Pod annotations.               |
 | `podSecurityContext.runAsNonRoot`          | boolean | `true`  | Run as non-root user.          |
 | `podSecurityContext.runAsUser`             | integer | `10000` | User ID.                       |
@@ -44,7 +44,7 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 ## Resources
 
 | Value                       | Type   | Default | Description     |
-|-----------------------------|--------|---------|-----------------|
+| --------------------------- | ------ | ------- | --------------- |
 | `resources.requests.cpu`    | string | `100m`  | CPU request.    |
 | `resources.requests.memory` | string | `128Mi` | Memory request. |
 | `resources.limits.cpu`      | string | `500m`  | CPU limit.      |
@@ -53,28 +53,30 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 ## Scheduling
 
 | Value          | Type   | Default | Description                                                                   |
-|----------------|--------|---------|-------------------------------------------------------------------------------|
+| -------------- | ------ | ------- | ----------------------------------------------------------------------------- |
 | `nodeSelector` | object | `{}`    | Node selector. Set `node-role.kubernetes.io/control-plane: ""` for file mode. |
 | `tolerations`  | list   | `[]`    | Tolerations. Add control-plane toleration for file mode.                      |
 | `affinity`     | object | `{}`    | Affinity rules.                                                               |
 
 ## Operator Runtime
 
-Runtime settings for the Audicia operator. These are exposed as Helm values and set as environment variables on the operator container.
+Runtime settings for the Audicia operator. These are exposed as Helm values and
+set as environment variables on the operator container.
 
-| Value                             | Type    | Default | Env Var                     | Description                                              |
-|-----------------------------------|---------|---------|-----------------------------|----------------------------------------------------------|
-| `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.                |
-| `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address.          |
-| `operator.leaderElection.enabled` | boolean | `true`  | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA.                           |
-| `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).                |
+| Value                             | Type    | Default | Env Var                     | Description                                     |
+| --------------------------------- | ------- | ------- | --------------------------- | ----------------------------------------------- |
+| `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.       |
+| `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address. |
+| `operator.leaderElection.enabled` | boolean | `true`  | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA.                  |
+| `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).       |
 
 ### Additional Runtime Environment Variables
 
-These environment variables are not exposed as top-level Helm values but can be set via `extraEnv` or by customizing the Deployment template:
+These environment variables are not exposed as top-level Helm values but can be
+set via `extraEnv` or by customizing the Deployment template:
 
 | Env Var                     | Default                 | Description                                             |
-|-----------------------------|-------------------------|---------------------------------------------------------|
+| --------------------------- | ----------------------- | ------------------------------------------------------- |
 | `LEADER_ELECTION_ID`        | `audicia-operator-lock` | Lease resource name for leader election.                |
 | `LEADER_ELECTION_NAMESPACE` | `audicia-system`        | Namespace for the Lease (auto-set from pod namespace).  |
 | `CONCURRENT_RECONCILES`     | `1`                     | Number of parallel reconcile loops.                     |
@@ -83,7 +85,7 @@ These environment variables are not exposed as top-level Helm values but can be 
 ### Logging Levels
 
 | Level     | Content                                                                 |
-|-----------|-------------------------------------------------------------------------|
+| --------- | ----------------------------------------------------------------------- |
 | 0 (info)  | Reconcile events, pipeline start/stop, report updates, errors.          |
 | 1 (debug) | Skipped malformed lines, compliance skip reasons, inode check warnings. |
 | 2 (trace) | Available but not currently used.                                       |
@@ -91,41 +93,44 @@ These environment variables are not exposed as top-level Helm values but can be 
 ### Health Probes
 
 | Probe     | Endpoint   | Port | Description                                  |
-|-----------|------------|------|----------------------------------------------|
+| --------- | ---------- | ---- | -------------------------------------------- |
 | Liveness  | `/healthz` | 8081 | Basic ping check — operator process is alive |
 | Readiness | `/readyz`  | 8081 | Operator is ready to process events          |
 
-Both use standard `healthz.Ping` checks. Ports are configurable via `operator.healthProbeBindAddress`.
+Both use standard `healthz.Ping` checks. Ports are configurable via
+`operator.healthProbeBindAddress`.
 
 ## Audit Log (File Mode)
 
 | Value               | Type    | Default                   | Description                           |
-|---------------------|---------|---------------------------|---------------------------------------|
+| ------------------- | ------- | ------------------------- | ------------------------------------- |
 | `auditLog.enabled`  | boolean | `false`                   | Enable mounting the audit log volume. |
 | `auditLog.hostPath` | string  | `/var/log/kube-audit.log` | Host path to the audit log file.      |
 
-When enabled, mounts the host file as a read-only volume. Requires control plane scheduling (nodeSelector +
-tolerations) and typically `runAsUser: 0` for hostPath read access.
+When enabled, mounts the host file as a read-only volume. Requires control plane
+scheduling (nodeSelector + tolerations) and typically `runAsUser: 0` for
+hostPath read access.
 
 ## Webhook (Webhook Mode)
 
-| Value                          | Type    | Default | Description                                                                                    |
-|--------------------------------|---------|---------|------------------------------------------------------------------------------------------------|
-| `webhook.enabled`              | boolean | `false` | Enable the webhook audit event receiver.                                                       |
-| `webhook.port`                 | integer | `8443`  | HTTPS port for the webhook receiver.                                                           |
-| `webhook.tlsSecretName`        | string  | `""`    | Name of a TLS Secret (must contain `tls.crt` and `tls.key`). Required when webhook is enabled. |
-| `webhook.clientCASecretName`   | string  | `""`    | Name of a Secret containing `ca.crt` for mTLS. Optional but recommended for production.        |
-| `webhook.hostPort`             | boolean | `false` | Expose the webhook port on the host via hostPort. Recommended for Cilium / kube-proxy-free clusters where ClusterIP is unreachable from the host namespace. Requires control plane node scheduling. |
-| `webhook.service.clusterIP`              | string  | `""`    | Fixed ClusterIP for the webhook Service. Survives uninstall/reinstall cycles.       |
-| `webhook.service.nodePort`               | string  | `""`    | Fixed NodePort (30000-32767). When set, the Service type is changed to NodePort.    |
-| `webhook.networkPolicy.enabled`          | boolean | `false` | Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.           |
-| `webhook.networkPolicy.controlPlaneCIDR` | string  | `""`    | CIDR of your control plane node(s). Required when networkPolicy is enabled.         |
+| Value                                    | Type    | Default | Description                                                                                                                                                                                         |
+| ---------------------------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `webhook.enabled`                        | boolean | `false` | Enable the webhook audit event receiver.                                                                                                                                                            |
+| `webhook.port`                           | integer | `8443`  | HTTPS port for the webhook receiver.                                                                                                                                                                |
+| `webhook.tlsSecretName`                  | string  | `""`    | Name of a TLS Secret (must contain `tls.crt` and `tls.key`). Required when webhook is enabled.                                                                                                      |
+| `webhook.clientCASecretName`             | string  | `""`    | Name of a Secret containing `ca.crt` for mTLS. Optional but recommended for production.                                                                                                             |
+| `webhook.hostPort`                       | boolean | `false` | Expose the webhook port on the host via hostPort. Recommended for Cilium / kube-proxy-free clusters where ClusterIP is unreachable from the host namespace. Requires control plane node scheduling. |
+| `webhook.service.clusterIP`              | string  | `""`    | Fixed ClusterIP for the webhook Service. Survives uninstall/reinstall cycles.                                                                                                                       |
+| `webhook.service.nodePort`               | string  | `""`    | Fixed NodePort (30000-32767). When set, the Service type is changed to NodePort.                                                                                                                    |
+| `webhook.networkPolicy.enabled`          | boolean | `false` | Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.                                                                                                                           |
+| `webhook.networkPolicy.controlPlaneCIDR` | string  | `""`    | CIDR of your control plane node(s). Required when networkPolicy is enabled.                                                                                                                         |
 
 When enabled, adds:
 
 - Webhook containerPort (with `hostPort` if `webhook.hostPort` is true)
 - TLS Secret volume + volumeMount at `/etc/audicia/webhook-tls`
-- Client CA Secret volume + volumeMount at `/etc/audicia/webhook-client-ca` (only when `clientCASecretName` is set)
+- Client CA Secret volume + volumeMount at `/etc/audicia/webhook-client-ca`
+  (only when `clientCASecretName` is set)
 - A ClusterIP or NodePort Service for the webhook endpoint
 - A NetworkPolicy (only when `webhook.networkPolicy.enabled` is true)
 
@@ -134,20 +139,22 @@ For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
 
 ## Cloud Audit Log (Cloud Mode)
 
-| Value                                       | Type    | Default    | Description                                                                                       |
-|---------------------------------------------|---------|------------|---------------------------------------------------------------------------------------------------|
-| `cloudAuditLog.enabled`                     | boolean | `false`    | Enable cloud-based audit log ingestion.                                                           |
-| `cloudAuditLog.provider`                    | string  | `""`       | Cloud provider: `AzureEventHub`, `AWSCloudWatch`, or `GCPPubSub`.                                |
-| `cloudAuditLog.clusterIdentity`             | string  | `""`       | Cluster identity string for event validation (AKS resource ID, EKS ARN, GKE resource name).      |
-| `cloudAuditLog.azure.eventHubNamespace`     | string  | `""`       | Fully qualified Event Hub namespace (e.g., `myns.servicebus.windows.net`).                        |
-| `cloudAuditLog.azure.eventHubName`          | string  | `""`       | Event Hub instance name.                                                                          |
-| `cloudAuditLog.azure.consumerGroup`         | string  | `$Default` | Consumer group for partition reads.                                                               |
-| `cloudAuditLog.azure.storageAccountURL`     | string  | `""`       | Azure Blob Storage URL for checkpoint persistence. Empty uses in-status checkpoints only.          |
-| `cloudAuditLog.azure.storageContainerName`  | string  | `""`       | Blob container name for checkpoints.                                                              |
+| Value                                      | Type    | Default    | Description                                                                                 |
+| ------------------------------------------ | ------- | ---------- | ------------------------------------------------------------------------------------------- |
+| `cloudAuditLog.enabled`                    | boolean | `false`    | Enable cloud-based audit log ingestion.                                                     |
+| `cloudAuditLog.provider`                   | string  | `""`       | Cloud provider: `AzureEventHub`, `AWSCloudWatch`, or `GCPPubSub`.                           |
+| `cloudAuditLog.clusterIdentity`            | string  | `""`       | Cluster identity string for event validation (AKS resource ID, EKS ARN, GKE resource name). |
+| `cloudAuditLog.azure.eventHubNamespace`    | string  | `""`       | Fully qualified Event Hub namespace (e.g., `myns.servicebus.windows.net`).                  |
+| `cloudAuditLog.azure.eventHubName`         | string  | `""`       | Event Hub instance name.                                                                    |
+| `cloudAuditLog.azure.consumerGroup`        | string  | `$Default` | Consumer group for partition reads.                                                         |
+| `cloudAuditLog.azure.storageAccountURL`    | string  | `""`       | Azure Blob Storage URL for checkpoint persistence. Empty uses in-status checkpoints only.   |
+| `cloudAuditLog.azure.storageContainerName` | string  | `""`       | Blob container name for checkpoints.                                                        |
 
-Authentication uses workload identity (managed identity). When using the `AzureEventHub` provider, the Helm chart
-automatically adds the `azure.workload.identity/use: "true"` pod label so the Workload Identity webhook injects the
-required environment variables. Annotate the ServiceAccount with provider-specific identity bindings:
+Authentication uses workload identity (managed identity). When using the
+`AzureEventHub` provider, the Helm chart automatically adds the
+`azure.workload.identity/use: "true"` pod label so the Workload Identity webhook
+injects the required environment variables. Annotate the ServiceAccount with
+provider-specific identity bindings:
 
 ```yaml
 serviceAccount:
@@ -160,14 +167,15 @@ serviceAccount:
     iam.gke.io/gcp-service-account: "<SA>@<PROJECT>.iam.gserviceaccount.com"
 ```
 
-The operator image must be built with the appropriate build tag (e.g., `azure`, `aws`, `gcp`).
+The operator image must be built with the appropriate build tag (e.g., `azure`,
+`aws`, `gcp`).
 
 See the [AKS Setup Guide](../guides/aks-setup.md) for a complete walkthrough.
 
 ## Monitoring
 
 | Value                     | Type    | Default | Description                                                        |
-|---------------------------|---------|---------|--------------------------------------------------------------------|
+| ------------------------- | ------- | ------- | ------------------------------------------------------------------ |
 | `serviceMonitor.enabled`  | boolean | `false` | Create a Prometheus ServiceMonitor for automatic scrape discovery. |
 | `serviceMonitor.labels`   | object  | `{}`    | Additional labels for the ServiceMonitor.                          |
 | `serviceMonitor.interval` | string  | `30s`   | Scrape interval.                                                   |
@@ -207,8 +215,9 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set webhook.networkPolicy.controlPlaneCIDR=<CONTROL-PLANE-IP>/32
 ```
 
-Replace `<CLUSTER-IP>` with a free IP from your service CIDR and `<CONTROL-PLANE-IP>` with your control plane
-node IP (`kubectl get nodes -o wide`).
+Replace `<CLUSTER-IP>` with a free IP from your service CIDR and
+`<CONTROL-PLANE-IP>` with your control plane node IP
+(`kubectl get nodes -o wide`).
 
 ## Example: Cloud Mode (AKS)
 
@@ -222,5 +231,7 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
 ```
 
-Replace the Azure placeholders with your Event Hub namespace, Event Hub name, and managed identity client ID.
-See the [AKS Setup Guide](../guides/aks-setup.md) for detailed instructions including Workload Identity setup.
+Replace the Azure placeholders with your Event Hub namespace, Event Hub name,
+and managed identity client ID. See the
+[AKS Setup Guide](../guides/aks-setup.md) for detailed instructions including
+Workload Identity setup.

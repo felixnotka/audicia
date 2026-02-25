@@ -1,11 +1,12 @@
 # Demo Script
 
-This walkthrough demonstrates Audicia's core value loop: **observe access patterns, generate a policy, apply it, verify.
-**
+This walkthrough demonstrates Audicia's core value loop: **observe access
+patterns, generate a policy, apply it, verify. **
 
 ## Prerequisites
 
-- A running Kubernetes cluster with audit logging enabled (see [Installation](../getting-started/installation.md))
+- A running Kubernetes cluster with audit logging enabled (see
+  [Installation](../getting-started/installation.md))
 - Audicia operator installed
 - `kubectl` configured
 
@@ -15,14 +16,16 @@ This walkthrough demonstrates Audicia's core value loop: **observe access patter
 
 Most clusters do not have audit logging enabled by default. Audicia requires it.
 
-Ensure your kube-apiserver has `--audit-policy-file` and `--audit-log-path` configured. See [Installation](../getting-started/installation.md) for setup instructions and [Audit Policy](audit-policy.md) for tuning.
+Ensure your kube-apiserver has `--audit-policy-file` and `--audit-log-path`
+configured. See [Installation](../getting-started/installation.md) for setup
+instructions and [Audit Policy](audit-policy.md) for tuning.
 
 ---
 
 ## Step 1: The Problem — Alice Can't List Pods
 
-Alice is a developer. She has a kubeconfig with her identity (`alice@example.com`) but no RBAC Role in the `dev`
-namespace.
+Alice is a developer. She has a kubeconfig with her identity
+(`alice@example.com`) but no RBAC Role in the `dev` namespace.
 
 ```bash
 # As Alice
@@ -88,7 +91,8 @@ Save the above manifest and apply it:
 kubectl apply -f audicia-source.yaml
 ```
 
-Audicia begins tailing the audit log from the current position. Check that it started successfully:
+Audicia begins tailing the audit log from the current position. Check that it
+started successfully:
 
 ```bash
 kubectl describe audiciasource dev-cluster-audit
@@ -131,45 +135,45 @@ spec:
     name: alice@example.com
 status:
   observedRules:
-    - apiGroups: [ "" ]
-      resources: [ "pods" ]
-      verbs: [ "list" ]
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["list"]
       firstSeen: "2026-02-14T10:00:00Z"
       lastSeen: "2026-02-14T10:00:00Z"
       count: 1
   suggestedPolicy:
     manifests:
       - |
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: Role
-        metadata:
-          name: suggested-alice-role
-          namespace: dev
-        rules:
-          - apiGroups: [""]
-            resources: ["pods"]
-            verbs: ["list"]
-      - |
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: RoleBinding
-        metadata:
-          name: suggested-alice-binding
-          namespace: dev
-        roleRef:
-          apiGroup: rbac.authorization.k8s.io
+          apiVersion: rbac.authorization.k8s.io/v1
           kind: Role
-          name: suggested-alice-role
-        subjects:
-          - kind: User
-            name: alice@example.com
+          metadata:
+            name: suggested-alice-role
+            namespace: dev
+          rules:
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["list"]
+      - |
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: suggested-alice-binding
+            namespace: dev
+          roleRef:
             apiGroup: rbac.authorization.k8s.io
+            kind: Role
+            name: suggested-alice-role
+          subjects:
+            - kind: User
+              name: alice@example.com
+              apiGroup: rbac.authorization.k8s.io
   conditions:
     - type: Ready
       status: "True"
 ```
 
-Audicia observed Alice's `list pods` attempt and generated the **minimal** Role and RoleBinding to satisfy exactly that
-access.
+Audicia observed Alice's `list pods` attempt and generated the **minimal** Role
+and RoleBinding to satisfy exactly that access.
 
 ---
 
@@ -196,7 +200,9 @@ role.rbac.authorization.k8s.io/suggested-alice-role created
 rolebinding.rbac.authorization.k8s.io/suggested-alice-binding created
 ```
 
-> **Tip:** For GitOps workflows, pipe the output to a file in your policy repo instead:
+> **Tip:** For GitOps workflows, pipe the output to a file in your policy repo
+> instead:
+>
 > ```bash
 > kubectl get audiciapolicyreport report-alice-example -n dev \
 >   -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
@@ -230,20 +236,22 @@ frontend-84c9b7d6f-p3n7q       1/1     Running   0          2h
 This is the Audicia workflow:
 
 ```
-  ┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-  │  403 Denied  │────►│  Audit Event  │────►│  Audicia      │────►│  Apply Role  │
-  │  (Red)       │     │  Generated    │     │  Policy Report│     │  (Green)     │
-  └─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
-        ▲                                                              │
-        └──────────────────────────────────────────────────────────────┘
-                              Continuous Refinement
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  403 Denied  │────►│  Audit Event  │────►│  Audicia      │────►│  Apply Role  │
+│  (Red)       │     │  Generated    │     │  Policy Report│     │  (Green)     │
+└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
+      ▲                                                              │
+      └──────────────────────────────────────────────────────────────┘
+                            Continuous Refinement
 ```
 
-As Alice's usage evolves (she starts watching pods, checking logs), Audicia updates the report incrementally. The policy
-grows organically to match real behavior — always minimal, always correct.
+As Alice's usage evolves (she starts watching pods, checking logs), Audicia
+updates the report incrementally. The policy grows organically to match real
+behavior — always minimal, always correct.
 
 ---
 
 ## Troubleshooting
 
-If reports aren't appearing or the pipeline isn't working as expected, see [Troubleshooting](../troubleshooting.md).
+If reports aren't appearing or the pipeline isn't working as expected, see
+[Troubleshooting](../troubleshooting.md).

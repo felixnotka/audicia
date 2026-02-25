@@ -287,13 +287,13 @@ func TestParseLogEntryCoreGroup(t *testing.T) {
 
 func TestParseMethodName(t *testing.T) {
 	tests := []struct {
-		name       string
-		method     string
-		wantVerb   string
-		wantRes    string
-		wantGroup  string
-		wantVer    string
-		wantErr    bool
+		name      string
+		method    string
+		wantVerb  string
+		wantRes   string
+		wantGroup string
+		wantVer   string
+		wantErr   bool
 	}{
 		{
 			name:      "core group pods list",
@@ -498,18 +498,18 @@ func TestMapStatusCode(t *testing.T) {
 		grpc     int
 		wantHTTP int32
 	}{
-		{0, 200},   // OK
-		{1, 499},   // CANCELLED
-		{3, 400},   // INVALID_ARGUMENT
-		{5, 404},   // NOT_FOUND
-		{7, 403},   // PERMISSION_DENIED
-		{13, 500},  // INTERNAL
-		{16, 401},  // UNAUTHENTICATED
-		{14, 503},  // UNAVAILABLE
-		{6, 409},   // ALREADY_EXISTS
-		{8, 429},   // RESOURCE_EXHAUSTED
-		{12, 501},  // UNIMPLEMENTED
-		{99, 500},  // unknown maps to 500
+		{0, 200},  // OK
+		{1, 499},  // CANCELLED
+		{3, 400},  // INVALID_ARGUMENT
+		{5, 404},  // NOT_FOUND
+		{7, 403},  // PERMISSION_DENIED
+		{13, 500}, // INTERNAL
+		{16, 401}, // UNAUTHENTICATED
+		{14, 503}, // UNAVAILABLE
+		{6, 409},  // ALREADY_EXISTS
+		{8, 429},  // RESOURCE_EXHAUSTED
+		{12, 501}, // UNIMPLEMENTED
+		{99, 500}, // unknown maps to 500
 	}
 
 	for _, tt := range tests {

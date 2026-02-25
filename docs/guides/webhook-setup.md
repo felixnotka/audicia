@@ -1,14 +1,14 @@
 # Webhook Mode — Setup Guide
 
-Step-by-step guide for setting up Audicia's webhook-based audit event ingestion on a
-kubeadm bare-metal cluster. Tested on Kubernetes v1.35.0.
+Step-by-step guide for setting up Audicia's webhook-based audit event ingestion
+on a kubeadm bare-metal cluster. Tested on Kubernetes v1.35.0.
 
-This guide also applies to k3s, RKE2, and any self-managed cluster where you have access
-to kube-apiserver flags.
+This guide also applies to k3s, RKE2, and any self-managed cluster where you
+have access to kube-apiserver flags.
 
-> **Not supported on managed Kubernetes.** EKS, GKE, and AKS do not expose kube-apiserver
-> flags or allow custom audit webhook configuration.
-> See [Platform Compatibility](../reference/features.md#platform-compatibility).
+> **Not supported on managed Kubernetes.** EKS, GKE, and AKS do not expose
+> kube-apiserver flags or allow custom audit webhook configuration. See
+> [Platform Compatibility](../reference/features.md#platform-compatibility).
 
 ---
 
@@ -17,16 +17,17 @@ to kube-apiserver flags.
 - A kubeadm cluster with SSH access to the control plane node.
 - `openssl` installed on the control plane node (or your workstation).
 - The Audicia Helm chart (`helm repo add audicia https://charts.audicia.io`).
-- An audit policy already configured (`--audit-policy-file`). If you're already using
-  file-based audit logging, you have one.
+- An audit policy already configured (`--audit-policy-file`). If you're already
+  using file-based audit logging, you have one.
 
 ---
 
 ## Critical: Order of Operations
 
-> **The kube-apiserver validates the webhook config at startup. If the webhook endpoint
-> is unreachable, the CA cert is missing, or the Service doesn't exist, the apiserver
-> will refuse to start and enter a crash loop. This takes down your entire cluster.**
+> **The kube-apiserver validates the webhook config at startup. If the webhook
+> endpoint is unreachable, the CA cert is missing, or the Service doesn't exist,
+> the apiserver will refuse to start and enter a crash loop. This takes down
+> your entire cluster.**
 >
 > **You MUST follow this order:**
 >
@@ -37,26 +38,29 @@ to kube-apiserver flags.
 > 5. Create the webhook kubeconfig file on the control plane
 > 6. **Only then** add the `--audit-webhook-config-file` flag to the apiserver
 
-If you add the apiserver flag before Audicia is running, the apiserver will crash loop.
-See [Recovery: Apiserver Crash Loop](#recovery-apiserver-crash-loop) at the bottom.
+If you add the apiserver flag before Audicia is running, the apiserver will
+crash loop. See [Recovery: Apiserver Crash Loop](#recovery-apiserver-crash-loop)
+at the bottom.
 
 ---
 
 ## Step 1: Generate a Self-Signed TLS Certificate
 
-Run this on the control plane node (or your workstation — you'll need the files in both
-places).
+Run this on the control plane node (or your workstation — you'll need the files
+in both places).
 
-> **Important:** You need the IP address that the kube-apiserver will use to reach the
-> webhook for the certificate SAN. This is the Service ClusterIP.
+> **Important:** You need the IP address that the kube-apiserver will use to
+> reach the webhook for the certificate SAN. This is the Service ClusterIP.
 
-> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from the host
-> namespace. See the dedicated [Kube-Proxy-Free Guide](kube-proxy-free.md) for the
-> hostPort-based setup instead.
+> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from
+> the host namespace. See the dedicated
+> [Kube-Proxy-Free Guide](kube-proxy-free.md) for the hostPort-based setup
+> instead.
 
-If this is a fresh install, first do Steps 2-3 to create the namespace and install Audicia,
-note the ClusterIP from `kubectl get svc -n audicia-system`, then come back here. If
-reinstalling, the ClusterIP may change — regenerate the cert.
+If this is a fresh install, first do Steps 2-3 to create the namespace and
+install Audicia, note the ClusterIP from `kubectl get svc -n audicia-system`,
+then come back here. If reinstalling, the ClusterIP may change — regenerate the
+cert.
 
 ```bash
 # First, get the Service ClusterIP (after Helm install):
@@ -74,16 +78,18 @@ openssl req -x509 -newkey rsa:4096 -nodes \
 
 ### Why the IP matters
 
-The SAN (Subject Alternative Name) **must** include the IP the kube-apiserver uses to
-reach the webhook. The kube-apiserver runs with `hostNetwork: true` and uses the node's
-DNS resolver, which **cannot resolve** Kubernetes `.svc.cluster.local` names. The webhook
-kubeconfig must therefore use an IP address.
+The SAN (Subject Alternative Name) **must** include the IP the kube-apiserver
+uses to reach the webhook. The kube-apiserver runs with `hostNetwork: true` and
+uses the node's DNS resolver, which **cannot resolve** Kubernetes
+`.svc.cluster.local` names. The webhook kubeconfig must therefore use an IP
+address.
 
-> **Why not the DNS name?** The kube-apiserver static pod uses `hostNetwork: true`, so it
-> uses the node's `/etc/resolv.conf` (typically pointing to a public DNS or systemd-resolved).
-> Cluster-internal DNS names like `*.svc.cluster.local` are only resolvable via CoreDNS,
-> which runs inside the cluster's pod network. The apiserver cannot reach CoreDNS for name
-> resolution. Using an IP address bypasses this entirely.
+> **Why not the DNS name?** The kube-apiserver static pod uses
+> `hostNetwork: true`, so it uses the node's `/etc/resolv.conf` (typically
+> pointing to a public DNS or systemd-resolved). Cluster-internal DNS names like
+> `*.svc.cluster.local` are only resolvable via CoreDNS, which runs inside the
+> cluster's pod network. The apiserver cannot reach CoreDNS for name resolution.
+> Using an IP address bypasses this entirely.
 
 ---
 
@@ -102,8 +108,9 @@ kubectl create secret tls audicia-webhook-tls \
 
 ### Optional: mTLS Client CA Secret
 
-If you want the webhook server to verify that requests come from your kube-apiserver
-(recommended for production), create a Secret with the cluster's CA certificate:
+If you want the webhook server to verify that requests come from your
+kube-apiserver (recommended for production), create a Secret with the cluster's
+CA certificate:
 
 ```bash
 # Run this on the control plane node where /etc/kubernetes/pki/ is accessible
@@ -112,8 +119,8 @@ kubectl create secret generic kube-apiserver-client-ca \
   -n audicia-system
 ```
 
-This enables mTLS: only clients presenting a certificate signed by the cluster CA (i.e.,
-the kube-apiserver) can send events to the webhook.
+This enables mTLS: only clients presenting a certificate signed by the cluster
+CA (i.e., the kube-apiserver) can send events to the webhook.
 
 ---
 
@@ -142,9 +149,9 @@ helm install audicia audicia/audicia-operator \
 
 ### Upgrading from Basic TLS to mTLS
 
-If you already have a working basic TLS install and want to add mTLS, follow **all four
-steps** below. The apiserver must present a client certificate, so both the kubeconfig and
-the Helm values need updating.
+If you already have a working basic TLS install and want to add mTLS, follow
+**all four steps** below. The apiserver must present a client certificate, so
+both the kubeconfig and the Helm values need updating.
 
 **Step A: Create the client CA secret** (if not already present):
 
@@ -227,11 +234,13 @@ kubectl logs -n audicia-system deploy/audicia --tail=20 | grep mTLS
 # Expected: "mTLS enabled" clientCA="/etc/audicia/webhook-client-ca/ca.crt"
 ```
 
-**Step D: Update the webhook kubeconfig** to present the apiserver's client certificate:
+**Step D: Update the webhook kubeconfig** to present the apiserver's client
+certificate:
 
-On the control plane node, update `/etc/kubernetes/audit-webhook-kubeconfig.yaml` to add
-client cert and key. See [Step 6](#step-6-create-the-webhook-kubeconfig-on-the-control-plane)
-for the full mTLS kubeconfig format. The key additions are:
+On the control plane node, update
+`/etc/kubernetes/audit-webhook-kubeconfig.yaml` to add client cert and key. See
+[Step 6](#step-6-create-the-webhook-kubeconfig-on-the-control-plane) for the
+full mTLS kubeconfig format. The key additions are:
 
 ```yaml
 users:
@@ -249,12 +258,14 @@ sleep 5
 mv /etc/kubernetes/kube-apiserver.yaml /etc/kubernetes/manifests/kube-apiserver.yaml
 ```
 
-> **Why does the apiserver need a restart?** The webhook kubeconfig is loaded once at
-> startup. Unlike the TLS server cert, the client certificate fields require an update to
-> the kubeconfig file and an apiserver restart to take effect.
+> **Why does the apiserver need a restart?** The webhook kubeconfig is loaded
+> once at startup. Unlike the TLS server cert, the client certificate fields
+> require an update to the kubeconfig file and an apiserver restart to take
+> effect.
 
-> **Note:** Webhook mode (ClusterIP) does NOT need `nodeSelector`, `tolerations`, or
-> `runAsUser: 0`. The pod can run on any node — no hostPath, no control plane scheduling.
+> **Note:** Webhook mode (ClusterIP) does NOT need `nodeSelector`,
+> `tolerations`, or `runAsUser: 0`. The pod can run on any node — no hostPath,
+> no control plane scheduling.
 
 ---
 
@@ -273,8 +284,8 @@ kubectl get svc -n audicia-system
 #   audicia-audicia-operator-webhook   ClusterIP   10.x.x.x   <none>   8443/TCP
 ```
 
-> **Write down the ClusterIP** (e.g., `10.111.100.194`). You will need it for the webhook
-> kubeconfig in Step 6 and the TLS certificate SAN in Step 1.
+> **Write down the ClusterIP** (e.g., `10.111.100.194`). You will need it for
+> the webhook kubeconfig in Step 6 and the TLS certificate SAN in Step 1.
 
 Verify the webhook container port and TLS volume:
 
@@ -287,7 +298,8 @@ kubectl get deploy -n audicia-system -o jsonpath='{.items[0].spec.template.spec.
 
 ## Step 5: Create the Webhook AudiciaSource
 
-Apply the [Webhook AudiciaSource](../examples/audicia-source-webhook.md) example or create your own:
+Apply the [Webhook AudiciaSource](../examples/audicia-source-webhook.md) example
+or create your own:
 
 ```bash
 kubectl apply -f - <<EOF
@@ -335,27 +347,30 @@ kubectl logs -n audicia-system deploy/audicia -f | grep webhook
 # Expected: "starting webhook HTTPS server" port=8443
 ```
 
-If using mTLS, you should also see: `"mTLS enabled" clientCA="/etc/audicia/webhook-client-ca/ca.crt"`
+If using mTLS, you should also see:
+`"mTLS enabled" clientCA="/etc/audicia/webhook-client-ca/ca.crt"`
 
 ---
 
 ## Step 6: Create the Webhook Kubeconfig on the Control Plane
 
-SSH to the control plane node and create the kubeconfig that tells the kube-apiserver
-where to send audit events.
+SSH to the control plane node and create the kubeconfig that tells the
+kube-apiserver where to send audit events.
 
 > **You MUST use an IP address, not the DNS name.** The kube-apiserver runs with
-> `hostNetwork: true` and cannot resolve `.svc.cluster.local` names — it uses the node's
-> DNS resolver, not CoreDNS. If you use the DNS name, the apiserver will silently drop all
-> audit events with `dial tcp: lookup ... no such host`.
+> `hostNetwork: true` and cannot resolve `.svc.cluster.local` names — it uses
+> the node's DNS resolver, not CoreDNS. If you use the DNS name, the apiserver
+> will silently drop all audit events with `dial tcp: lookup ... no such host`.
 >
 > Use the Service ClusterIP from Step 4 (e.g., `10.111.100.194`).
 
-Get the IP for your mode, then create the kubeconfig. Example templates are in the
-documentation:
+Get the IP for your mode, then create the kubeconfig. Example templates are in
+the documentation:
 
-- [Webhook Kubeconfig (Basic TLS)](../examples/webhook-kubeconfig.md) — basic TLS (no mTLS)
-- [Webhook Kubeconfig (mTLS)](../examples/webhook-kubeconfig-mtls.md) — mTLS (recommended for production)
+- [Webhook Kubeconfig (Basic TLS)](../examples/webhook-kubeconfig.md) — basic
+  TLS (no mTLS)
+- [Webhook Kubeconfig (mTLS)](../examples/webhook-kubeconfig-mtls.md) — mTLS
+  (recommended for production)
 
 ### Basic TLS kubeconfig (no mTLS)
 
@@ -381,8 +396,9 @@ EOF
 
 ### mTLS kubeconfig (recommended for production)
 
-If you enabled mTLS (with `clientCASecretName`), the apiserver must present a client
-certificate. Add the `client-certificate` and `client-key` fields to the `users` section:
+If you enabled mTLS (with `clientCASecretName`), the apiserver must present a
+client certificate. Add the `client-certificate` and `client-key` fields to the
+`users` section:
 
 ```bash
 # Replace <CLUSTER-IP> with the actual IP from: kubectl get svc -n audicia-system
@@ -408,11 +424,12 @@ current-context: audicia
 EOF
 ```
 
-> **Which client cert?** On kubeadm clusters, the apiserver's client certificate is at
-> `/etc/kubernetes/pki/apiserver-kubelet-client.crt` (with key `.key`). This cert is signed
-> by the cluster CA (`/etc/kubernetes/pki/ca.crt`) — the same CA we put in the
-> `kube-apiserver-client-ca` Secret. Both files are already inside the apiserver's
-> `/etc/kubernetes/pki` volume mount, so no extra volumes are needed.
+> **Which client cert?** On kubeadm clusters, the apiserver's client certificate
+> is at `/etc/kubernetes/pki/apiserver-kubelet-client.crt` (with key `.key`).
+> This cert is signed by the cluster CA (`/etc/kubernetes/pki/ca.crt`) — the
+> same CA we put in the `kube-apiserver-client-ca` Secret. Both files are
+> already inside the apiserver's `/etc/kubernetes/pki` volume mount, so no extra
+> volumes are needed.
 
 For example, if the ClusterIP is `10.111.100.194` (mTLS):
 
@@ -446,22 +463,22 @@ certificate. Since we used a self-signed cert, the cert itself is the CA:
 cp webhook-server.crt /etc/kubernetes/pki/audicia-webhook-ca.crt
 ```
 
-> **Why this path?** The kube-apiserver container mounts `/etc/kubernetes/pki` as a
-> read-only volume (standard kubeadm setup). Putting the CA cert here makes it visible
-> inside the container without adding extra volume mounts.
+> **Why this path?** The kube-apiserver container mounts `/etc/kubernetes/pki`
+> as a read-only volume (standard kubeadm setup). Putting the CA cert here makes
+> it visible inside the container without adding extra volume mounts.
 >
-> **ClusterIP stability:** The ClusterIP is stable across pod restarts and Helm upgrades
-> as long as the Service is not deleted and recreated. If you run `helm uninstall` and
-> `helm install` (which recreates the Service), the ClusterIP may change — update the
-> kubeconfig and regenerate the TLS certificate. Pin it with
-> `--set webhook.service.clusterIP=<IP>` to avoid this.
+> **ClusterIP stability:** The ClusterIP is stable across pod restarts and Helm
+> upgrades as long as the Service is not deleted and recreated. If you run
+> `helm uninstall` and `helm install` (which recreates the Service), the
+> ClusterIP may change — update the kubeconfig and regenerate the TLS
+> certificate. Pin it with `--set webhook.service.clusterIP=<IP>` to avoid this.
 
 ---
 
 ## Step 7: Add the Apiserver Flag
 
-> **Only do this after Steps 1-6 are complete and verified.** The apiserver validates
-> the webhook config at startup. If anything is wrong, it crash-loops.
+> **Only do this after Steps 1-6 are complete and verified.** The apiserver
+> validates the webhook config at startup. If anything is wrong, it crash-loops.
 
 Edit the kube-apiserver static pod manifest:
 
@@ -469,42 +486,45 @@ Edit the kube-apiserver static pod manifest:
 vi /etc/kubernetes/manifests/kube-apiserver.yaml
 ```
 
-Add the webhook flag to the `command` list. Place it near the other `--audit-*` flags:
+Add the webhook flag to the `command` list. Place it near the other `--audit-*`
+flags:
 
 ```yaml
-    - --audit-webhook-config-file=/etc/kubernetes/audit-webhook-kubeconfig.yaml
+- --audit-webhook-config-file=/etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
 
-You also need to mount the kubeconfig file into the container. Add a volumeMount and
-volume:
+You also need to mount the kubeconfig file into the container. Add a volumeMount
+and volume:
 
 ```yaml
-    volumeMounts:
-      # ... existing mounts ...
-      - mountPath: /etc/kubernetes/audit-webhook-kubeconfig.yaml
-        name: audit-webhook-config
-        readOnly: true
+volumeMounts:
+  # ... existing mounts ...
+  - mountPath: /etc/kubernetes/audit-webhook-kubeconfig.yaml
+    name: audit-webhook-config
+    readOnly: true
 
-    volumes:
-      # ... existing volumes ...
-      - hostPath:
-          path: /etc/kubernetes/audit-webhook-kubeconfig.yaml
-          type: File
-        name: audit-webhook-config
+volumes:
+  # ... existing volumes ...
+  - hostPath:
+      path: /etc/kubernetes/audit-webhook-kubeconfig.yaml
+      type: File
+    name: audit-webhook-config
 ```
 
-> **Note:** The `/etc/kubernetes/pki` directory is already mounted by kubeadm, so the
-> CA cert at `/etc/kubernetes/pki/audicia-webhook-ca.crt` is automatically visible.
-> You only need an extra mount for the kubeconfig file itself.
+> **Note:** The `/etc/kubernetes/pki` directory is already mounted by kubeadm,
+> so the CA cert at `/etc/kubernetes/pki/audicia-webhook-ca.crt` is
+> automatically visible. You only need an extra mount for the kubeconfig file
+> itself.
 
-Save the file. The kube-apiserver will restart automatically (kubelet watches static
-pod manifests). Wait 30-60 seconds:
+Save the file. The kube-apiserver will restart automatically (kubelet watches
+static pod manifests). Wait 30-60 seconds:
 
 ```bash
 kubectl get nodes
 ```
 
-If it doesn't respond within 2 minutes, see [Recovery](#recovery-apiserver-crash-loop).
+If it doesn't respond within 2 minutes, see
+[Recovery](#recovery-apiserver-crash-loop).
 
 ---
 
@@ -534,9 +554,9 @@ kubectl logs -n audicia-system deploy/audicia --tail=50
 
 ## Dual Mode: File + Webhook
 
-You can run both ingestion modes simultaneously. Each `AudiciaSource` gets its own
-pipeline goroutine. The kube-apiserver supports both `--audit-log-path` (file) and
-`--audit-webhook-config-file` (webhook) at the same time.
+You can run both ingestion modes simultaneously. Each `AudiciaSource` gets its
+own pipeline goroutine. The kube-apiserver supports both `--audit-log-path`
+(file) and `--audit-webhook-config-file` (webhook) at the same time.
 
 ```bash
 helm install audicia audicia/audicia-operator \
@@ -555,13 +575,15 @@ helm install audicia audicia/audicia-operator \
   --set podSecurityContext.runAsNonRoot=false
 ```
 
-> **Note:** Dual mode requires control plane scheduling because the file ingestor needs
-> hostPath access. On kube-proxy-free clusters, add `--set webhook.hostPort=true` since the
-> operator is already on the control plane node. See the
-> [Kube-Proxy-Free Guide](kube-proxy-free.md).
+> **Note:** Dual mode requires control plane scheduling because the file
+> ingestor needs hostPath access. On kube-proxy-free clusters, add
+> `--set webhook.hostPort=true` since the operator is already on the control
+> plane node. See the [Kube-Proxy-Free Guide](kube-proxy-free.md).
 
-Then apply both AudiciaSource CRs. See the [File Mode](../examples/audicia-source-file.md)
-and [Webhook Mode](../examples/audicia-source-webhook.md) example pages for the full manifests.
+Then apply both AudiciaSource CRs. See the
+[File Mode](../examples/audicia-source-file.md) and
+[Webhook Mode](../examples/audicia-source-webhook.md) example pages for the full
+manifests.
 
 ---
 
@@ -570,7 +592,7 @@ and [Webhook Mode](../examples/audicia-source-webhook.md) example pages for the 
 The kube-apiserver supports tuning the webhook backend:
 
 | Flag                              | Default | Description                                       |
-|-----------------------------------|---------|---------------------------------------------------|
+| --------------------------------- | ------- | ------------------------------------------------- |
 | `--audit-webhook-config-file`     | —       | Path to the webhook kubeconfig (required).        |
 | `--audit-webhook-mode`            | `batch` | `batch` (recommended) or `blocking`.              |
 | `--audit-webhook-batch-max-wait`  | `30s`   | Max time to buffer events before sending a batch. |
@@ -578,14 +600,15 @@ The kube-apiserver supports tuning the webhook backend:
 | `--audit-webhook-initial-backoff` | `10s`   | Backoff after a failed webhook request.           |
 | `--audit-policy-file`             | —       | Shared by both file and webhook backends.         |
 
-The default batch mode sends events in `EventList` batches every 30 seconds or when the
-buffer reaches 400 events — whichever comes first.
+The default batch mode sends events in `EventList` batches every 30 seconds or
+when the buffer reaches 400 events — whichever comes first.
 
 ---
 
 ## Recovery: Apiserver Crash Loop
 
-If the kube-apiserver crash-loops after adding the webhook flag, see [Troubleshooting](../troubleshooting.md#apiserver-crash-loop-after-adding-webhook-flag).
+If the kube-apiserver crash-loops after adding the webhook flag, see
+[Troubleshooting](../troubleshooting.md#apiserver-crash-loop-after-adding-webhook-flag).
 
 ---
 
@@ -627,4 +650,5 @@ rm /etc/kubernetes/audit-webhook-kubeconfig.yaml
 
 ## Troubleshooting
 
-For common webhook issues (no events, mTLS failures, DNS resolution, NetworkPolicy), see [Troubleshooting](../troubleshooting.md).
+For common webhook issues (no events, mTLS failures, DNS resolution,
+NetworkPolicy), see [Troubleshooting](../troubleshooting.md).

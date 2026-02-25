@@ -1,29 +1,32 @@
 # mTLS Setup Guide
 
-This guide covers enabling mutual TLS (mTLS) for Audicia's webhook endpoint. With mTLS, only the kube-apiserver
-(presenting a valid client certificate) can send audit events to Audicia — preventing spoofing and poisoning attacks.
+This guide covers enabling mutual TLS (mTLS) for Audicia's webhook endpoint.
+With mTLS, only the kube-apiserver (presenting a valid client certificate) can
+send audit events to Audicia — preventing spoofing and poisoning attacks.
 
-**Prerequisite:** You should already have basic TLS webhook mode working. If not, start with the
-[Webhook Setup Guide](webhook-setup.md) first.
+**Prerequisite:** You should already have basic TLS webhook mode working. If
+not, start with the [Webhook Setup Guide](webhook-setup.md) first.
 
 ---
 
 ## How mTLS Works
 
-In basic TLS mode, Audicia presents a server certificate and the kube-apiserver verifies it (one-way TLS). With mTLS:
+In basic TLS mode, Audicia presents a server certificate and the kube-apiserver
+verifies it (one-way TLS). With mTLS:
 
 1. Audicia presents its server certificate (same as basic TLS).
 2. The kube-apiserver presents a **client certificate** signed by a trusted CA.
 3. Audicia verifies the client certificate against a CA bundle you provide.
 
-This ensures only the kube-apiserver — not any arbitrary network client — can send audit events.
+This ensures only the kube-apiserver — not any arbitrary network client — can
+send audit events.
 
 ---
 
 ## Step 1: Create the Client CA Secret
 
-The client CA is the CA that signed the kube-apiserver's client certificate. On kubeadm clusters, this is the cluster
-CA at `/etc/kubernetes/pki/ca.crt`:
+The client CA is the CA that signed the kube-apiserver's client certificate. On
+kubeadm clusters, this is the cluster CA at `/etc/kubernetes/pki/ca.crt`:
 
 ```bash
 # The cluster CA is at /etc/kubernetes/pki/ca.crt on the control plane
@@ -37,9 +40,11 @@ kubectl create secret generic kube-apiserver-client-ca \
 
 ## Step 2: Update the AudiciaSource
 
-The `clientCASecretName` field on the AudiciaSource CR tells the controller to enable mTLS. Either:
+The `clientCASecretName` field on the AudiciaSource CR tells the controller to
+enable mTLS. Either:
 
-**Option A: Apply the [hardened example](../examples/audicia-source-hardened.md):**
+**Option A: Apply the
+[hardened example](../examples/audicia-source-hardened.md):**
 
 ```bash
 kubectl delete audiciasource realtime-audit -n audicia-system
@@ -88,8 +93,9 @@ kubectl patch audiciasource <NAME> -n audicia-system --type=merge \
   -p '{"spec":{"webhook":{"clientCASecretName":"kube-apiserver-client-ca"}}}'
 ```
 
-> **Important:** The `clientCASecretName` in the AudiciaSource CR is what enables mTLS, not the Helm value. The Helm
-> value only mounts the volume in the Deployment.
+> **Important:** The `clientCASecretName` in the AudiciaSource CR is what
+> enables mTLS, not the Helm value. The Helm value only mounts the volume in the
+> Deployment.
 
 ## Step 3: Helm Upgrade
 
@@ -112,10 +118,12 @@ kubectl logs -n audicia-system deploy/audicia --tail=20 | grep mTLS
 
 ## Step 4: Update the Webhook Kubeconfig
 
-The kube-apiserver must now present a client certificate when connecting to Audicia's webhook. On the control plane
-node, update the webhook kubeconfig to add client cert and key:
+The kube-apiserver must now present a client certificate when connecting to
+Audicia's webhook. On the control plane node, update the webhook kubeconfig to
+add client cert and key:
 
-Replace `<CLUSTER-IP>` with the Service ClusterIP from `kubectl get svc -n audicia-system`:
+Replace `<CLUSTER-IP>` with the Service ClusterIP from
+`kubectl get svc -n audicia-system`:
 
 ```yaml
 apiVersion: v1
@@ -138,12 +146,14 @@ users:
 current-context: audicia
 ```
 
-See the [Webhook Kubeconfig (mTLS)](../examples/webhook-kubeconfig-mtls.md) example for the complete template.
+See the [Webhook Kubeconfig (mTLS)](../examples/webhook-kubeconfig-mtls.md)
+example for the complete template.
 
-> **Which client cert?** On kubeadm clusters, the apiserver's client certificate is at
-> `/etc/kubernetes/pki/apiserver-kubelet-client.crt`. This cert is signed by the cluster CA — the same CA we put in
-> the `kube-apiserver-client-ca` Secret. Both files are already inside the apiserver's `/etc/kubernetes/pki` volume
-> mount, so no extra volumes are needed.
+> **Which client cert?** On kubeadm clusters, the apiserver's client certificate
+> is at `/etc/kubernetes/pki/apiserver-kubelet-client.crt`. This cert is signed
+> by the cluster CA — the same CA we put in the `kube-apiserver-client-ca`
+> Secret. Both files are already inside the apiserver's `/etc/kubernetes/pki`
+> volume mount, so no extra volumes are needed.
 
 ## Step 5: Restart the Apiserver
 
@@ -174,7 +184,8 @@ kubectl get nodes
    kubectl get audiciapolicyreports --all-namespaces
    ```
 
-3. **Unauthorized clients should be rejected.** Test from a pod without a client cert:
+3. **Unauthorized clients should be rejected.** Test from a pod without a client
+   cert:
    ```bash
    kubectl run test-curl --rm -it --image=curlimages/curl -- \
      curl -k -v -X POST https://<SERVICE-NAME>.audicia-system.svc:8443/ -d '{}'
@@ -185,4 +196,6 @@ kubectl get nodes
 
 ## Troubleshooting
 
-For mTLS-specific issues (`tls: client didn't provide a certificate`, `tls: bad certificate`, `mTLS enabled` not appearing), see [Troubleshooting](../troubleshooting.md).
+For mTLS-specific issues (`tls: client didn't provide a certificate`,
+`tls: bad certificate`, `mTLS enabled` not appearing), see
+[Troubleshooting](../troubleshooting.md).

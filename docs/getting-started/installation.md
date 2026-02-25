@@ -5,24 +5,26 @@
 - A Kubernetes cluster (kubeadm, k3s, or RKE2)
 - `kubectl` configured and pointing at your cluster
 - `helm` v3 installed
-- Audit logging enabled on the kube-apiserver (see [Audit Policy Guide](../guides/audit-policy.md))
+- Audit logging enabled on the kube-apiserver (see
+  [Audit Policy Guide](../guides/audit-policy.md))
 
 ## Enable Audit Logging
 
 Most clusters do not have audit logging enabled by default. Audicia requires it.
 
-Add these flags to your kube-apiserver manifest (`/etc/kubernetes/manifests/kube-apiserver.yaml`):
+Add these flags to your kube-apiserver manifest
+(`/etc/kubernetes/manifests/kube-apiserver.yaml`):
 
 ```yaml
 spec:
   containers:
-  - command:
-    - kube-apiserver
-    # ... existing flags ...
-    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-    - --audit-log-path=/var/log/kube-audit.log          # For file-based ingestion
-    # OR for webhook ingestion:
-    - --audit-webhook-config-file=/etc/kubernetes/audit-webhook-kubeconfig.yaml
+    - command:
+        - kube-apiserver
+        # ... existing flags ...
+        - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+        - --audit-log-path=/var/log/kube-audit.log # For file-based ingestion
+        # OR for webhook ingestion:
+        - --audit-webhook-config-file=/etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
 
 Copy the audit policy to the control plane:
@@ -31,7 +33,8 @@ Copy the audit policy to the control plane:
 cp operator/hack/audit-policy.yaml /etc/kubernetes/audit-policy.yaml
 ```
 
-See the [Audit Policy Guide](../guides/audit-policy.md) for tuning recommendations.
+See the [Audit Policy Guide](../guides/audit-policy.md) for tuning
+recommendations.
 
 ### Verify Audit Logging
 
@@ -39,7 +42,8 @@ See the [Audit Policy Guide](../guides/audit-policy.md) for tuning recommendatio
 head -5 /var/log/kube-audit.log
 ```
 
-You should see JSON audit events. If the file is empty or missing, check your apiserver flags.
+You should see JSON audit events. If the file is empty or missing, check your
+apiserver flags.
 
 ## Install Audicia
 
@@ -50,7 +54,8 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 
 ### For File-Based Ingestion
 
-The operator needs to run on a control plane node with access to the audit log file:
+The operator needs to run on a control plane node with access to the audit log
+file:
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
@@ -61,13 +66,15 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
   --set tolerations[0].effect=NoSchedule
 ```
 
-> **Permission denied?** Kubernetes audit logs are a sensitive resource — they are typically
-> owned by root and restricted to root-only access. The operator runs as a non-root user
-> (UID 10000) by default, which means it cannot read the audit log without elevated privileges.
+> **Permission denied?** Kubernetes audit logs are a sensitive resource — they
+> are typically owned by root and restricted to root-only access. The operator
+> runs as a non-root user (UID 10000) by default, which means it cannot read the
+> audit log without elevated privileges.
 >
 > You have two options:
 >
-> **Option A: Run the operator as root** (simplest, recommended for dedicated operator nodes):
+> **Option A: Run the operator as root** (simplest, recommended for dedicated
+> operator nodes):
 >
 > ```bash
 > helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
@@ -80,14 +87,16 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 >   --set podSecurityContext.runAsNonRoot=false
 > ```
 >
-> **Option B: Relax file permissions on the host** (keeps the operator non-root):
+> **Option B: Relax file permissions on the host** (keeps the operator
+> non-root):
 >
 > ```bash
 > chmod 644 /var/log/kube-audit.log
 > ```
 >
-> Note that some kube-apiserver configurations reset file permissions on restart. If you choose
-> this approach, verify the permissions persist after an apiserver restart.
+> Note that some kube-apiserver configurations reset file permissions on
+> restart. If you choose this approach, verify the permissions persist after an
+> apiserver restart.
 
 ### For Webhook Ingestion
 
@@ -111,17 +120,19 @@ helm install audicia audicia/audicia-operator -n audicia-system \
   --set webhook.tlsSecretName=audicia-webhook-tls
 ```
 
-> **ClusterIP unreachable?** On Cilium or other kube-proxy-free CNIs, the kube-apiserver
-> may not be able to route traffic to a ClusterIP. See the
-> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) for the hostPort-based setup.
+> **ClusterIP unreachable?** On Cilium or other kube-proxy-free CNIs, the
+> kube-apiserver may not be able to route traffic to a ClusterIP. See the
+> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) for the hostPort-based
+> setup.
 
-After installing, you must configure the kube-apiserver to send audit events to the webhook.
-This requires adding a flag and restarting the apiserver. See the
-[Webhook Setup Guide](../guides/webhook-setup.md) for the full walkthrough including
-kube-apiserver configuration and mTLS.
+After installing, you must configure the kube-apiserver to send audit events to
+the webhook. This requires adding a flag and restarting the apiserver. See the
+[Webhook Setup Guide](../guides/webhook-setup.md) for the full walkthrough
+including kube-apiserver configuration and mTLS.
 
-> **How to restart the kube-apiserver.** On kubeadm clusters, the kube-apiserver runs as a
-> static pod managed by the kubelet. To restart it after changing its manifest:
+> **How to restart the kube-apiserver.** On kubeadm clusters, the kube-apiserver
+> runs as a static pod managed by the kubelet. To restart it after changing its
+> manifest:
 >
 > ```bash
 > # Move the manifest out of the watched directory
@@ -134,9 +145,9 @@ kube-apiserver configuration and mTLS.
 > mv /etc/kubernetes/kube-apiserver.yaml /etc/kubernetes/manifests/kube-apiserver.yaml
 > ```
 >
-> The apiserver should be back within 30-60 seconds. Verify with `kubectl get nodes`. If it
-> doesn't come back within 2 minutes, check the static pod logs with
-> `crictl logs $(crictl ps --name kube-apiserver -q)`.
+> The apiserver should be back within 30-60 seconds. Verify with
+> `kubectl get nodes`. If it doesn't come back within 2 minutes, check the
+> static pod logs with `crictl logs $(crictl ps --name kube-apiserver -q)`.
 
 ## Verify Installation
 
@@ -153,7 +164,11 @@ kubectl logs -n audicia-system -l app.kubernetes.io/name=audicia-operator
 
 ## What's Next
 
-- [Quick Start: File Ingestion](quick-start-file.md) — Create your first AudiciaSource and generate reports
-- [Quick Start: Webhook Ingestion](quick-start-webhook.md) — Real-time audit events via HTTPS
-- [Quick Start: AKS Cloud Ingestion](quick-start-aks.md) — Ingest audit logs from AKS via Event Hub
-- [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration with TLS and mTLS
+- [Quick Start: File Ingestion](quick-start-file.md) — Create your first
+  AudiciaSource and generate reports
+- [Quick Start: Webhook Ingestion](quick-start-webhook.md) — Real-time audit
+  events via HTTPS
+- [Quick Start: AKS Cloud Ingestion](quick-start-aks.md) — Ingest audit logs
+  from AKS via Event Hub
+- [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration
+  with TLS and mTLS

@@ -1,7 +1,7 @@
 # EKS Setup (CloudWatch Logs)
 
-This guide walks through configuring Audicia to ingest audit logs from an Amazon EKS cluster via
-CloudWatch Logs using IRSA (IAM Roles for Service Accounts).
+This guide walks through configuring Audicia to ingest audit logs from an Amazon
+EKS cluster via CloudWatch Logs using IRSA (IAM Roles for Service Accounts).
 
 ## Prerequisites
 
@@ -11,13 +11,13 @@ CloudWatch Logs using IRSA (IAM Roles for Service Accounts).
 
 ## Step 1: Enable EKS Audit Logging
 
-EKS control plane logging is **disabled by default**. You must explicitly enable the `audit` log type.
-Once enabled, audit events stream to CloudWatch Logs under the log group
-`/aws/eks/<CLUSTER_NAME>/cluster`.
+EKS control plane logging is **disabled by default**. You must explicitly enable
+the `audit` log type. Once enabled, audit events stream to CloudWatch Logs under
+the log group `/aws/eks/<CLUSTER_NAME>/cluster`.
 
-> **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges. Consider setting a
-> retention policy on the log group to control costs (e.g., 30 or 90 days). AWS may also truncate
-> very large audit log entries — see
+> **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges.
+> Consider setting a retention policy on the log group to control costs (e.g.,
+> 30 or 90 days). AWS may also truncate very large audit log entries — see
 > [EKS logging documentation](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)
 > for details on limits.
 
@@ -75,7 +75,8 @@ Note the policy ARN from the output.
 
 ## Step 3: Set Up IRSA
 
-IRSA allows Kubernetes ServiceAccounts to assume IAM roles without static credentials.
+IRSA allows Kubernetes ServiceAccounts to assume IAM roles without static
+credentials.
 
 **1. Create an OIDC provider for your cluster (if not already done):**
 
@@ -97,7 +98,8 @@ eksctl create iamserviceaccount \
   --override-existing-serviceaccounts
 ```
 
-Or manually, create the IAM role with a trust policy for the OIDC provider and annotate the ServiceAccount:
+Or manually, create the IAM role with a trust policy for the OIDC provider and
+annotate the ServiceAccount:
 
 ```bash
 OIDC_PROVIDER=$(aws eks describe-cluster --name <CLUSTER_NAME> \
@@ -168,14 +170,16 @@ helm install audicia audicia/audicia-operator \
   -f values-eks.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
-> Check in `values-eks.yaml` alongside your other infrastructure config.
+> **Tip:** Pin `--version` to a specific chart version for reproducible
+> deployments. Check in `values-eks.yaml` alongside your other infrastructure
+> config.
 
 The `eks.amazonaws.com/role-arn` ServiceAccount annotation is used by
-[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) (IAM Roles
-for Service Accounts). The IRSA mutating webhook injects `AWS_ROLE_ARN`,
-`AWS_WEB_IDENTITY_TOKEN_FILE`, and a projected service account token volume into the pod. The AWS SDK
-picks these up automatically via the default credential chain.
+[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)
+(IAM Roles for Service Accounts). The IRSA mutating webhook injects
+`AWS_ROLE_ARN`, `AWS_WEB_IDENTITY_TOKEN_FILE`, and a projected service account
+token volume into the pod. The AWS SDK picks these up automatically via the
+default credential chain.
 
 ## Step 5: Create an AudiciaSource
 
@@ -220,17 +224,19 @@ kubectl port-forward svc/audicia-metrics 8080:8080 -n audicia-system
 curl localhost:8080/metrics | grep audicia_cloud
 ```
 
-You should see `audicia_cloud_messages_received_total` incrementing and `AudiciaPolicyReport` resources being created.
+You should see `audicia_cloud_messages_received_total` incrementing and
+`AudiciaPolicyReport` resources being created.
 
 ## Production Hardening
 
-The steps above get Audicia running. For production environments, consider the following additional
-measures.
+The steps above get Audicia running. For production environments, consider the
+following additional measures.
 
 ### CloudWatch Log Retention and Encryption
 
-By default, CloudWatch log groups retain data indefinitely, which can lead to unexpected costs.
-Set a retention policy and optionally encrypt the log group with a KMS key:
+By default, CloudWatch log groups retain data indefinitely, which can lead to
+unexpected costs. Set a retention policy and optionally encrypt the log group
+with a KMS key:
 
 ```bash
 # Set retention (e.g., 90 days)
@@ -246,7 +252,8 @@ aws logs associate-kms-key \
 
 > **Note:** AWS may truncate very large audit log entries. See the
 > [EKS control plane logging documentation](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)
-> for details on size limits. This can affect audit fidelity for requests with very large bodies.
+> for details on size limits. This can affect audit fidelity for requests with
+> very large bodies.
 
 ### IAM Policy Hardening
 
@@ -293,25 +300,29 @@ securityContext:
 
 ### Network Policy
 
-Restrict the operator's network access. See the [NetworkPolicy example](../examples/network-policy.md)
-for a ready-to-use manifest that limits egress to the Kubernetes API server and CloudWatch endpoints.
+Restrict the operator's network access. See the
+[NetworkPolicy example](../examples/network-policy.md) for a ready-to-use
+manifest that limits egress to the Kubernetes API server and CloudWatch
+endpoints.
 
 ## Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-|---------|-------------|-----|
-| No messages received | Audit logging not enabled on EKS cluster | Enable via `aws eks update-cluster-config --logging` |
-| No messages received | Wrong log group name | Verify with `aws logs describe-log-groups` |
-| AccessDeniedException | Missing IAM permissions | Verify `logs:FilterLogEvents` permission on the log group |
-| Authentication error | IRSA not configured | Check SA annotation and OIDC provider setup |
-| `WebIdentityErr` | Trust policy mismatch | Verify OIDC provider, namespace, and SA name in trust policy |
-| Events from wrong cluster | Shared log group | Set `clusterIdentity` to the EKS cluster ARN |
-| High `cloud_lag_seconds` | Large backlog or slow polling | Increase `checkpoint.batchSize`, check network latency |
-| Truncated audit events | AWS log entry size limits | See [EKS logging docs](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html) |
+| Symptom                   | Likely Cause                             | Fix                                                                                              |
+| ------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| No messages received      | Audit logging not enabled on EKS cluster | Enable via `aws eks update-cluster-config --logging`                                             |
+| No messages received      | Wrong log group name                     | Verify with `aws logs describe-log-groups`                                                       |
+| AccessDeniedException     | Missing IAM permissions                  | Verify `logs:FilterLogEvents` permission on the log group                                        |
+| Authentication error      | IRSA not configured                      | Check SA annotation and OIDC provider setup                                                      |
+| `WebIdentityErr`          | Trust policy mismatch                    | Verify OIDC provider, namespace, and SA name in trust policy                                     |
+| Events from wrong cluster | Shared log group                         | Set `clusterIdentity` to the EKS cluster ARN                                                     |
+| High `cloud_lag_seconds`  | Large backlog or slow polling            | Increase `checkpoint.batchSize`, check network latency                                           |
+| Truncated audit events    | AWS log entry size limits                | See [EKS logging docs](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html) |
 
 ## Related
 
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full `spec.cloud` field reference
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+  design
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full `spec.cloud`
+  field reference
 - [Helm Values](../configuration/helm-values.md) — `cloudAuditLog` configuration
 - [Metrics Reference](../reference/metrics.md) — Cloud metrics

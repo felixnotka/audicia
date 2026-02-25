@@ -1,6 +1,7 @@
 # AudiciaSource: Cloud (GKE)
 
-An AudiciaSource configured for cloud-based ingestion from a GKE cluster via Pub/Sub using Workload Identity Federation.
+An AudiciaSource configured for cloud-based ingestion from a GKE cluster via
+Pub/Sub using Workload Identity Federation.
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -36,18 +37,18 @@ spec:
 
 ## Key Fields
 
-| Field | Value | Notes |
-|-------|-------|-------|
-| `sourceType` | `CloudAuditLog` | Selects the cloud ingestion path |
-| `cloud.provider` | `GCPPubSub` | GCP Pub/Sub adapter |
-| `cloud.clusterIdentity` | GKE cluster resource name | Used to filter events if multiple clusters share a Pub/Sub topic |
-| `cloud.gcp.projectID` | GCP project ID | The project containing the Pub/Sub subscription |
-| `cloud.gcp.subscriptionID` | Subscription name | Must exist and have messages routed from Cloud Logging |
+| Field                      | Value                     | Notes                                                            |
+| -------------------------- | ------------------------- | ---------------------------------------------------------------- |
+| `sourceType`               | `CloudAuditLog`           | Selects the cloud ingestion path                                 |
+| `cloud.provider`           | `GCPPubSub`               | GCP Pub/Sub adapter                                              |
+| `cloud.clusterIdentity`    | GKE cluster resource name | Used to filter events if multiple clusters share a Pub/Sub topic |
+| `cloud.gcp.projectID`      | GCP project ID            | The project containing the Pub/Sub subscription                  |
+| `cloud.gcp.subscriptionID` | Subscription name         | Must exist and have messages routed from Cloud Logging           |
 
 ## Authentication
 
-Authentication uses Workload Identity Federation. The ServiceAccount must be annotated with the GCP
-Service Account email:
+Authentication uses Workload Identity Federation. The ServiceAccount must be
+annotated with the GCP Service Account email:
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
@@ -63,11 +64,14 @@ The GCP Service Account needs the following role on the Pub/Sub subscription:
 
 - `roles/pubsub.subscriber`
 
-See the [GKE Setup Guide](../guides/gke-setup.md) for full Workload Identity Federation setup including
-GCP Service Account creation, IAM binding, and Cloud Logging sink configuration.
+See the [GKE Setup Guide](../guides/gke-setup.md) for full Workload Identity
+Federation setup including GCP Service Account creation, IAM binding, and Cloud
+Logging sink configuration.
 
 ## Related
 
 - [GKE Setup Guide](../guides/gke-setup.md) — Step-by-step walkthrough
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture overview
-- [AudiciaSource CRD Reference](../reference/crd-audiciasource.md) — Full field reference
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture
+  overview
+- [AudiciaSource CRD Reference](../reference/crd-audiciasource.md) — Full field
+  reference

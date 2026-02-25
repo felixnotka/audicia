@@ -1,9 +1,9 @@
 # Quick Start: GKE Cloud Ingestion
 
-This tutorial walks you through setting up Audicia to ingest audit logs from a GKE cluster via
-Cloud Logging and Pub/Sub. Unlike file or webhook mode, cloud ingestion works without control plane
-access — GKE sends audit logs to Cloud Logging, a log router sink forwards them to Pub/Sub, and
-Audicia consumes them.
+This tutorial walks you through setting up Audicia to ingest audit logs from a
+GKE cluster via Cloud Logging and Pub/Sub. Unlike file or webhook mode, cloud
+ingestion works without control plane access — GKE sends audit logs to Cloud
+Logging, a log router sink forwards them to Pub/Sub, and Audicia consumes them.
 
 ## Prerequisites
 
@@ -55,7 +55,8 @@ gcloud pubsub subscriptions create audicia-audit-sub \
 
 ## Step 2: Set Up Workload Identity Federation
 
-Create a GCP Service Account, grant it Pub/Sub access, and bind it to the Kubernetes ServiceAccount:
+Create a GCP Service Account, grant it Pub/Sub access, and bind it to the
+Kubernetes ServiceAccount:
 
 ```bash
 # Create GCP Service Account
@@ -77,8 +78,8 @@ gcloud iam service-accounts add-iam-policy-binding \
   --role="roles/iam.workloadIdentityUser"
 ```
 
-> **Note:** The Kubernetes namespace and ServiceAccount name (`audicia-system:audicia-operator`)
-> must match the Helm chart defaults.
+> **Note:** The Kubernetes namespace and ServiceAccount name
+> (`audicia-system:audicia-operator`) must match the Helm chart defaults.
 
 ## Step 3: Install Audicia
 
@@ -112,13 +113,14 @@ helm install audicia audicia/audicia-operator \
   -f values-gke.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
-> Check in `values-gke.yaml` alongside your other infrastructure config.
+> **Tip:** Pin `--version` to a specific chart version for reproducible
+> deployments. Check in `values-gke.yaml` alongside your other infrastructure
+> config.
 
 The `iam.gke.io/gcp-service-account` ServiceAccount annotation enables
 [Workload Identity Federation](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
-GKE projects a federated token into the pod, which the GCP client libraries discover automatically
-via Application Default Credentials (ADC).
+GKE projects a federated token into the pod, which the GCP client libraries
+discover automatically via Application Default Credentials (ADC).
 
 ## Step 4: Create an AudiciaSource
 
@@ -162,8 +164,8 @@ kubectl get audiciasource gke-cloud-audit -n audicia-system
 kubectl logs -l app.kubernetes.io/name=audicia -n audicia-system --tail=20
 ```
 
-You should see `audicia_cloud_messages_received_total` incrementing. After a flush cycle, policy reports start
-appearing:
+You should see `audicia_cloud_messages_received_total` incrementing. After a
+flush cycle, policy reports start appearing:
 
 ```bash
 kubectl get audiciapolicyreports --all-namespaces
@@ -171,8 +173,13 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [GKE Setup Guide](../guides/gke-setup.md) — Full guide with log router details, production hardening, and troubleshooting
-- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia network access
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
-- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
-- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works
+- [GKE Setup Guide](../guides/gke-setup.md) — Full guide with log router
+  details, production hardening, and troubleshooting
+- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia
+  network access
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+  design
+- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations
+  for production
+- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift
+  detection works

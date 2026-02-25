@@ -1,6 +1,7 @@
 # AudiciaSource: Cloud (EKS)
 
-An AudiciaSource configured for cloud-based ingestion from an EKS cluster via CloudWatch Logs using IRSA.
+An AudiciaSource configured for cloud-based ingestion from an EKS cluster via
+CloudWatch Logs using IRSA.
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -37,19 +38,19 @@ spec:
 
 ## Key Fields
 
-| Field | Value | Notes |
-|-------|-------|-------|
-| `sourceType` | `CloudAuditLog` | Selects the cloud ingestion path |
-| `cloud.provider` | `AWSCloudWatch` | AWS CloudWatch Logs adapter |
-| `cloud.clusterIdentity` | EKS cluster ARN | Used to filter events if multiple clusters share a log group |
-| `cloud.aws.logGroupName` | Log group path | EKS default: `/aws/eks/<cluster>/cluster` |
-| `cloud.aws.logStreamPrefix` | Stream prefix | Filters to `kube-apiserver-audit-` streams only |
-| `cloud.aws.region` | AWS region | If empty, uses `AWS_REGION` from environment |
+| Field                       | Value           | Notes                                                        |
+| --------------------------- | --------------- | ------------------------------------------------------------ |
+| `sourceType`                | `CloudAuditLog` | Selects the cloud ingestion path                             |
+| `cloud.provider`            | `AWSCloudWatch` | AWS CloudWatch Logs adapter                                  |
+| `cloud.clusterIdentity`     | EKS cluster ARN | Used to filter events if multiple clusters share a log group |
+| `cloud.aws.logGroupName`    | Log group path  | EKS default: `/aws/eks/<cluster>/cluster`                    |
+| `cloud.aws.logStreamPrefix` | Stream prefix   | Filters to `kube-apiserver-audit-` streams only              |
+| `cloud.aws.region`          | AWS region      | If empty, uses `AWS_REGION` from environment                 |
 
 ## Authentication
 
-Authentication uses IRSA (IAM Roles for Service Accounts). The ServiceAccount must be annotated with the IAM
-role ARN:
+Authentication uses IRSA (IAM Roles for Service Accounts). The ServiceAccount
+must be annotated with the IAM role ARN:
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
@@ -66,11 +67,13 @@ The IAM role needs the following permissions on the CloudWatch Logs group:
 - `logs:FilterLogEvents`
 - `logs:DescribeLogStreams`
 
-See the [EKS Setup Guide](../guides/eks-setup.md) for full IRSA setup including IAM role creation, OIDC
-provider configuration, and trust policy.
+See the [EKS Setup Guide](../guides/eks-setup.md) for full IRSA setup including
+IAM role creation, OIDC provider configuration, and trust policy.
 
 ## Related
 
 - [EKS Setup Guide](../guides/eks-setup.md) — Step-by-step walkthrough
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture overview
-- [AudiciaSource CRD Reference](../reference/crd-audiciasource.md) — Full field reference
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture
+  overview
+- [AudiciaSource CRD Reference](../reference/crd-audiciasource.md) — Full field
+  reference

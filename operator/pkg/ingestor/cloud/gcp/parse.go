@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
 // logEntry represents a Cloud Logging LogEntry as received from a
@@ -27,7 +27,7 @@ type logEntry struct {
 type protoPayload struct {
 	Type               string              `json:"@type"`
 	Status             *rpcStatus          `json:"status"`
-	AuthenticationInfo *authenticationInfo  `json:"authenticationInfo"`
+	AuthenticationInfo *authenticationInfo `json:"authenticationInfo"`
 	RequestMetadata    *requestMetadata    `json:"requestMetadata"`
 	ServiceName        string              `json:"serviceName"`
 	MethodName         string              `json:"methodName"`

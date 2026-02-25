@@ -158,10 +158,10 @@ func TestWebhookDeduplication(t *testing.T) {
 				Resource:   "pods",
 				Namespace:  ns,
 			},
-			ResponseStatus:          &metav1.Status{Code: 200},
+			ResponseStatus:           &metav1.Status{Code: 200},
 			RequestReceivedTimestamp: now,
 			StageTimestamp:           now,
-			SourceIPs:               []string{"10.0.0.1"},
+			SourceIPs:                []string{"10.0.0.1"},
 		})
 	}
 

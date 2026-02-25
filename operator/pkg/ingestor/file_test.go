@@ -176,7 +176,7 @@ func TestFileIngestor_ReadFromBeginningOnInodeChange(t *testing.T) {
 
 	// Start ingestor with a different inode (simulating rotation).
 	startPos := Position{
-		FileOffset: 9999, // Would skip all content if inode matched.
+		FileOffset: 9999,  // Would skip all content if inode matched.
 		Inode:      12345, // Fake inode that won't match the real file.
 	}
 	ing := NewFileIngestor(path, startPos, 100)

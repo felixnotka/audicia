@@ -1,8 +1,11 @@
 # AudiciaSource: Webhook Mode
 
-AudiciaSource for webhook-based real-time audit event ingestion from the kube-apiserver.
+AudiciaSource for webhook-based real-time audit event ingestion from the
+kube-apiserver.
 
-**See also:** [Quick Start: Webhook Mode](../getting-started/quick-start-webhook.md) | [Webhook Setup Guide](../guides/webhook-setup.md)
+**See also:**
+[Quick Start: Webhook Mode](../getting-started/quick-start-webhook.md) |
+[Webhook Setup Guide](../guides/webhook-setup.md)
 
 ```yaml
 apiVersion: audicia.io/v1alpha1
@@ -16,7 +19,7 @@ spec:
     port: 8443
     tlsSecretName: audicia-webhook-tls
     rateLimitPerSecond: 100
-    maxRequestBodyBytes: 1048576  # 1MB
+    maxRequestBodyBytes: 1048576 # 1MB
 
   policyStrategy:
     scopeMode: ClusterScopeAllowed
@@ -39,6 +42,8 @@ spec:
 
 ## Customization
 
-- **`tlsSecretName`** — Must reference a `kubernetes.io/tls` Secret in the same namespace.
-- **mTLS** — Add `clientCASecretName` for production hardening. See [Hardened Example](audicia-source-hardened.md).
+- **`tlsSecretName`** — Must reference a `kubernetes.io/tls` Secret in the same
+  namespace.
+- **mTLS** — Add `clientCASecretName` for production hardening. See
+  [Hardened Example](audicia-source-hardened.md).
 - **Rate limiting** — Increase `rateLimitPerSecond` for high-traffic clusters.
