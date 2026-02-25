@@ -18,10 +18,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+
 	"github.com/felixnotka/audicia/operator/pkg/aggregator"
 	audiciav1alpha1 "github.com/felixnotka/audicia/operator/pkg/apis/audicia.io/v1alpha1"
 	"github.com/felixnotka/audicia/operator/pkg/filter"
 	"github.com/felixnotka/audicia/operator/pkg/ingestor"
+	"github.com/felixnotka/audicia/operator/pkg/normalizer"
+	"github.com/felixnotka/audicia/operator/pkg/rbac"
 	"github.com/felixnotka/audicia/operator/pkg/strategy"
 )
 
@@ -889,5 +893,346 @@ func TestFlushSubjectReport(t *testing.T) {
 	}
 	if readyCond.Status != metav1.ConditionTrue {
 		t.Errorf("expected Ready=True, got %s", readyCond.Status)
+	}
+}
+
+// --- restoreCloudCheckpoint ---
+
+func TestRestoreCloudCheckpoint_Empty(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{}
+	pos := restoreCloudCheckpoint(source)
+	if pos.PartitionOffsets != nil {
+		t.Error("expected nil PartitionOffsets for empty source")
+	}
+	if pos.LastTimestamp != "" {
+		t.Error("expected empty LastTimestamp for empty source")
+	}
+}
+
+func TestRestoreCloudCheckpoint_WithData(t *testing.T) {
+	ts := metav1.Now()
+	source := audiciav1alpha1.AudiciaSource{
+		Status: audiciav1alpha1.AudiciaSourceStatus{
+			CloudCheckpoint: &audiciav1alpha1.CloudCheckpointStatus{
+				PartitionOffsets: map[string]string{"0": "100", "1": "200"},
+			},
+			LastTimestamp: &ts,
+		},
+	}
+
+	pos := restoreCloudCheckpoint(source)
+	if len(pos.PartitionOffsets) != 2 {
+		t.Errorf("expected 2 partition offsets, got %d", len(pos.PartitionOffsets))
+	}
+	if pos.PartitionOffsets["0"] != "100" {
+		t.Errorf("expected partition 0 offset=100, got %q", pos.PartitionOffsets["0"])
+	}
+	if pos.LastTimestamp == "" {
+		t.Error("expected non-empty LastTimestamp")
+	}
+}
+
+// --- createCloudIngestor ---
+
+func TestCreateCloudIngestor_NilConfig(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			SourceType: audiciav1alpha1.SourceTypeCloudAuditLog,
+			Cloud:      nil,
+		},
+	}
+
+	_, err := createIngestor(source, logr.Discard())
+	if err == nil {
+		t.Error("expected error for nil cloud config")
+	}
+}
+
+// --- processEvent edge cases ---
+
+func TestProcessEvent_NilObjectRef(t *testing.T) {
+	r := &Reconciler{}
+	source := audiciav1alpha1.AudiciaSource{
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			IgnoreSystemUsers: false,
+		},
+	}
+
+	chain, _ := filter.NewChain(nil)
+	aggregators := make(map[string]*aggregator.Aggregator)
+	subjects := make(map[string]audiciav1alpha1.Subject)
+
+	event := auditv1.Event{
+		Verb:      "get",
+		User:      authnv1.UserInfo{Username: "system:serviceaccount:default:my-sa"},
+		ObjectRef: nil, // No ObjectRef — resource/namespace should be empty.
+	}
+
+	r.processEvent(event, source, chain, aggregators, subjects)
+
+	if len(aggregators) != 1 {
+		t.Errorf("expected 1 aggregator, got %d", len(aggregators))
+	}
+}
+
+func TestProcessEvent_ExplicitTimestamp(t *testing.T) {
+	r := &Reconciler{}
+	source := audiciav1alpha1.AudiciaSource{
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			IgnoreSystemUsers: false,
+		},
+	}
+
+	chain, _ := filter.NewChain(nil)
+	aggregators := make(map[string]*aggregator.Aggregator)
+	subjects := make(map[string]audiciav1alpha1.Subject)
+
+	ts := metav1.NewMicroTime(time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC))
+	event := auditv1.Event{
+		Verb:                      "list",
+		User:                      authnv1.UserInfo{Username: "system:serviceaccount:default:ts-sa"},
+		ObjectRef:                 &auditv1.ObjectReference{Resource: "pods", Namespace: "default"},
+		RequestReceivedTimestamp:  ts,
+	}
+
+	r.processEvent(event, source, chain, aggregators, subjects)
+
+	for _, agg := range aggregators {
+		rules := agg.Rules()
+		if len(rules) != 1 {
+			t.Fatalf("expected 1 rule, got %d", len(rules))
+		}
+		if rules[0].FirstSeen.Time.Year() != 2025 {
+			t.Errorf("expected event timestamp year=2025, got %d", rules[0].FirstSeen.Time.Year())
+		}
+	}
+}
+
+// --- setSourceCondition ---
+
+func TestSetSourceCondition(t *testing.T) {
+	source := &audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cond-source-2",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(source)
+	key := types.NamespacedName{Name: "cond-source-2", Namespace: "default"}
+
+	r.setSourceCondition(context.Background(), key, metav1.Condition{
+		Type:    "Ready",
+		Status:  metav1.ConditionTrue,
+		Reason:  "PipelineRunning",
+		Message: "running",
+	})
+
+	var updated audiciav1alpha1.AudiciaSource
+	if err := r.Get(context.Background(), key, &updated); err != nil {
+		t.Fatalf("get source: %v", err)
+	}
+	cond := meta.FindStatusCondition(updated.Status.Conditions, "Ready")
+	if cond == nil {
+		t.Fatal("expected Ready condition")
+	}
+	if cond.Reason != "PipelineRunning" {
+		t.Errorf("expected reason=PipelineRunning, got %q", cond.Reason)
+	}
+}
+
+func TestSetSourceCondition_NotFound(t *testing.T) {
+	r := newTestReconciler()
+	key := types.NamespacedName{Name: "missing", Namespace: "default"}
+
+	// Should not panic when source doesn't exist.
+	r.setSourceCondition(context.Background(), key, metav1.Condition{
+		Type:   "Ready",
+		Status: metav1.ConditionFalse,
+		Reason: "Test",
+	})
+}
+
+// --- flushCheckpoint ---
+
+type fakeIngestor struct {
+	pos ingestor.Position
+}
+
+func (f *fakeIngestor) Start(_ context.Context) (<-chan auditv1.Event, error) {
+	return nil, nil
+}
+
+func (f *fakeIngestor) Checkpoint() ingestor.Position {
+	return f.pos
+}
+
+func TestFlushCheckpoint(t *testing.T) {
+	source := &audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ckpt-source",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(source)
+	key := types.NamespacedName{Name: "ckpt-source", Namespace: "default"}
+
+	// Note: Inode (uint64) causes a panic in the fake client's structured-merge-diff,
+	// so we only test FileOffset and LastTimestamp here.
+	ing := &fakeIngestor{pos: ingestor.Position{
+		FileOffset:   42000,
+		LastTimestamp: "2025-06-15T12:00:00Z",
+	}}
+
+	r.flushCheckpoint(context.Background(), key, ing)
+
+	var updated audiciav1alpha1.AudiciaSource
+	if err := r.Get(context.Background(), key, &updated); err != nil {
+		t.Fatalf("get source: %v", err)
+	}
+	if updated.Status.FileOffset != 42000 {
+		t.Errorf("expected FileOffset=42000, got %d", updated.Status.FileOffset)
+	}
+	if updated.Status.LastTimestamp == nil {
+		t.Fatal("expected non-nil LastTimestamp")
+	}
+}
+
+func TestFlushCheckpoint_NotFound(t *testing.T) {
+	r := newTestReconciler()
+	key := types.NamespacedName{Name: "missing", Namespace: "default"}
+	ing := &fakeIngestor{pos: ingestor.Position{FileOffset: 100}}
+
+	// Should not panic when source doesn't exist.
+	r.flushCheckpoint(context.Background(), key, ing)
+}
+
+// --- flushReports ---
+
+func TestFlushReports(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "flush-multi-source",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(&source)
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+
+	aggregators := make(map[string]*aggregator.Aggregator)
+	subjects := make(map[string]audiciav1alpha1.Subject)
+
+	// Add two subjects with rules.
+	for _, name := range []string{"sa-alpha", "sa-beta"} {
+		key := fmt.Sprintf("ServiceAccount/default/%s", name)
+		aggregators[key] = aggregator.New()
+		subjects[key] = audiciav1alpha1.Subject{
+			Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+			Name:      name,
+			Namespace: "default",
+		}
+		aggregators[key].Add(normalizer.CanonicalRule{
+			APIGroup: "", Resource: "pods",
+			Verb: "get", Namespace: "default",
+		}, time.Now())
+	}
+
+	r.flushReports(context.Background(), types.NamespacedName{Name: "flush-multi-source", Namespace: "default"}, source, engine, aggregators, subjects)
+
+	// Both subjects should have reports.
+	for _, name := range []string{"sa-alpha", "sa-beta"} {
+		reportName := fmt.Sprintf("report-%s", sanitizeName(name))
+		var report audiciav1alpha1.AudiciaPolicyReport
+		if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "default"}, &report); err != nil {
+			t.Errorf("expected report for %s: %v", name, err)
+		}
+	}
+}
+
+// --- flushSubjectReport cross-namespace ---
+
+func TestFlushSubjectReport_CrossNamespace(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "xns-source",
+			Namespace: "audicia-system",
+		},
+	}
+
+	r := newTestReconciler(&source)
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	subject := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "cross-sa",
+		Namespace: "other-ns", // Different from source namespace.
+	}
+	rules := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "other-ns", time.Now()),
+	}
+
+	err := r.flushSubjectReport(context.Background(), source, engine, subject, rules, 1, logr.Discard())
+	if err != nil {
+		t.Fatalf("flushSubjectReport: %v", err)
+	}
+
+	// Report should be in the subject's namespace, not the source's.
+	reportName := fmt.Sprintf("report-%s", sanitizeName(subject.Name))
+	var report audiciav1alpha1.AudiciaPolicyReport
+	if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "other-ns"}, &report); err != nil {
+		t.Fatalf("expected report in other-ns: %v", err)
+	}
+}
+
+// --- populateReportStatus with Resolver ---
+
+func TestPopulateReportStatus_WithResolver(t *testing.T) {
+	s := newTestScheme()
+	_ = rbacv1.AddToScheme(s)
+
+	role := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-role", Namespace: "default"},
+		Rules: []rbacv1.PolicyRule{
+			{APIGroups: []string{""}, Resources: []string{"pods"}, Verbs: []string{"get"}},
+			{APIGroups: []string{""}, Resources: []string{"secrets"}, Verbs: []string{"get"}},
+		},
+	}
+	binding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-binding", Namespace: "default"},
+		RoleRef:    rbacv1.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "Role", Name: "test-role"},
+		Subjects: []rbacv1.Subject{
+			{Kind: "ServiceAccount", Name: "test-sa", Namespace: "default"},
+		},
+	}
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(s).
+		WithObjects(role, binding).
+		Build()
+
+	r := &Reconciler{
+		Client:   fakeClient,
+		Scheme:   s,
+		Resolver: rbac.NewResolver(fakeClient),
+	}
+
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	subject := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "test-sa",
+		Namespace: "default",
+	}
+	rules := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "default", time.Now()),
+	}
+
+	r.populateReportStatus(context.Background(), report, subject, rules, []string{"kind: Role"}, 1, logr.Discard())
+
+	if report.Status.Compliance == nil {
+		t.Fatal("expected non-nil compliance (Resolver is set)")
+	}
+	if report.Status.Compliance.Score == 0 {
+		t.Error("expected non-zero compliance score")
 	}
 }
