@@ -9,7 +9,7 @@ image:
   # -- Image pull policy.
   pullPolicy: Always
   # -- Overrides the image tag (default is the chart appVersion).
-  tag: ""
+  tag: "@sha256:bccbf37847578f4b374683e2a79f9b0cf5558ae2fa8bf70c27ebcf7f68c10d34"
 
 # -- Image pull secrets for private registries.
 imagePullSecrets: []
