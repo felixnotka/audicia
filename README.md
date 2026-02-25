@@ -1,5 +1,9 @@
 # Audicia
 
+[![Pipeline](https://github.com/felixnotka/audicia/actions/workflows/pipeline.yaml/badge.svg)](https://github.com/felixnotka/audicia/actions/workflows/pipeline.yaml)
+[![Nightly](https://github.com/felixnotka/audicia/actions/workflows/nightly.yaml/badge.svg)](https://github.com/felixnotka/audicia/actions/workflows/nightly.yaml)
+[![License](https://img.shields.io/github/license/felixnotka/audicia)](LICENSE)
+
 **Audicia** is an open-source **Kubernetes RBAC generator** — a Kubernetes Operator that watches
 audit logs and generates least-privilege RBAC policies automatically.
 
