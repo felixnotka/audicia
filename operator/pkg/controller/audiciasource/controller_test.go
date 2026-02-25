@@ -24,6 +24,7 @@ import (
 	audiciav1alpha1 "github.com/felixnotka/audicia/operator/pkg/apis/audicia.io/v1alpha1"
 	"github.com/felixnotka/audicia/operator/pkg/filter"
 	"github.com/felixnotka/audicia/operator/pkg/ingestor"
+	"github.com/felixnotka/audicia/operator/pkg/ingestor/cloud"
 	"github.com/felixnotka/audicia/operator/pkg/normalizer"
 	"github.com/felixnotka/audicia/operator/pkg/rbac"
 	"github.com/felixnotka/audicia/operator/pkg/strategy"
@@ -1234,5 +1235,174 @@ func TestPopulateReportStatus_WithResolver(t *testing.T) {
 	}
 	if report.Status.Compliance.Score == 0 {
 		t.Error("expected non-zero compliance score")
+	}
+}
+
+// --- flushCloudCheckpoint ---
+
+type fakeParser struct{}
+
+func (fakeParser) Parse([]byte) ([]auditv1.Event, error) { return nil, nil }
+
+func TestFlushCloudCheckpoint(t *testing.T) {
+	source := &audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cloud-ckpt-src",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(source)
+	key := types.NamespacedName{Name: "cloud-ckpt-src", Namespace: "default"}
+
+	ing := cloud.NewCloudIngestor(
+		cloud.NewFakeSource(), fakeParser{}, nil,
+		cloud.CloudPosition{
+			PartitionOffsets: map[string]string{"0": "42", "1": "99"},
+			LastTimestamp:    "2025-06-15T12:00:00Z",
+		},
+		"test",
+	)
+
+	r.flushCloudCheckpoint(context.Background(), key, ing, logr.Discard())
+
+	var updated audiciav1alpha1.AudiciaSource
+	if err := r.Get(context.Background(), key, &updated); err != nil {
+		t.Fatalf("get source: %v", err)
+	}
+	if updated.Status.CloudCheckpoint == nil {
+		t.Fatal("expected non-nil CloudCheckpoint")
+	}
+	if updated.Status.CloudCheckpoint.PartitionOffsets["0"] != "42" {
+		t.Errorf("expected partition 0 offset=42, got %q", updated.Status.CloudCheckpoint.PartitionOffsets["0"])
+	}
+	if updated.Status.CloudCheckpoint.PartitionOffsets["1"] != "99" {
+		t.Errorf("expected partition 1 offset=99, got %q", updated.Status.CloudCheckpoint.PartitionOffsets["1"])
+	}
+	if updated.Status.LastTimestamp == nil {
+		t.Fatal("expected non-nil LastTimestamp")
+	}
+}
+
+func TestFlushCloudCheckpoint_NotFound(t *testing.T) {
+	r := newTestReconciler()
+	key := types.NamespacedName{Name: "missing", Namespace: "default"}
+
+	ing := cloud.NewCloudIngestor(
+		cloud.NewFakeSource(), fakeParser{}, nil,
+		cloud.CloudPosition{}, "test",
+	)
+
+	// Should not panic when source doesn't exist.
+	r.flushCloudCheckpoint(context.Background(), key, ing, logr.Discard())
+}
+
+// --- eventLoop ---
+
+func TestEventLoop_ProcessesEventsAndFlushes(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "evloop-source",
+			Namespace: "default",
+		},
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			IgnoreSystemUsers: false,
+			Checkpoint: audiciav1alpha1.CheckpointConfig{
+				IntervalSeconds: 1, // 1 second flush interval for fast test.
+			},
+		},
+	}
+
+	r := newTestReconciler(&source)
+	key := types.NamespacedName{Name: "evloop-source", Namespace: "default"}
+
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	filterChain, _ := filter.NewChain(nil)
+	ing := &fakeIngestor{}
+
+	events := make(chan auditv1.Event, 10)
+
+	// Send some events.
+	events <- auditv1.Event{
+		Verb: "get",
+		User: authnv1.UserInfo{Username: "system:serviceaccount:default:loop-sa"},
+		ObjectRef: &auditv1.ObjectReference{
+			Resource: "pods", Namespace: "default",
+		},
+	}
+	events <- auditv1.Event{
+		Verb: "list",
+		User: authnv1.UserInfo{Username: "system:serviceaccount:default:loop-sa"},
+		ObjectRef: &auditv1.ObjectReference{
+			Resource: "pods", Namespace: "default",
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+	go func() {
+		r.eventLoop(ctx, key, source, engine, filterChain, ing, events)
+		close(done)
+	}()
+
+	// Wait for the checkpoint ticker to fire and flush.
+	time.Sleep(2 * time.Second)
+
+	// Cancel context to trigger final flush and shutdown.
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("eventLoop did not exit after context cancellation")
+	}
+
+	// Verify a report was created.
+	reportName := fmt.Sprintf("report-%s", sanitizeName("loop-sa"))
+	var report audiciav1alpha1.AudiciaPolicyReport
+	if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "default"}, &report); err != nil {
+		t.Fatalf("expected report for loop-sa: %v", err)
+	}
+	if report.Status.EventsProcessed < 2 {
+		t.Errorf("expected at least 2 events processed, got %d", report.Status.EventsProcessed)
+	}
+}
+
+func TestEventLoop_ChannelClosed(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "evloop-close-source",
+			Namespace: "default",
+		},
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			Checkpoint: audiciav1alpha1.CheckpointConfig{
+				IntervalSeconds: 60,
+			},
+		},
+	}
+
+	r := newTestReconciler(&source)
+	key := types.NamespacedName{Name: "evloop-close-source", Namespace: "default"}
+
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	filterChain, _ := filter.NewChain(nil)
+	ing := &fakeIngestor{}
+
+	events := make(chan auditv1.Event, 10)
+
+	// Close the channel immediately — eventLoop should exit cleanly.
+	close(events)
+
+	done := make(chan struct{})
+	go func() {
+		r.eventLoop(context.Background(), key, source, engine, filterChain, ing, events)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("eventLoop did not exit after channel close")
 	}
 }
