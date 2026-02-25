@@ -1002,8 +1002,8 @@ func TestProcessEvent_ExplicitTimestamp(t *testing.T) {
 		if len(rules) != 1 {
 			t.Fatalf("expected 1 rule, got %d", len(rules))
 		}
-		if rules[0].FirstSeen.Time.Year() != 2025 {
-			t.Errorf("expected event timestamp year=2025, got %d", rules[0].FirstSeen.Time.Year())
+		if rules[0].FirstSeen.Year() != 2025 {
+			t.Errorf("expected event timestamp year=2025, got %d", rules[0].FirstSeen.Year())
 		}
 	}
 }
