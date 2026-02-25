@@ -157,8 +157,8 @@ function transformLinks(markdown: string, category: string | null): string {
   // between the character class and the literal "\.md" that follows.
   return markdown.replaceAll(
     /\[([^\]]+)\]\(((?:\.\.\/|\.\/)?[a-zA-Z0-9_/-]+(?:\.[a-zA-Z0-9_/-]+)*)\.md(#[a-zA-Z0-9_-]*)?\)/g,
-    (_match, text, basePath, anchor) => {
-      const fragment = anchor || "";
+    (_match: string, text: string, basePath: string, anchor = "") => {
+      const fragment = anchor;
 
       // Handle cross-category links like ../guides/audit-policy
       if (basePath.startsWith("../")) {
@@ -199,10 +199,10 @@ export async function getDoc(
     const text = await Deno.readTextFile(filePath);
 
     // Extract title from first # heading
-    const titleMatch = text.match(/^#\s+([^\n]+)$/m);
+    const titleMatch = /^#\s+([^\n]+)$/m.exec(text);
     const title = titleMatch
       ? titleMatch[1].trim()
-      : slugParts[slugParts.length - 1];
+      : slugParts.at(-1)!;
 
     const transformed = transformLinks(text, category);
 
@@ -211,7 +211,7 @@ export async function getDoc(
       : `/docs/${slugParts[0]}`;
 
     return {
-      slug: slugParts[slugParts.length - 1],
+      slug: slugParts.at(-1)!,
       category,
       title,
       content: transformed,
@@ -246,6 +246,65 @@ export interface SearchEntry {
 
 let _searchIndex: SearchEntry[] | null = null;
 
+async function buildSearchEntryForPage(
+  section: NavSection,
+  page: { slug: string; title: string },
+  slugger: GithubSlugger,
+): Promise<SearchEntry | null> {
+  const filePath = section.slug
+    ? join(DOCS_DIR, section.slug, `${page.slug}.md`)
+    : join(DOCS_DIR, `${page.slug}.md`);
+
+  let text: string;
+  try {
+    text = await Deno.readTextFile(filePath);
+  } catch {
+    return null;
+  }
+
+  const urlPath = section.slug
+    ? `/docs/${section.slug}/${page.slug}`
+    : `/docs/${page.slug}`;
+
+  // Extract title
+  const titleMatch = /^#\s+([^\n]+)$/m.exec(text);
+  const title = titleMatch ? titleMatch[1].trim() : page.title;
+
+  // Extract h2/h3 headings with anchor slugs
+  slugger.reset();
+  const headings: [string, string][] = [];
+  const headingRegex = /^#{2,3}\s+([^\n]+)$/gm;
+  let match;
+  while ((match = headingRegex.exec(text)) !== null) {
+    const headingText = match[1].trim();
+    const anchor = slugger.slug(headingText);
+    headings.push([headingText, anchor]);
+  }
+
+  // Generate plain-text snippet
+  const snippet = text
+    .replaceAll(/^#{1,6}\s+[^\n]+$/gm, "") // remove headings
+    .replaceAll(/```[^`]*(?:`(?!``)[^`]*)*```/g, "") // remove code blocks
+    .replaceAll(/`[^`]+`/g, "") // remove inline code
+    .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links → text
+    .replaceAll(/[*_~]/g, "") // remove emphasis
+    .replaceAll(/\|[^\n]+\|/g, "") // remove table rows
+    .replaceAll(/---+/g, "") // remove hr
+    .replaceAll(/\n{2,}/g, " ")
+    .replaceAll("\n", " ")
+    .trim()
+    .slice(0, 160);
+
+  return {
+    t: title,
+    p: urlPath,
+    s: section.section || "Project",
+    h: headings,
+    x: snippet,
+    e: !!section.expert,
+  };
+}
+
 export async function buildSearchIndex(): Promise<SearchEntry[]> {
   if (_searchIndex) return _searchIndex;
 
@@ -254,58 +313,8 @@ export async function buildSearchIndex(): Promise<SearchEntry[]> {
 
   for (const section of DOCS_NAV) {
     for (const page of section.pages) {
-      const filePath = section.slug
-        ? join(DOCS_DIR, section.slug, `${page.slug}.md`)
-        : join(DOCS_DIR, `${page.slug}.md`);
-
-      let text: string;
-      try {
-        text = await Deno.readTextFile(filePath);
-      } catch {
-        continue;
-      }
-
-      const urlPath = section.slug
-        ? `/docs/${section.slug}/${page.slug}`
-        : `/docs/${page.slug}`;
-
-      // Extract title
-      const titleMatch = text.match(/^#\s+([^\n]+)$/m);
-      const title = titleMatch ? titleMatch[1].trim() : page.title;
-
-      // Extract h2/h3 headings with anchor slugs
-      slugger.reset();
-      const headings: [string, string][] = [];
-      const headingRegex = /^#{2,3}\s+([^\n]+)$/gm;
-      let match;
-      while ((match = headingRegex.exec(text)) !== null) {
-        const headingText = match[1].trim();
-        const anchor = slugger.slug(headingText);
-        headings.push([headingText, anchor]);
-      }
-
-      // Generate plain-text snippet
-      const snippet = text
-        .replaceAll(/^#{1,6}\s+[^\n]+$/gm, "") // remove headings
-        .replaceAll(/```[^`]*(?:`(?!``)[^`]*)*```/g, "") // remove code blocks
-        .replaceAll(/`[^`]+`/g, "") // remove inline code
-        .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links → text
-        .replaceAll(/[*_~]/g, "") // remove emphasis
-        .replaceAll(/\|[^\n]+\|/g, "") // remove table rows
-        .replaceAll(/---+/g, "") // remove hr
-        .replaceAll(/\n{2,}/g, " ")
-        .replaceAll("\n", " ")
-        .trim()
-        .slice(0, 160);
-
-      entries.push({
-        t: title,
-        p: urlPath,
-        s: section.section || "Project",
-        h: headings,
-        x: snippet,
-        e: !!section.expert,
-      });
+      const entry = await buildSearchEntryForPage(section, page, slugger);
+      if (entry) entries.push(entry);
     }
   }
 

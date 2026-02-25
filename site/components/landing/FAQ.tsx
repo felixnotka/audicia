@@ -25,15 +25,15 @@ const faqs = [
   },
 ];
 
-export default function FAQ() {
+export default function Faq() {
   return (
     <section className="landing-section">
       <div className="landing-section-inner">
         <h2 className="section-headline">Frequently Asked Questions</h2>
 
         <div className="faq-list">
-          {faqs.map((faq, i) => (
-            <details key={i} className="faq-item">
+          {faqs.map((faq) => (
+            <details key={faq.q} className="faq-item">
               <summary className="faq-question">{faq.q}</summary>
               <p className="faq-answer">{faq.a}</p>
             </details>

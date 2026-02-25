@@ -47,7 +47,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
       <script
         // deno-lint-ignore react-no-danger
         dangerouslySetInnerHTML={{
-          __html: `
+          __html: String.raw`
           document.addEventListener('DOMContentLoaded', function() {
             var sidebar = document.querySelector('.docs-sidebar');
 
@@ -57,7 +57,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
             if (toggle && nav) {
               toggle.addEventListener('click', function() {
                 var open = nav.classList.toggle('open');
-                toggle.querySelector('.docs-sidebar-toggle-icon').textContent = open ? '\\u2212' : '+';
+                toggle.querySelector('.docs-sidebar-toggle-icon').textContent = open ? '\u2212' : '+';
               });
             }
 
@@ -104,7 +104,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
 
               // Platform-appropriate shortcut hint
               if (shortcutKey) {
-                shortcutKey.textContent = navigator.platform.indexOf('Mac') > -1 ? '\\u2318' : 'Ctrl+';
+                shortcutKey.textContent = navigator.platform.indexOf('Mac') > -1 ? '\u2318' : 'Ctrl+';
               }
 
               function doSearch(query) {
@@ -114,7 +114,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
                   searchResults.classList.remove('visible');
                   return;
                 }
-                var tokens = query.toLowerCase().split(/\\s+/).filter(Boolean);
+                var tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
                 var scored = [];
 
                 for (var i = 0; i < searchIndex.length; i++) {
@@ -148,7 +148,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
                 var results = scored.slice(0, 8);
 
                 if (results.length === 0) {
-                  searchResults.innerHTML = '<div class="docs-search-empty">No results found</div>';
+                  searchResults.innerHTML = '<li class="docs-search-empty">No results found</li>';
                   searchResults.classList.add('visible');
                   return;
                 }
@@ -157,17 +157,20 @@ export default define.page<typeof handler>(function DocsPage(props) {
                   var item = results[r];
                   var href = item.entry.p;
                   if (item.heading) href += '#' + item.heading[1];
-                  var div = document.createElement('a');
-                  div.href = href;
-                  div.className = 'docs-search-result-item';
-                  div.setAttribute('role', 'option');
-                  div.innerHTML =
+                  var li = document.createElement('li');
+                  li.className = 'docs-search-result-li';
+                  var a = document.createElement('a');
+                  a.href = href;
+                  a.className = 'docs-search-result-item';
+                  a.setAttribute('role', 'option');
+                  a.innerHTML =
                     '<span class="docs-search-result-section">' + item.entry.s + '</span>' +
                     '<span class="docs-search-result-title">' + item.entry.t + '</span>' +
                     (item.heading
                       ? '<span class="docs-search-result-heading"># ' + item.heading[0] + '</span>'
                       : '');
-                  searchResults.appendChild(div);
+                  li.appendChild(a);
+                  searchResults.appendChild(li);
                 }
                 searchResults.classList.add('visible');
               }

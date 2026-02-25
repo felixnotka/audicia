@@ -63,7 +63,7 @@ export async function getPost(slug: string): Promise<Post | null> {
 
     const publishedAt = new Date(attrs.published_at);
     if (Number.isNaN(publishedAt.getTime())) {
-      throw new Error(
+      throw new TypeError(
         `Invalid "published_at" date in front matter for slug "${slug}": "${attrs.published_at}"`,
       );
     }

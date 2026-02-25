@@ -7,7 +7,7 @@ import HowItWorks from "../components/landing/HowItWorks.tsx";
 import Features from "../components/landing/Features.tsx";
 import Compliance from "../components/landing/Compliance.tsx";
 import Comparison from "../components/landing/Comparison.tsx";
-import FAQ from "../components/landing/FAQ.tsx";
+import Faq from "../components/landing/Faq.tsx";
 import QuickStart from "../components/landing/QuickStart.tsx";
 import OpenSource from "../components/landing/OpenSource.tsx";
 
@@ -123,7 +123,7 @@ export default define.page(function Home({ state }) {
         <Compliance />
         <Comparison />
         <QuickStart />
-        <FAQ />
+        <Faq />
         <OpenSource />
       </main>
     </div>
