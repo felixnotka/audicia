@@ -7,7 +7,6 @@ audit logs to Event Hub, and Audicia consumes them.
 ## Prerequisites
 
 - An Azure Event Hub namespace and instance receiving the diagnostic logs
-- The Audicia operator image built with the `azure` build tag
 - Helm 3
 
 ## Step 1: Enable AKS Diagnostic Settings
@@ -73,6 +72,9 @@ cloudAuditLog:
   azure:
     eventHubNamespace: "<NAMESPACE>.servicebus.windows.net"
     eventHubName: "<EVENT_HUB_NAME>"
+
+image:
+  tag: "<VERSION>-azure"
 
 serviceAccount:
   annotations:

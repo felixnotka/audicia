@@ -53,6 +53,7 @@ role ARN:
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+  --set image.tag=<VERSION>-aws \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AWSCloudWatch \
   --set cloudAuditLog.aws.logGroupName="/aws/eks/my-cluster/cluster" \

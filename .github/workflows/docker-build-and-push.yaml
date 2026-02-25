@@ -13,6 +13,19 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # Default image: file + webhook ingestion only (smallest).
+          - suffix: ""
+            build_tags: ""
+          # Cloud provider variants.
+          - suffix: "-azure"
+            build_tags: "azure"
+          - suffix: "-aws"
+            build_tags: "aws"
+          - suffix: "-gcp"
+            build_tags: "gcp"
 
     steps:
       - name: Check Out Repo
@@ -27,6 +40,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Compute image tags
+        id: tags
+        run: |
+          VERSION="${{ inputs.new_version }}"
+          SUFFIX="${{ matrix.suffix }}"
+          TAGS="felixnotka/audicia-operator:${VERSION}${SUFFIX}"
+          if [ "${{ inputs.environment }}" = "prod" ] && [ -z "$SUFFIX" ]; then
+            TAGS="${TAGS},felixnotka/audicia-operator:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image with provenance and SBOM
         uses: docker/build-push-action@v6
         with:
@@ -37,27 +61,30 @@ jobs:
             VERSION=${{ inputs.new_version }}
             COMMIT=${{ github.sha }}
             DATE=${{ github.event.head_commit.timestamp }}
-            GO_BUILD_TAGS=azure,aws,gcp
-          tags: |
-            felixnotka/audicia-operator:${{ inputs.new_version }}
-            ${{ inputs.environment == 'prod' && 'felixnotka/audicia-operator:latest' || '' }}
+            GO_BUILD_TAGS=${{ matrix.build_tags }}
+          tags: ${{ steps.tags.outputs.tags }}
           push: true
           sbom: true
           provenance: mode=max
 
+  release:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: inputs.environment == 'prod'
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v6
+
       - name: Set up Helm
-        if: inputs.environment == 'prod'
         uses: azure/setup-helm@v4
 
       - name: Package Helm chart
-        if: inputs.environment == 'prod'
         run: |
           helm package deploy/helm/ \
             --version ${{ inputs.new_version }} \
             --app-version ${{ inputs.new_version }}
 
       - name: Create and push git tag
-        if: inputs.environment == 'prod'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -65,7 +92,6 @@ jobs:
           git push origin "${{ inputs.new_version }}"
 
       - name: Create GitHub Release
-        if: inputs.environment == 'prod'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.new_version }}

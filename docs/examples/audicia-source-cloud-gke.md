@@ -51,6 +51,7 @@ Service Account email:
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+  --set image.tag=<VERSION>-gcp \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=GCPPubSub \
   --set cloudAuditLog.gcp.projectID="my-project" \

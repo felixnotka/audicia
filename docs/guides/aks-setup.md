@@ -6,7 +6,6 @@ Azure Event Hub using Workload Identity.
 ## Prerequisites
 
 - An Azure Event Hub namespace and instance receiving the diagnostic logs
-- The Audicia operator image built with the `azure` build tag
 - Helm 3
 
 ## Step 1: Enable AKS Diagnostic Settings
@@ -72,6 +71,7 @@ az identity federated-credential create \
 helm repo add audicia https://charts.audicia.io
 
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
+  --set image.tag=<VERSION>-azure \
   --set cloudAuditLog.enabled=true \
   --set cloudAuditLog.provider=AzureEventHub \
   --set cloudAuditLog.clusterIdentity="/subscriptions/<SUB>/resourceGroups/<RG>/providers/Microsoft.ContainerService/managedClusters/<CLUSTER>" \

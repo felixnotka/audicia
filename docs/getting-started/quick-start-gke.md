@@ -8,7 +8,6 @@ Audicia consumes them.
 ## Prerequisites
 
 - A GKE cluster with audit logging enabled (Admin Activity logs are on by default; Data Access logs must be enabled separately)
-- The Audicia operator image built with the `gcp` build tag
 - Helm 3
 - `gcloud` CLI authenticated with sufficient permissions
 
@@ -93,6 +92,9 @@ cloudAuditLog:
   gcp:
     projectID: "<PROJECT_ID>"
     subscriptionID: "audicia-audit-sub"
+
+image:
+  tag: "<VERSION>-gcp"
 
 serviceAccount:
   annotations:

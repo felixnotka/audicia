@@ -6,7 +6,6 @@ CloudWatch Logs using IRSA (IAM Roles for Service Accounts).
 ## Prerequisites
 
 - An EKS cluster with audit logging enabled (disabled by default — must be explicitly enabled)
-- The Audicia operator image built with the `aws` build tag
 - Helm 3
 - `eksctl` or `aws` CLI for IAM/OIDC setup
 
@@ -149,6 +148,9 @@ cloudAuditLog:
   aws:
     logGroupName: "/aws/eks/<CLUSTER_NAME>/cluster"
     region: "<REGION>"
+
+image:
+  tag: "<VERSION>-aws"
 
 serviceAccount:
   annotations:
