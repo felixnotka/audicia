@@ -63,6 +63,12 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["breaking-change", "manual-review"]
+    },
+    {
+      "description": "Ignore Helm values image tag — CI sets this at release time",
+      "matchFileNames": ["deploy/helm/values.yaml"],
+      "matchManagers": ["helm-values"],
+      "enabled": false
     }
   ],
 
