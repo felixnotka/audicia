@@ -52,6 +52,13 @@ jobs:
         with:
           name: go-coverage
 
+      - name: Read project version
+        id: version
+        run: |
+          major=$(jq -r '.Major' version.json)
+          minor=$(jq -r '.Minor' version.json)
+          echo "value=${major}.${minor}" >> "$GITHUB_OUTPUT"
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:
@@ -60,6 +67,7 @@ jobs:
         with:
           args: >
             -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.projectVersion=${{ steps.version.outputs.value }}
 
       - name: SonarQube Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
