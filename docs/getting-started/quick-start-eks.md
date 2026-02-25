@@ -1,34 +1,43 @@
 # Quick Start: EKS Cloud Ingestion
 
 This tutorial walks you through setting up Audicia to ingest audit logs from an Amazon EKS cluster via
-CloudWatch Logs. Unlike file or webhook mode, cloud ingestion works without control plane access — EKS
-automatically sends audit logs to CloudWatch, and Audicia consumes them.
+CloudWatch Logs. Unlike file or webhook mode, cloud ingestion works without control plane access — once
+enabled, EKS streams audit logs to CloudWatch, and Audicia consumes them.
 
 ## Prerequisites
 
-- An EKS cluster with audit logging enabled (enabled by default)
+- An EKS cluster with [audit logging enabled](#step-1-enable-eks-audit-logging) (disabled by default)
 - The Audicia operator image built with the `aws` build tag
 - Helm 3
 - `eksctl` or `aws` CLI for IAM/OIDC setup
 
-## Step 1: Verify EKS Audit Logs in CloudWatch
+## Step 1: Enable EKS Audit Logging
 
-EKS automatically sends API server audit logs to CloudWatch Logs under the log group
-`/aws/eks/<CLUSTER_NAME>/cluster`. Verify they exist:
+EKS control plane logging is **disabled by default**. You must explicitly enable the `audit` log type,
+which streams API server audit events to CloudWatch Logs under `/aws/eks/<CLUSTER_NAME>/cluster`.
+
+> **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges. Consider setting a
+> retention policy on the log group to control costs (e.g., 30 or 90 days).
+
+```bash
+# Enable audit logging
+aws eks update-cluster-config \
+  --name <CLUSTER_NAME> \
+  --logging '{"clusterLogging":[{"types":["audit"],"enabled":true}]}'
+
+# Optional: set log retention to control costs (default is indefinite)
+aws logs put-retention-policy \
+  --log-group-name "/aws/eks/<CLUSTER_NAME>/cluster" \
+  --retention-in-days 90
+```
+
+Verify the log group exists and contains audit events:
 
 ```bash
 aws logs filter-log-events \
   --log-group-name "/aws/eks/<CLUSTER_NAME>/cluster" \
   --log-stream-name-prefix "kube-apiserver-audit-" \
   --limit 5
-```
-
-If the log group doesn't exist, enable audit logging:
-
-```bash
-aws eks update-cluster-config \
-  --name <CLUSTER_NAME> \
-  --logging '{"clusterLogging":[{"types":["audit"],"enabled":true}]}'
 ```
 
 ## Step 2: Set Up IRSA
@@ -81,19 +90,40 @@ eksctl create iamserviceaccount \
 
 ## Step 3: Install Audicia
 
+Create a `values-eks.yaml` file with your cluster-specific configuration:
+
+```yaml
+# values-eks.yaml
+cloudAuditLog:
+  enabled: true
+  provider: AWSCloudWatch
+  aws:
+    logGroupName: "/aws/eks/<CLUSTER_NAME>/cluster"
+    region: "<REGION>"
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT_ID>:role/audicia-operator"
+```
+
+Install with Helm:
+
 ```bash
 helm repo add audicia https://charts.audicia.io
 
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=AWSCloudWatch \
-  --set cloudAuditLog.aws.logGroupName="/aws/eks/<CLUSTER_NAME>/cluster" \
-  --set cloudAuditLog.aws.region="<REGION>" \
-  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="arn:aws:iam::<ACCOUNT_ID>:role/audicia-operator"
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  --version <VERSION> \
+  -f values-eks.yaml
 ```
 
-The `eks.amazonaws.com/role-arn` ServiceAccount annotation triggers the EKS Pod Identity webhook to inject
-the required AWS credentials into the pod.
+> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
+> Check in `values-eks.yaml` alongside your other infrastructure config.
+
+The `eks.amazonaws.com/role-arn` ServiceAccount annotation is used by
+[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) (IAM Roles
+for Service Accounts). The IRSA mutating webhook injects `AWS_ROLE_ARN` and
+`AWS_WEB_IDENTITY_TOKEN_FILE` into the pod, which the AWS SDK picks up automatically.
 
 ## Step 4: Create an AudiciaSource
 
@@ -147,7 +177,8 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [EKS Setup Guide](../guides/eks-setup.md) — Full guide with IRSA manual setup and troubleshooting
+- [EKS Setup Guide](../guides/eks-setup.md) — Full guide with IRSA manual setup, production hardening, and troubleshooting
+- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia network access
 - [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
 - [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
 - [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works

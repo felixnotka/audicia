@@ -7,7 +7,7 @@ Audicia consumes them.
 
 ## Prerequisites
 
-- A GKE cluster with audit logging enabled (enabled by default)
+- A GKE cluster with audit logging enabled (Admin Activity logs are on by default; Data Access logs must be enabled separately)
 - The Audicia operator image built with the `gcp` build tag
 - Helm 3
 - `gcloud` CLI authenticated with sufficient permissions
@@ -83,19 +83,40 @@ gcloud iam service-accounts add-iam-policy-binding \
 
 ## Step 3: Install Audicia
 
+Create a `values-gke.yaml` file with your cluster-specific configuration:
+
+```yaml
+# values-gke.yaml
+cloudAuditLog:
+  enabled: true
+  provider: GCPPubSub
+  gcp:
+    projectID: "<PROJECT_ID>"
+    subscriptionID: "audicia-audit-sub"
+
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: "audicia-operator@<PROJECT_ID>.iam.gserviceaccount.com"
+```
+
+Install with Helm:
+
 ```bash
 helm repo add audicia https://charts.audicia.io
 
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=GCPPubSub \
-  --set cloudAuditLog.gcp.projectID="<PROJECT_ID>" \
-  --set cloudAuditLog.gcp.subscriptionID="audicia-audit-sub" \
-  --set serviceAccount.annotations."iam\.gke\.io/gcp-service-account"="audicia-operator@<PROJECT_ID>.iam.gserviceaccount.com"
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  --version <VERSION> \
+  -f values-gke.yaml
 ```
 
-The `iam.gke.io/gcp-service-account` ServiceAccount annotation triggers GKE Workload Identity to project
-a federated token into the pod. The GCP client libraries discover this automatically.
+> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
+> Check in `values-gke.yaml` alongside your other infrastructure config.
+
+The `iam.gke.io/gcp-service-account` ServiceAccount annotation enables
+[Workload Identity Federation](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+GKE projects a federated token into the pod, which the GCP client libraries discover automatically
+via Application Default Credentials (ADC).
 
 ## Step 4: Create an AudiciaSource
 
@@ -148,7 +169,8 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [GKE Setup Guide](../guides/gke-setup.md) — Full guide with log router details and troubleshooting
+- [GKE Setup Guide](../guides/gke-setup.md) — Full guide with log router details, production hardening, and troubleshooting
+- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia network access
 - [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
 - [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
 - [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works

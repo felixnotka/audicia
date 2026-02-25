@@ -63,16 +63,35 @@ az identity federated-credential create \
 
 ## Step 3: Install Audicia
 
+Create a `values-aks.yaml` file with your cluster-specific configuration:
+
+```yaml
+# values-aks.yaml
+cloudAuditLog:
+  enabled: true
+  provider: AzureEventHub
+  azure:
+    eventHubNamespace: "<NAMESPACE>.servicebus.windows.net"
+    eventHubName: "<EVENT_HUB_NAME>"
+
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "<MANAGED_IDENTITY_CLIENT_ID>"
+```
+
+Install with Helm:
+
 ```bash
 helm repo add audicia https://charts.audicia.io
 
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=AzureEventHub \
-  --set cloudAuditLog.azure.eventHubNamespace="<NAMESPACE>.servicebus.windows.net" \
-  --set cloudAuditLog.azure.eventHubName="<EVENT_HUB_NAME>" \
-  --set serviceAccount.annotations."azure\.workload\.identity/client-id"="<MANAGED_IDENTITY_CLIENT_ID>"
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  --version <VERSION> \
+  -f values-aks.yaml
 ```
+
+> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
+> Check in `values-aks.yaml` alongside your other infrastructure config.
 
 The Helm chart automatically adds the `azure.workload.identity/use: "true"` pod label when the Azure provider is
 configured, which causes the Workload Identity webhook to inject the required credentials into the pod.
@@ -129,7 +148,8 @@ kubectl get audiciapolicyreports --all-namespaces
 
 ## What's Next
 
-- [AKS Setup Guide](../guides/aks-setup.md) — Full guide with blob checkpoints and troubleshooting
+- [AKS Setup Guide](../guides/aks-setup.md) — Full guide with blob checkpoints, production hardening, and troubleshooting
+- [NetworkPolicy Example](../examples/network-policy.md) — Restrict Audicia network access
 - [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and design
 - [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations for production
 - [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift detection works

@@ -5,17 +5,33 @@ CloudWatch Logs using IRSA (IAM Roles for Service Accounts).
 
 ## Prerequisites
 
-- An EKS cluster with audit logging enabled (enabled by default — logs go to CloudWatch)
+- An EKS cluster with audit logging enabled (disabled by default — must be explicitly enabled)
 - The Audicia operator image built with the `aws` build tag
 - Helm 3
 - `eksctl` or `aws` CLI for IAM/OIDC setup
 
-## Step 1: Verify EKS Audit Logs in CloudWatch
+## Step 1: Enable EKS Audit Logging
 
-EKS automatically sends API server audit logs to CloudWatch Logs. The log group follows the naming convention:
+EKS control plane logging is **disabled by default**. You must explicitly enable the `audit` log type.
+Once enabled, audit events stream to CloudWatch Logs under the log group
+`/aws/eks/<CLUSTER_NAME>/cluster`.
 
-```
-/aws/eks/<CLUSTER_NAME>/cluster
+> **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges. Consider setting a
+> retention policy on the log group to control costs (e.g., 30 or 90 days). AWS may also truncate
+> very large audit log entries — see
+> [EKS logging documentation](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)
+> for details on limits.
+
+```bash
+# Enable audit logging
+aws eks update-cluster-config \
+  --name <CLUSTER_NAME> \
+  --logging '{"clusterLogging":[{"types":["audit"],"enabled":true}]}'
+
+# Optional: set log retention to control costs (default is indefinite)
+aws logs put-retention-policy \
+  --log-group-name "/aws/eks/<CLUSTER_NAME>/cluster" \
+  --retention-in-days 90
 ```
 
 Verify the log group exists and contains audit events:
@@ -28,14 +44,6 @@ aws logs filter-log-events \
   --log-group-name "/aws/eks/<CLUSTER_NAME>/cluster" \
   --log-stream-name-prefix "kube-apiserver-audit-" \
   --limit 5
-```
-
-If the log group doesn't exist, enable audit logging in the EKS console or via CLI:
-
-```bash
-aws eks update-cluster-config \
-  --name <CLUSTER_NAME> \
-  --logging '{"clusterLogging":[{"types":["audit"],"enabled":true}]}'
 ```
 
 ## Step 2: Create an IAM Policy
@@ -131,20 +139,41 @@ aws iam attach-role-policy \
 
 ## Step 4: Install with Helm
 
+Create a `values-eks.yaml` file with your cluster-specific configuration:
+
+```yaml
+# values-eks.yaml
+cloudAuditLog:
+  enabled: true
+  provider: AWSCloudWatch
+  aws:
+    logGroupName: "/aws/eks/<CLUSTER_NAME>/cluster"
+    region: "<REGION>"
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT_ID>:role/audicia-operator"
+```
+
+Install with Helm:
+
 ```bash
 helm repo add audicia https://charts.audicia.io
 
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=AWSCloudWatch \
-  --set cloudAuditLog.aws.logGroupName="/aws/eks/<CLUSTER_NAME>/cluster" \
-  --set cloudAuditLog.aws.region="<REGION>" \
-  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="arn:aws:iam::<ACCOUNT_ID>:role/audicia-operator"
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  --version <VERSION> \
+  -f values-eks.yaml
 ```
 
-The `eks.amazonaws.com/role-arn` ServiceAccount annotation triggers the EKS Pod Identity webhook to inject
-`AWS_ROLE_ARN`, `AWS_WEB_IDENTITY_TOKEN_FILE`, and the projected token volume into the pod. The AWS SDK
-picks these up automatically.
+> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
+> Check in `values-eks.yaml` alongside your other infrastructure config.
+
+The `eks.amazonaws.com/role-arn` ServiceAccount annotation is used by
+[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) (IAM Roles
+for Service Accounts). The IRSA mutating webhook injects `AWS_ROLE_ARN`,
+`AWS_WEB_IDENTITY_TOKEN_FILE`, and a projected service account token volume into the pod. The AWS SDK
+picks these up automatically via the default credential chain.
 
 ## Step 5: Create an AudiciaSource
 
@@ -191,6 +220,80 @@ curl localhost:8080/metrics | grep audicia_cloud
 
 You should see `audicia_cloud_messages_received_total` incrementing and `AudiciaPolicyReport` resources being created.
 
+## Production Hardening
+
+The steps above get Audicia running. For production environments, consider the following additional
+measures.
+
+### CloudWatch Log Retention and Encryption
+
+By default, CloudWatch log groups retain data indefinitely, which can lead to unexpected costs.
+Set a retention policy and optionally encrypt the log group with a KMS key:
+
+```bash
+# Set retention (e.g., 90 days)
+aws logs put-retention-policy \
+  --log-group-name "/aws/eks/<CLUSTER_NAME>/cluster" \
+  --retention-in-days 90
+
+# Optional: encrypt log group with KMS
+aws logs associate-kms-key \
+  --log-group-name "/aws/eks/<CLUSTER_NAME>/cluster" \
+  --kms-key-id "arn:aws:kms:<REGION>:<ACCOUNT_ID>:key/<KEY_ID>"
+```
+
+> **Note:** AWS may truncate very large audit log entries. See the
+> [EKS control plane logging documentation](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)
+> for details on size limits. This can affect audit fidelity for requests with very large bodies.
+
+### IAM Policy Hardening
+
+For regulated environments, add conditions to restrict the IAM policy:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:FilterLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "<REGION>"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Pod Security
+
+Add a `securityContext` to the Helm values to run the operator as non-root:
+
+```yaml
+# values-eks.yaml (add to existing file)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  fsGroup: 65534
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+```
+
+### Network Policy
+
+Restrict the operator's network access. See the [NetworkPolicy example](../examples/network-policy.md)
+for a ready-to-use manifest that limits egress to the Kubernetes API server and CloudWatch endpoints.
+
 ## Troubleshooting
 
 | Symptom | Likely Cause | Fix |
@@ -202,6 +305,7 @@ You should see `audicia_cloud_messages_received_total` incrementing and `Audicia
 | `WebIdentityErr` | Trust policy mismatch | Verify OIDC provider, namespace, and SA name in trust policy |
 | Events from wrong cluster | Shared log group | Set `clusterIdentity` to the EKS cluster ARN |
 | High `cloud_lag_seconds` | Large backlog or slow polling | Increase `checkpoint.batchSize`, check network latency |
+| Truncated audit events | AWS log entry size limits | See [EKS logging docs](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html) |
 
 ## Related
 

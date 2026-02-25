@@ -5,7 +5,7 @@ Cloud Logging and Pub/Sub using Workload Identity Federation.
 
 ## Prerequisites
 
-- A GKE cluster with audit logging enabled (enabled by default)
+- A GKE cluster with audit logging enabled (Admin Activity logs are on by default; Data Access logs must be enabled separately)
 - The Audicia operator image built with the `gcp` build tag
 - Helm 3
 - `gcloud` CLI authenticated with sufficient permissions
@@ -113,20 +113,40 @@ gcloud iam service-accounts add-iam-policy-binding \
 
 ## Step 5: Install with Helm
 
+Create a `values-gke.yaml` file with your cluster-specific configuration:
+
+```yaml
+# values-gke.yaml
+cloudAuditLog:
+  enabled: true
+  provider: GCPPubSub
+  gcp:
+    projectID: "<PROJECT_ID>"
+    subscriptionID: "audicia-audit-sub"
+
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: "audicia-operator@<PROJECT_ID>.iam.gserviceaccount.com"
+```
+
+Install with Helm:
+
 ```bash
 helm repo add audicia https://charts.audicia.io
 
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set cloudAuditLog.enabled=true \
-  --set cloudAuditLog.provider=GCPPubSub \
-  --set cloudAuditLog.gcp.projectID="<PROJECT_ID>" \
-  --set cloudAuditLog.gcp.subscriptionID="audicia-audit-sub" \
-  --set serviceAccount.annotations."iam\.gke\.io/gcp-service-account"="audicia-operator@<PROJECT_ID>.iam.gserviceaccount.com"
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  --version <VERSION> \
+  -f values-gke.yaml
 ```
 
-The `iam.gke.io/gcp-service-account` ServiceAccount annotation triggers GKE Workload Identity
-to project a federated token into the pod. The GCP client libraries discover this token
-automatically via Application Default Credentials (ADC).
+> **Tip:** Pin `--version` to a specific chart version for reproducible deployments.
+> Check in `values-gke.yaml` alongside your other infrastructure config.
+
+The `iam.gke.io/gcp-service-account` ServiceAccount annotation enables
+[Workload Identity Federation](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+GKE projects a federated token into the pod, which the GCP client libraries discover automatically
+via Application Default Credentials (ADC).
 
 ## Step 6: Create an AudiciaSource
 
@@ -171,6 +191,60 @@ curl localhost:8080/metrics | grep audicia_cloud
 ```
 
 You should see `audicia_cloud_messages_received_total` incrementing and `AudiciaPolicyReport` resources being created.
+
+## Production Hardening
+
+The steps above get Audicia running. For production environments, consider the following additional
+measures.
+
+### Data Access Logs
+
+GKE Admin Activity logs are always on, but Data Access logs (which capture read operations like `list`
+and `get`) must be enabled separately. Audicia benefits from both log types for complete RBAC coverage:
+
+```bash
+# Enable Data Access audit logs for GKE in your project's IAM audit config
+gcloud projects get-iam-policy <PROJECT_ID> --format=json > policy.json
+# Edit policy.json to add auditConfigs for container.googleapis.com
+gcloud projects set-iam-policy <PROJECT_ID> policy.json
+```
+
+### Pub/Sub Encryption and Retention
+
+By default, Pub/Sub encrypts messages with Google-managed keys. For regulated environments,
+use a customer-managed encryption key (CMEK):
+
+```bash
+gcloud pubsub topics update audicia-audit-logs \
+  --project <PROJECT_ID> \
+  --topic-encryption-key="projects/<PROJECT_ID>/locations/<LOCATION>/keyRings/<RING>/cryptoKeys/<KEY>"
+```
+
+Review the subscription message retention (default 7 days in this guide) against your compliance
+requirements.
+
+### Pod Security
+
+Add a `securityContext` to the Helm values to run the operator as non-root:
+
+```yaml
+# values-gke.yaml (add to existing file)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  fsGroup: 65534
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+```
+
+### Network Policy
+
+Restrict the operator's network access. See the [NetworkPolicy example](../examples/network-policy.md)
+for a ready-to-use manifest that limits egress to the Kubernetes API server and Pub/Sub endpoints.
 
 ## Troubleshooting
 
