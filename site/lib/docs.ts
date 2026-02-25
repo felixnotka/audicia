@@ -200,9 +200,7 @@ export async function getDoc(
 
     // Extract title from first # heading
     const titleMatch = /^#\s+([^\n]+)$/m.exec(text);
-    const title = titleMatch
-      ? titleMatch[1].trim()
-      : slugParts.at(-1);
+    const title = titleMatch ? titleMatch[1].trim() : slugParts.at(-1);
 
     const transformed = transformLinks(text, category);
 

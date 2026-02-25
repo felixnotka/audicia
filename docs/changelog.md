@@ -7,6 +7,67 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.2.2
+
+### Added
+
+- **SonarQube quality gate enforcement** — PRs that fail the SonarQube quality
+  gate can no longer be merged; the `sonarqube-quality-gate-action` step blocks
+  the pipeline
+- **Nightly CI workflow** — Scheduled build (02:00 UTC daily) runs tests,
+  coverage, and SonarQube analysis independently of the main pipeline; also
+  supports manual dispatch
+- **E2E tests in main pipeline** — End-to-end tests now run as part of the
+  standard lint-and-test workflow on every PR, not just nightly
+- **Per-cloud-provider Docker images** — CI builds separate images with `azure`,
+  `aws`, and `gcp` build tags alongside the default cloud-free image
+- **README badges** — Pipeline status, nightly status, and license badges
+- **Controller test coverage** — Unit tests for `flushCloudCheckpoint`,
+  `eventLoop`, and additional uncovered controller paths
+- **EKS and GKE documentation** — Quick start guides, setup guides, and example
+  manifests for AWS CloudWatch Logs and GCP Pub/Sub ingestion
+
+### Fixed
+
+- 19 SonarQube code issues across operator and site: reduced cognitive
+  complexity in GCP parser and docs search index builder, replaced deprecated
+  patterns (`.match()` → `RegExp.exec()`, `.replace()` → `.replaceAll()`), added
+  `Readonly` props, switched to `TypeError`, used `String.raw` template tags,
+  stable React keys, and PascalCase component naming
+- 3 additional SonarQube issues from post-scan feedback: removed unnecessary
+  non-null assertions, fixed interactive role on non-interactive element
+- Controller `staticcheck QF1008` — removed redundant embedded field selector
+- E2E race condition and lint errors in controller tests
+- Duplicate `.footer` CSS selector merged into one block
+
+### Changed
+
+- SonarQube coverage and duplication exclusions tuned to reduce false positives
+  on test files, site code, and cloud provider adapters
+- Docs navigation updated with EKS/GKE cloud examples
+
+---
+
+## 0.2.1
+
+### Added
+
+- **AWS CloudWatch adapter** — Adapter for EKS audit logs via CloudWatch Logs
+  with workload identity support
+- **GCP Pub/Sub adapter** — Adapter for GKE audit logs via Cloud Pub/Sub with
+  Cloud Logging LogEntry parsing and raw K8s event auto-detection
+- **SEO foundation** — Meta tags, sitemap, RSS feed, 404 page, and internal link
+  structure for the documentation site
+- **Blog content** — 20 SEO blog posts covering Kubernetes RBAC, audit logging,
+  and security automation topics
+
+### Fixed
+
+- GCP parse lint error — removed always-nil error return
+- GCP parse type error and missing cloud adapter dependencies
+
+---
+
 ## 0.2.0
 
 ### Added
