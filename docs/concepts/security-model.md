@@ -146,7 +146,7 @@ only their own reports.
 
 ## Vulnerability Reporting
 
-To report security vulnerabilities, please email security@audicia.io. See the
+To report security vulnerabilities, please email info@audicia.io. See the
 project's
 [SECURITY.md](https://github.com/felixnotka/audicia/blob/main/SECURITY.md) on
 GitHub for the full vulnerability reporting process and disclosure timeline.
