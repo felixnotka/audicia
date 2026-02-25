@@ -7,7 +7,7 @@ Audicia consumes them.
 
 ## Prerequisites
 
-- A GKE cluster with audit logging enabled (Admin Activity logs are on by default; Data Access logs must be enabled separately)
+- A GKE cluster
 - Helm 3
 - `gcloud` CLI authenticated with sufficient permissions
 

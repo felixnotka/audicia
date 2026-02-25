@@ -5,7 +5,7 @@ CloudWatch Logs using IRSA (IAM Roles for Service Accounts).
 
 ## Prerequisites
 
-- An EKS cluster with audit logging enabled (disabled by default — must be explicitly enabled)
+- An EKS cluster
 - Helm 3
 - `eksctl` or `aws` CLI for IAM/OIDC setup
 

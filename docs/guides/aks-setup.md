@@ -5,7 +5,8 @@ Azure Event Hub using Workload Identity.
 
 ## Prerequisites
 
-- An Azure Event Hub namespace and instance receiving the diagnostic logs
+- An AKS cluster
+- An Azure Event Hub namespace and instance
 - Helm 3
 
 ## Step 1: Enable AKS Diagnostic Settings

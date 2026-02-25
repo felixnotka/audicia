@@ -269,10 +269,10 @@ func writeTempFile(t *testing.T, data []byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Remove(f.Name()) })
+	t.Cleanup(func() { _ = os.Remove(f.Name()) })
 	if _, err := f.Write(data); err != nil {
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 	return f.Name()
 }

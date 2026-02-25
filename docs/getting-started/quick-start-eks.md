@@ -6,7 +6,7 @@ enabled, EKS streams audit logs to CloudWatch, and Audicia consumes them.
 
 ## Prerequisites
 
-- An EKS cluster with [audit logging enabled](#step-1-enable-eks-audit-logging) (disabled by default)
+- An EKS cluster
 - Helm 3
 - `eksctl` or `aws` CLI for IAM/OIDC setup
 

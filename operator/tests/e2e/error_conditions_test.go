@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	audiciav1alpha1 "github.com/felixnotka/audicia/operator/pkg/apis/audicia.io/v1alpha1"
@@ -79,8 +80,15 @@ func TestErrorCondition_SourceConditionSet(t *testing.T) {
 		return len(s.Status.Conditions) > 0
 	}, 30*time.Second)
 
-	// Should have PipelineStarting (set synchronously in Reconcile).
-	assertCondition(t, src.Status.Conditions, "Ready", "PipelineStarting", metav1.ConditionFalse)
+	// The reconciler sets PipelineStarting synchronously, but the pipeline
+	// goroutine may update the condition to PipelineRunning before we read it.
+	readyCond := meta.FindStatusCondition(src.Status.Conditions, "Ready")
+	if readyCond == nil {
+		t.Fatal("expected Ready condition to be set")
+	}
+	if readyCond.Reason != "PipelineStarting" && readyCond.Reason != "PipelineRunning" {
+		t.Errorf("expected Ready reason PipelineStarting or PipelineRunning, got %q", readyCond.Reason)
+	}
 
 	t.Log("source condition test passed")
 }

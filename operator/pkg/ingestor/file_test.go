@@ -156,9 +156,9 @@ func writeAuditFile(t *testing.T, path string, events []string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // test helper
 	for _, e := range events {
-		f.WriteString(e + "\n")
+		_, _ = f.WriteString(e + "\n")
 	}
 }
 
@@ -311,7 +311,7 @@ func TestFileIngestor_PollDetectsRotation(t *testing.T) {
 	// Rotate: remove old file and immediately write a new one.
 	// The poll tick (1s) detects inode change → pollForData returns →
 	// tail() sleeps 2s → readFile() reopens the new file.
-	os.Remove(path)
+	_ = os.Remove(path)
 	writeAuditFile(t, path, []string{
 		validAuditJSON("b1", "create", "configmaps", "default"),
 	})
