@@ -7,7 +7,7 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
-## 0.2.2
+## 0.3.0
 
 ### Added
 
