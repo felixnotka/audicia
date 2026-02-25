@@ -103,6 +103,8 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "audicia-source-webhook", title: "AudiciaSource: Webhook" },
       { slug: "audicia-source-hardened", title: "AudiciaSource: Hardened" },
       { slug: "audicia-source-cloud-aks", title: "AudiciaSource: Cloud (AKS)" },
+      { slug: "audicia-source-cloud-eks", title: "AudiciaSource: Cloud (EKS)" },
+      { slug: "audicia-source-cloud-gke", title: "AudiciaSource: Cloud (GKE)" },
       { slug: "webhook-kubeconfig", title: "Webhook Kubeconfig" },
       { slug: "webhook-kubeconfig-mtls", title: "Webhook Kubeconfig (mTLS)" },
       { slug: "network-policy", title: "NetworkPolicy" },
