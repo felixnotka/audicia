@@ -49,9 +49,10 @@ operator:
   metricsBindAddress: ":8080"
   # -- Health probe bind address.
   healthProbeBindAddress: ":8081"
-  # -- Enable leader election.
+  # -- Enable leader election. Disable for single-replica deployments to
+  # avoid an unnecessary API dependency at startup.
   leaderElection:
-    enabled: true
+    enabled: false
   # -- Log level (0=info, 1=debug).
   logLevel: 0
 
@@ -72,6 +73,17 @@ tolerations: []
 
 # -- Affinity rules.
 affinity: {}
+
+# -- Use the host network namespace. Required for file-mode deployments on
+# control plane nodes when the CNI (e.g. Cilium without kube-proxy) cannot
+# route pod traffic to the Kubernetes service ClusterIP. When true, the
+# operator uses the node's network stack and can reach the API server directly.
+# Recommended when auditLog.enabled is true.
+hostNetwork: false
+
+# -- DNS policy. Set to ClusterFirstWithHostNet when hostNetwork is true so
+# cluster DNS still works (e.g. for leader election lease lookups).
+dnsPolicy: ""
 
 # Audit log volume configuration.
 auditLog:

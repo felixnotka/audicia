@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"strconv"
@@ -37,10 +38,42 @@ func main() {
 
 	config := loadConfig()
 
-	if err := operator.Start(ctx, buildInfo, config); err != nil {
+	maxRetries := envInt("STARTUP_MAX_RETRIES", 5)
+	if err := startWithRetry(ctx, buildInfo, config, maxRetries); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// startWithRetry wraps operator.Start with exponential backoff. This handles
+// transient API server connectivity issues (e.g. CNI not ready, control plane
+// restart) without relying on Kubernetes' slow CrashLoopBackOff (10s → 5min).
+func startWithRetry(ctx context.Context, buildInfo operator.BuildInfo, config operator.Config, maxRetries int) error {
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := time.Duration(math.Min(float64(time.Second)*math.Pow(2, float64(attempt)), float64(60*time.Second)))
+			_, _ = fmt.Fprintf(os.Stderr, "startup failed (attempt %d/%d), retrying in %s: %v\n",
+				attempt, maxRetries, delay, lastErr)
+
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("interrupted during startup retry: %w", lastErr)
+			case <-time.After(delay):
+			}
+		}
+
+		lastErr = operator.Start(ctx, buildInfo, config)
+		if lastErr == nil {
+			return nil
+		}
+
+		// If the context was cancelled (SIGTERM/SIGINT), don't retry.
+		if ctx.Err() != nil {
+			return lastErr
+		}
+	}
+	return fmt.Errorf("operator failed after %d attempts: %w", maxRetries+1, lastErr)
 }
 
 // loadConfig reads operator configuration from environment variables with defaults.
