@@ -228,6 +228,8 @@ func helmInstall(ctx context.Context) error {
 		"--set", "image.tag=e2e",
 		"--set", "image.pullPolicy=Never",
 		"--set", "auditLog.enabled=true",
+		"--set", "podSecurityContext.runAsUser=0",
+		"--set", "podSecurityContext.runAsNonRoot=false",
 		"--set", "webhook.enabled=true",
 		"--set", "webhook.port=8443",
 		"--set", "webhook.tlsSecretName=audicia-webhook-tls",

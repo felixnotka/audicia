@@ -7,6 +7,26 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.2
+
+### Added
+
+- **Example values files** — per-mode Helm values files in `deploy/helm/` for
+  file mode, webhook (ClusterIP, mTLS, hostPort), and cloud providers (AKS, EKS,
+  GKE)
+
+### Fixed
+
+- E2E file-mode tests failing after audit log path migration: the kube-apiserver
+  creates audit log files with `0600` permissions (owner-only). The E2E helm
+  install now sets `runAsUser=0` to match production file-mode requirements,
+  where root access is needed to read the audit log
+- Deployment template hostPath volume type changed from `File` (requires
+  pre-existing file) to unset (no pre-existence check), improving compatibility
+  with clusters where the audit log is created by the kube-apiserver at startup
+
+---
+
 ## 0.3.1
 
 ### Added

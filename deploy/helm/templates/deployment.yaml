@@ -88,7 +88,7 @@ spec:
           volumeMounts:
             {{- if .Values.auditLog.enabled }}
             - name: audit-log
-              mountPath: {{ .Values.auditLog.hostPath }}
+              mountPath: {{ dir .Values.auditLog.hostPath }}
               readOnly: true
             {{- end }}
             {{- if .Values.webhook.enabled }}
@@ -105,8 +105,8 @@ spec:
         {{- if .Values.auditLog.enabled }}
         - name: audit-log
           hostPath:
-            path: {{ .Values.auditLog.hostPath }}
-            type: File
+            path: {{ dir .Values.auditLog.hostPath }}
+            type: DirectoryOrCreate
         {{- end }}
         {{- if .Values.webhook.enabled }}
         - name: webhook-tls
