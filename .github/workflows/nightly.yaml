@@ -31,7 +31,7 @@ jobs:
         run: go test -race -tags azure,aws,gcp -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: go-coverage
           path: operator/coverage.out
@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: go-coverage
 
