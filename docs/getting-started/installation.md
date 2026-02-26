@@ -22,7 +22,7 @@ spec:
         - kube-apiserver
         # ... existing flags ...
         - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-        - --audit-log-path=/var/log/kube-audit.log # For file-based ingestion
+        - --audit-log-path=/var/log/kubernetes/audit/audit.log # For file-based ingestion
         # OR for webhook ingestion:
         - --audit-webhook-config-file=/etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
@@ -39,7 +39,7 @@ recommendations.
 ### Verify Audit Logging
 
 ```bash
-head -5 /var/log/kube-audit.log
+head -5 /var/log/kubernetes/audit/audit.log
 ```
 
 You should see JSON audit events. If the file is empty or missing, check your
@@ -60,11 +60,20 @@ file:
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kube-audit.log \
+  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
+  --set hostNetwork=true \
   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
   --set tolerations[0].effect=NoSchedule
 ```
+
+> **Why `hostNetwork=true`?** On Cilium and other kube-proxy-free CNIs, pods on
+> control plane nodes cannot reach the Kubernetes service ClusterIP.
+> `hostNetwork` lets the pod use the node's network stack, bypassing the CNI
+> datapath. This is safe because the pod already runs on the control plane with
+> `hostPath` access. See the
+> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork).
+> If you are certain your cluster uses kube-proxy, you can omit this flag.
 
 > **Permission denied?** Kubernetes audit logs are a sensitive resource — they
 > are typically owned by root and restricted to root-only access. The operator
@@ -79,7 +88,8 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 > ```bash
 > helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
 >   --set auditLog.enabled=true \
->   --set auditLog.hostPath=/var/log/kube-audit.log \
+>   --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
+>   --set hostNetwork=true \
 >   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
 >   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
 >   --set tolerations[0].effect=NoSchedule \
@@ -91,7 +101,7 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 > non-root):
 >
 > ```bash
-> chmod 644 /var/log/kube-audit.log
+> chmod 644 /var/log/kubernetes/audit/audit.log
 > ```
 >
 > Note that some kube-apiserver configurations reset file permissions on

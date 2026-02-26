@@ -147,7 +147,7 @@ jq 'select(.user.username == "system:serviceaccount:my-team:backend")
   | {verb, resource: .objectRef.resource,
      namespace: .objectRef.namespace,
      subresource: .objectRef.subresource}' \
-  /var/log/kube-audit.log | sort | uniq -c | sort -rn
+  /var/log/kubernetes/audit/audit.log | sort | uniq -c | sort -rn
 ```
 
 This works for one-time analysis, but it has limitations:

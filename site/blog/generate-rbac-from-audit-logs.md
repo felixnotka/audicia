@@ -55,7 +55,7 @@ Audicia runs as a Kubernetes Operator. Install it with Helm:
 helm install audicia oci://ghcr.io/felixnotka/audicia/charts/audicia-operator \
   -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kube-audit.log
+  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log
 ```
 
 This deploys the operator and configures it to tail the audit log file from the
@@ -73,7 +73,7 @@ metadata:
 spec:
   sourceType: K8sAuditLog
   location:
-    path: /var/log/kube-audit.log
+    path: /var/log/kubernetes/audit/audit.log
   policyStrategy:
     scopeMode: NamespaceStrict
     verbMerge: Smart

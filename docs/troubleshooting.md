@@ -11,7 +11,7 @@ Common issues and their solutions, organized by symptom.
 1. **Audit logging not enabled.** Audicia needs audit events to work. Verify the
    audit log exists and contains events:
    ```bash
-   head -5 /var/log/kube-audit.log
+   head -5 /var/log/kubernetes/audit/audit.log
    ```
    If empty or missing, check that `--audit-policy-file` and `--audit-log-path`
    (or `--audit-webhook-config-file`) are set on the kube-apiserver. See
@@ -91,6 +91,54 @@ The webhook receiver is running but the kube-apiserver is not sending events.
    ```bash
    ps aux | grep audit-webhook
    ```
+
+---
+
+## Operator cannot reach API server (i/o timeout)
+
+The operator pod starts but crashes with:
+
+```
+dial tcp 10.96.0.1:443: i/o timeout
+```
+
+This happens on **kube-proxy-free clusters** (e.g. Cilium with
+`kubeProxyReplacement: true`) when the operator pod runs on a control plane
+node. The CNI's eBPF datapath cannot route pod traffic to the Kubernetes service
+ClusterIP from the pod network namespace.
+
+**Symptoms:**
+
+- Operator logs show `dial tcp 10.96.0.1:443: i/o timeout` during startup
+- May also show `failed to prime RBAC cache informer`
+- The pod never becomes Ready
+- This affects **file mode** deployments on control plane nodes
+
+**Fix:** Enable `hostNetwork` so the pod uses the node's network namespace:
+
+```bash
+helm upgrade audicia audicia/audicia-operator -n audicia-system \
+  --reuse-values \
+  --set hostNetwork=true
+```
+
+Or patch an existing deployment:
+
+```bash
+kubectl patch deployment -n audicia-system audicia-audicia-operator \
+  --type=json -p='[
+    {"op":"add","path":"/spec/template/spec/hostNetwork","value":true},
+    {"op":"add","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirstWithHostNet"}
+  ]'
+```
+
+See the [Kube-Proxy-Free Guide](guides/kube-proxy-free.md#file-mode-hostnetwork)
+for details.
+
+> **Note:** As of v0.3.1, the operator retries startup with exponential backoff
+> (up to 5 times). If your cluster has transient API server connectivity during
+> startup, the retries may resolve the issue automatically. If all retries fail,
+> the `hostNetwork` fix above is required.
 
 ---
 

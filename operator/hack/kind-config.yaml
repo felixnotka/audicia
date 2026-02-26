@@ -10,7 +10,7 @@ nodes:
         kind: ClusterConfiguration
         apiServer:
           extraArgs:
-            audit-log-path: /var/log/kube-audit.log
+            audit-log-path: /var/log/kubernetes/audit/audit.log
             audit-policy-file: /etc/kubernetes/audit-policy.yaml
             audit-log-maxage: "7"
             audit-log-maxbackup: "3"
@@ -21,9 +21,9 @@ nodes:
               mountPath: /etc/kubernetes/audit-policy.yaml
               readOnly: true
             - name: audit-log
-              hostPath: /var/log/kube-audit.log
-              mountPath: /var/log/kube-audit.log
-              pathType: FileOrCreate
+              hostPath: /var/log/kubernetes/audit
+              mountPath: /var/log/kubernetes/audit
+              pathType: DirectoryOrCreate
     extraMounts:
       - hostPath: ./operator/hack/audit-policy.yaml
         containerPath: /etc/kubernetes/audit-policy.yaml

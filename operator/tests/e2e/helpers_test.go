@@ -35,7 +35,7 @@ import (
 const (
 	defaultTimeout = 3 * time.Minute
 	pollInterval   = 2 * time.Second
-	auditLogPath   = "/var/log/kube-audit.log"
+	auditLogPath   = "/var/log/kubernetes/audit/audit.log"
 )
 
 // restConfig holds the rest.Config for SA token impersonation.

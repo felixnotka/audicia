@@ -50,6 +50,19 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 | `resources.limits.cpu`      | string | `500m`  | CPU limit.      |
 | `resources.limits.memory`   | string | `256Mi` | Memory limit.   |
 
+## Networking
+
+| Value         | Type    | Default | Description                                                                                                                                                    |
+| ------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hostNetwork` | boolean | `false` | Use the host network namespace. Required for file-mode on Cilium / kube-proxy-free clusters where pods cannot reach the Kubernetes service ClusterIP.          |
+| `dnsPolicy`   | string  | `""`    | DNS policy override. Automatically set to `ClusterFirstWithHostNet` when `hostNetwork` is true. Only set manually if you need a custom policy without hostNet. |
+
+When `hostNetwork` is enabled, the pod shares the node's network stack and can
+reach the API server directly. This is recommended for all file-mode deployments
+on control plane nodes. See the
+[Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork) for
+details.
+
 ## Scheduling
 
 | Value          | Type   | Default | Description                                                                   |
@@ -63,24 +76,25 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 Runtime settings for the Audicia operator. These are exposed as Helm values and
 set as environment variables on the operator container.
 
-| Value                             | Type    | Default | Env Var                     | Description                                     |
-| --------------------------------- | ------- | ------- | --------------------------- | ----------------------------------------------- |
-| `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.       |
-| `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address. |
-| `operator.leaderElection.enabled` | boolean | `true`  | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA.                  |
-| `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).       |
+| Value                             | Type    | Default | Env Var                     | Description                                                                |
+| --------------------------------- | ------- | ------- | --------------------------- | -------------------------------------------------------------------------- |
+| `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.                                  |
+| `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address.                            |
+| `operator.leaderElection.enabled` | boolean | `false` | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA. Only needed when running multiple replicas. |
+| `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).                                  |
 
 ### Additional Runtime Environment Variables
 
 These environment variables are not exposed as top-level Helm values but can be
 set via `extraEnv` or by customizing the Deployment template:
 
-| Env Var                     | Default                 | Description                                             |
-| --------------------------- | ----------------------- | ------------------------------------------------------- |
-| `LEADER_ELECTION_ID`        | `audicia-operator-lock` | Lease resource name for leader election.                |
-| `LEADER_ELECTION_NAMESPACE` | `audicia-system`        | Namespace for the Lease (auto-set from pod namespace).  |
-| `CONCURRENT_RECONCILES`     | `1`                     | Number of parallel reconcile loops.                     |
-| `SYNC_PERIOD`               | `10m`                   | Minimum interval between full cache resynchronizations. |
+| Env Var                     | Default                 | Description                                                                          |
+| --------------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| `LEADER_ELECTION_ID`        | `audicia-operator-lock` | Lease resource name for leader election.                                             |
+| `LEADER_ELECTION_NAMESPACE` | `audicia-system`        | Namespace for the Lease (auto-set from pod namespace).                               |
+| `CONCURRENT_RECONCILES`     | `1`                     | Number of parallel reconcile loops.                                                  |
+| `SYNC_PERIOD`               | `10m`                   | Minimum interval between full cache resynchronizations.                              |
+| `STARTUP_MAX_RETRIES`       | `5`                     | Number of startup retry attempts with exponential backoff before the operator exits. |
 
 ### Logging Levels
 
@@ -102,10 +116,10 @@ Both use standard `healthz.Ping` checks. Ports are configurable via
 
 ## Audit Log (File Mode)
 
-| Value               | Type    | Default                   | Description                           |
-| ------------------- | ------- | ------------------------- | ------------------------------------- |
-| `auditLog.enabled`  | boolean | `false`                   | Enable mounting the audit log volume. |
-| `auditLog.hostPath` | string  | `/var/log/kube-audit.log` | Host path to the audit log file.      |
+| Value               | Type    | Default                               | Description                           |
+| ------------------- | ------- | ------------------------------------- | ------------------------------------- |
+| `auditLog.enabled`  | boolean | `false`                               | Enable mounting the audit log volume. |
+| `auditLog.hostPath` | string  | `/var/log/kubernetes/audit/audit.log` | Host path to the audit log file.      |
 
 When enabled, mounts the host file as a read-only volume. Requires control plane
 scheduling (nodeSelector + tolerations) and typically `runAsUser: 0` for
@@ -187,13 +201,21 @@ See the [AKS Setup Guide](../guides/aks-setup.md) for a complete walkthrough.
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kube-audit.log \
+  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
+  --set hostNetwork=true \
   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
   --set tolerations[0].effect=NoSchedule \
   --set podSecurityContext.runAsUser=0 \
   --set podSecurityContext.runAsNonRoot=false
 ```
+
+> **Why `hostNetwork=true`?** On Cilium and other kube-proxy-free CNIs, pods on
+> control plane nodes cannot reach the Kubernetes service ClusterIP
+> (`10.96.0.1:443`). `hostNetwork` lets the pod use the node's network stack,
+> bypassing the CNI datapath. This is safe because the pod already runs on the
+> control plane with `hostPath` access. See the
+> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork).
 
 ## Example: Webhook Mode (ClusterIP)
 

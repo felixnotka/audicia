@@ -90,7 +90,7 @@ auditLog:
   # -- Enable mounting the audit log volume.
   enabled: false
   # -- Host path to the audit log file.
-  hostPath: /var/log/kube-audit.log
+  hostPath: /var/log/kubernetes/audit/audit.log
 
 # Webhook audit event receiver configuration.
 webhook:

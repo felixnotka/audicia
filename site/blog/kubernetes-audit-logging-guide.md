@@ -56,7 +56,7 @@ set up, works with any Kubernetes distribution that exposes apiserver flags.
 ```yaml
 # kube-apiserver flags
 - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-- --audit-log-path=/var/log/kube-audit.log
+- --audit-log-path=/var/log/kubernetes/audit/audit.log
 - --audit-log-maxsize=100 # Max size in MB per file
 - --audit-log-maxbackup=3 # Number of old files to retain
 - --audit-log-maxage=7 # Max days to retain old files
@@ -143,7 +143,7 @@ spec:
         - kube-apiserver
         # ... existing flags ...
         - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-        - --audit-log-path=/var/log/kube-audit.log
+        - --audit-log-path=/var/log/kubernetes/audit/audit.log
         - --audit-log-maxsize=100
         - --audit-log-maxbackup=3
         - --audit-log-maxage=7
@@ -157,7 +157,7 @@ Add volume mounts for the policy file and log directory:
       mountPath: /etc/kubernetes/audit-policy.yaml
       readOnly: true
     - name: audit-log
-      mountPath: /var/log/kube-audit.log
+      mountPath: /var/log/kubernetes/audit/audit.log
 volumes:
   - name: audit-policy
     hostPath:
@@ -165,7 +165,7 @@ volumes:
       type: File
   - name: audit-log
     hostPath:
-      path: /var/log/kube-audit.log
+      path: /var/log/kubernetes/audit/audit.log
       type: FileOrCreate
 ```
 
@@ -173,7 +173,7 @@ Save the file. The kubelet detects the change and restarts the apiserver
 automatically. Verify with:
 
 ```bash
-ls -la /var/log/kube-audit.log
+ls -la /var/log/kubernetes/audit/audit.log
 ```
 
 ### kind (for local development)
@@ -191,7 +191,7 @@ nodes:
           apiServer:
             extraArgs:
               audit-policy-file: /etc/kubernetes/audit-policy.yaml
-              audit-log-path: /var/log/kube-audit.log
+              audit-log-path: /var/log/kubernetes/audit/audit.log
     extraMounts:
       - hostPath: ./audit-policy.yaml
         containerPath: /etc/kubernetes/audit-policy.yaml
@@ -205,7 +205,8 @@ kind create cluster --config kind-audit-config.yaml
 ```
 
 The audit log is available inside the kind container at
-`/var/log/kube-audit.log`. Audicia's Helm chart can mount it via `hostPath`.
+`/var/log/kubernetes/audit/audit.log`. Audicia's Helm chart can mount it via
+`hostPath`.
 
 ### Amazon EKS
 

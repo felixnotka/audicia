@@ -2,31 +2,42 @@
 
 Running Audicia on clusters that replace kube-proxy with a CNI-native
 implementation (e.g. Cilium with `kubeProxyReplacement: true`). This guide
-covers the networking gotchas and their solutions.
+covers the networking gotchas and their solutions for **both file mode and
+webhook mode**.
 
 > **Standard kube-proxy clusters?** You don't need this guide. Follow the normal
-> [Webhook Setup Guide](webhook-setup.md) or
-> [Quick Start](../getting-started/quick-start-webhook.md).
+> [Installation](../getting-started/installation.md) or
+> [Webhook Setup Guide](webhook-setup.md).
 
 ---
 
 ## The Problem
 
-The kube-apiserver runs as a static pod with `hostNetwork: true` — it shares the
-node's network namespace. On standard clusters, kube-proxy programs iptables
-rules that translate ClusterIP addresses into pod IPs, and this works from the
-host namespace.
+On standard clusters, kube-proxy programs iptables rules that translate
+ClusterIP addresses into pod IPs. This routing works in both directions — from
+pods to the Kubernetes API server, and from the host namespace to pod
+ClusterIPs.
 
-On kube-proxy-free clusters, the CNI handles service routing in a different way.
-Cilium, for example, uses eBPF socket-level load balancing. With
-`socketLB.hostNamespaceOnly: true` (or depending on the Cilium version and
-config), **ClusterIP traffic originating from the host namespace may not be
-routed to pods**.
+On kube-proxy-free clusters, the CNI handles service routing differently.
+Cilium, for example, uses eBPF socket-level load balancing. Depending on the
+Cilium version and configuration, **ClusterIP traffic may not be routed
+correctly** between the host namespace and pod network. This breaks Audicia in
+two ways:
 
-This means the kube-apiserver cannot reach Audicia's webhook Service via its
-ClusterIP.
+1. **File mode (pod → apiserver):** The operator pod cannot reach the Kubernetes
+   API server ClusterIP (`10.96.0.1:443`) to start its informer caches.
+2. **Webhook mode (apiserver → pod):** The kube-apiserver (which runs with
+   `hostNetwork: true`) cannot reach Audicia's webhook Service via its
+   ClusterIP.
 
-**Symptoms:**
+### File Mode Symptoms
+
+- Operator pod starts but crashes with: `dial tcp 10.96.0.1:443: i/o timeout`
+- Operator logs show `failed to prime RBAC cache informer` or the manager fails
+  to start
+- The pod never reaches `Ready`
+
+### Webhook Mode Symptoms
 
 - Audicia pod is running, webhook HTTPS server is listening on port 8443
 - `curl -k https://<POD-IP>:8443` from the control plane node **works**
@@ -38,7 +49,47 @@ ClusterIP.
 
 ---
 
-## Solution: hostPort Mode
+## File Mode: hostNetwork {#file-mode-hostnetwork}
+
+The simplest fix for file mode: run the operator pod with `hostNetwork: true`.
+This makes the pod share the node's network namespace, bypassing the CNI
+datapath entirely. The pod can then reach the Kubernetes API server directly
+through the host's network stack.
+
+This is safe because file-mode pods already run on the control plane node with
+`hostPath` access to the audit log. Adding `hostNetwork` does not grant any
+additional privilege beyond what `hostPath` already implies.
+
+```bash
+helm install audicia audicia/audicia-operator \
+  --create-namespace --namespace audicia-system \
+  --set auditLog.enabled=true \
+  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
+  --set hostNetwork=true \
+  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
+  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
+  --set tolerations[0].effect=NoSchedule \
+  --set podSecurityContext.runAsUser=0 \
+  --set podSecurityContext.runAsNonRoot=false
+```
+
+The Helm chart automatically sets `dnsPolicy: ClusterFirstWithHostNet` when
+`hostNetwork` is enabled, so cluster DNS (e.g. for leader election lease
+lookups) continues to work.
+
+> **Already deployed without hostNetwork?** Patch the existing deployment:
+>
+> ```bash
+> kubectl patch deployment -n audicia-system audicia-audicia-operator \
+>   --type=json -p='[
+>     {"op":"add","path":"/spec/template/spec/hostNetwork","value":true},
+>     {"op":"add","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirstWithHostNet"}
+>   ]'
+> ```
+
+---
+
+## Webhook Mode: hostPort
 
 Instead of routing through a ClusterIP Service, expose the webhook directly on
 the node using `hostPort`. The kube-apiserver connects via `127.0.0.1`
@@ -199,6 +250,8 @@ hostPort bypasses all of this and is the recommended workaround.
 
 | Value                      | Type    | Default | Description                                                                  |
 | -------------------------- | ------- | ------- | ---------------------------------------------------------------------------- |
+| `hostNetwork`              | boolean | `false` | Use the host network namespace (file mode fix).                              |
+| `dnsPolicy`                | string  | `""`    | DNS policy override. Auto-set to `ClusterFirstWithHostNet` with hostNetwork. |
 | `webhook.hostPort`         | boolean | `false` | Expose the webhook port directly on the host via hostPort.                   |
 | `webhook.service.nodePort` | string  | `""`    | Fixed NodePort (30000-32767). Changes the Service type to NodePort when set. |
 
@@ -209,6 +262,8 @@ options.
 
 ## Related
 
+- [Installation](../getting-started/installation.md) — Standard installation
+  guide
 - [Webhook Setup Guide](webhook-setup.md) — Full webhook setup (ClusterIP mode)
 - [mTLS Setup Guide](mtls-setup.md) — Mutual TLS for webhook security
 - [Troubleshooting](../troubleshooting.md) — Common issues and solutions

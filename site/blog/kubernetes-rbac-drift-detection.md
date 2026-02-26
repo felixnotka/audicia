@@ -78,7 +78,7 @@ kubectl auth can-i --list \
 # Compare against actual audit log usage
 jq 'select(.user.username == "system:serviceaccount:my-team:backend")
   | {verb, resource: .objectRef.resource}' \
-  /var/log/kube-audit.log | sort -u
+  /var/log/kubernetes/audit/audit.log | sort -u
 ```
 
 Compare the two outputs. Any permission in the first list that does not appear

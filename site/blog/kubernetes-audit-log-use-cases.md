@@ -61,7 +61,7 @@ jq 'select(.verb == "delete" and
            .objectRef.name == "production")
   | {user: .user.username, time: .requestReceivedTimestamp,
      status: .responseStatus.code}' \
-  /var/log/kube-audit.log
+  /var/log/kubernetes/audit/audit.log
 ```
 
 This returns the exact user, timestamp, and status code for the deletion. No

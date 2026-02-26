@@ -119,7 +119,7 @@ metadata:
 spec:
   sourceType: K8sAuditLog
   location:
-    path: /var/log/kube-audit.log
+    path: /var/log/kubernetes/audit/audit.log
   filters:
     - action: Allow
       namespacePattern: "^team-a$"

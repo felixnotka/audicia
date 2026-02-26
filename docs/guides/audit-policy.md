@@ -74,7 +74,7 @@ Add to your kube-apiserver:
 
 ```yaml
 - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-- --audit-log-path=/var/log/kube-audit.log
+- --audit-log-path=/var/log/kubernetes/audit/audit.log
 ```
 
 ### Webhook Ingestion
@@ -92,7 +92,7 @@ You can use both backends at the same time:
 
 ```yaml
 - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
-- --audit-log-path=/var/log/kube-audit.log
+- --audit-log-path=/var/log/kubernetes/audit/audit.log
 - --audit-webhook-config-file=/etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
 
@@ -164,11 +164,11 @@ file.
 
 ```bash
 # Check the audit log exists and has events
-head -5 /var/log/kube-audit.log
+head -5 /var/log/kubernetes/audit/audit.log
 
 # Count events per minute (rough volume estimate)
-wc -l /var/log/kube-audit.log
+wc -l /var/log/kubernetes/audit/audit.log
 
 # Check a specific field Audicia needs
-cat /var/log/kube-audit.log | jq -r '.verb' | sort | uniq -c | sort -rn
+cat /var/log/kubernetes/audit/audit.log | jq -r '.verb' | sort | uniq -c | sort -rn
 ```

@@ -161,7 +161,7 @@ Audicia installs in under five minutes:
 helm install audicia oci://ghcr.io/felixnotka/audicia/charts/audicia-operator \
   -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kube-audit.log
+  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log
 ```
 
 See the [getting started guide](/docs/getting-started/introduction) for the full

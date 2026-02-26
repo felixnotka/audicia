@@ -7,6 +7,50 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.1
+
+### Added
+
+- **`hostNetwork` Helm value** — enables host network namespace for the operator
+  pod, bypassing CNI service routing issues on control plane nodes. Required for
+  file-mode deployments on Cilium and other kube-proxy-free clusters where pods
+  cannot reach the Kubernetes API server ClusterIP (`10.96.0.1:443`). See the
+  updated [Kube-Proxy-Free Guide](guides/kube-proxy-free.md)
+- **`dnsPolicy` Helm value** — configurable DNS policy; automatically set to
+  `ClusterFirstWithHostNet` when `hostNetwork` is enabled
+- **Startup retry with exponential backoff** — the operator now retries startup
+  up to 5 times (2s, 4s, 8s, 16s, 32s, capped at 60s) instead of crashing
+  immediately on transient API server connectivity failures. Configurable via
+  `STARTUP_MAX_RETRIES` environment variable
+- Kube-Proxy-Free Guide updated with a dedicated
+  [File Mode section](guides/kube-proxy-free.md#file-mode-hostnetwork) covering
+  the `hostNetwork` workaround
+
+### Changed
+
+- **Default audit log path** — standardized to
+  `/var/log/kubernetes/audit/audit.log` across Helm defaults, docs, examples,
+  and kind configs, matching the CNCF recommended path (previously
+  `/var/log/kube-audit.log`)
+- **Leader election disabled by default** — single-replica deployments (the
+  default) no longer require leader election, removing an unnecessary API
+  dependency at startup. Enable it explicitly with
+  `operator.leaderElection.enabled=true` when running multiple replicas
+- File mode installation examples across all docs now include
+  `--set
+  hostNetwork=true` for kube-proxy-free clusters
+
+### Fixed
+
+- Operator startup failure on Cilium kube-proxy-free clusters in file mode: pods
+  on control plane nodes could not reach the Kubernetes service ClusterIP
+  through the CNI datapath, causing `dial tcp 10.96.0.1:443: i/o timeout` during
+  RBAC cache informer initialization
+- `staticcheck SA1019` — replaced deprecated `result.Requeue` with
+  `result.RequeueAfter` in controller reconcile tests
+
+---
+
 ## 0.3.0
 
 ### Added
