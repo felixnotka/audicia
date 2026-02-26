@@ -398,7 +398,7 @@ func TestReconcile_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Requeue {
+	if result.RequeueAfter != 0 {
 		t.Error("expected no requeue")
 	}
 }
@@ -414,7 +414,7 @@ func TestReconcile_NotFound_StopsPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Requeue {
+	if result.RequeueAfter != 0 {
 		t.Error("expected no requeue")
 	}
 
@@ -455,7 +455,7 @@ func TestReconcile_PipelineAlreadyRunning(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Requeue {
+	if result.RequeueAfter != 0 {
 		t.Error("expected no requeue for same-generation pipeline")
 	}
 }
@@ -480,7 +480,7 @@ func TestReconcile_StartsNewPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Requeue {
+	if result.RequeueAfter != 0 {
 		t.Error("expected no requeue")
 	}
 
