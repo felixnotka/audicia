@@ -1,5 +1,4 @@
 # Audicia Operator Makefile
-
 # Build variables
 BINARY_NAME := audicia
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
