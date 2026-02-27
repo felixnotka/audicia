@@ -23,7 +23,7 @@ func TestMetricsEndpoint(t *testing.T) {
 	pfCtx, pfCancel := context.WithCancel(ctx)
 	pfCmd := exec.CommandContext(pfCtx, "kubectl", "port-forward",
 		"-n", helmNamespace,
-		"deploy/"+helmReleaseName+"-audicia-operator",
+		"deploy/"+helmFullName,
 		localPort+":8080",
 		"--context", "kind-"+kindClusterName)
 

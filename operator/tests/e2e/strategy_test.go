@@ -313,7 +313,7 @@ func setupWebhookClient(t *testing.T) (*http.Client, string) {
 	pfCtx, pfCancel := context.WithCancel(context.Background())
 	pfCmd := exec.CommandContext(pfCtx, "kubectl", "port-forward",
 		"-n", helmNamespace,
-		"svc/"+helmReleaseName+"-audicia-operator-webhook",
+		"svc/"+helmFullName+"-webhook",
 		localPort+":8443",
 		"--context", "kind-"+kindClusterName)
 

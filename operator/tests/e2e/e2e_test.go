@@ -39,6 +39,7 @@ const (
 	kindClusterName = "audicia-e2e"
 	helmReleaseName = "audicia"
 	helmNamespace   = "audicia-system"
+	helmFullName    = "audicia-operator" // must match fullnameOverride in values.yaml
 )
 
 var (
@@ -255,7 +256,7 @@ func grantOperatorRBAC(ctx context.Context) error {
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      helmReleaseName + "-audicia-operator",
+				Name:      helmFullName,
 				Namespace: helmNamespace,
 			},
 		},
@@ -271,7 +272,7 @@ func grantOperatorRBAC(ctx context.Context) error {
 
 func waitForDeployment(ctx context.Context) error {
 	fmt.Println("Waiting for operator deployment to be ready...")
-	deployName := helmReleaseName + "-audicia-operator"
+	deployName := helmFullName
 
 	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		var dep appsv1.Deployment
@@ -403,7 +404,7 @@ func generateWebhookTLS() (certPEM, keyPEM, caPEM []byte, err error) {
 		return nil, nil, nil, fmt.Errorf("generate server key: %w", err)
 	}
 
-	svcName := helmReleaseName + "-audicia-operator-webhook"
+	svcName := helmFullName + "-webhook"
 	serverTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject:      pkix.Name{CommonName: svcName + "." + helmNamespace + ".svc"},

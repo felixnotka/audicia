@@ -69,7 +69,7 @@ func TestWebhookIngestion(t *testing.T) {
 	localPort := "18443" // use a non-privileged local port
 	pfCmd := exec.CommandContext(pfCtx, "kubectl", "port-forward",
 		"-n", helmNamespace,
-		"svc/"+helmReleaseName+"-audicia-operator-webhook",
+		"svc/"+helmFullName+"-webhook",
 		localPort+":8443",
 		"--context", "kind-"+kindClusterName)
 

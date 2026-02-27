@@ -304,7 +304,7 @@ func assertNoRuleWithNamespace(t *testing.T, rules []audiciav1alpha1.ObservedRul
 func deleteOperatorPod(ctx context.Context, t *testing.T) {
 	t.Helper()
 
-	deployName := helmReleaseName + "-audicia-operator"
+	deployName := helmFullName
 	pods, err := clientset.CoreV1().Pods(helmNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=audicia-operator,app.kubernetes.io/instance=%s", helmReleaseName),
 	})
