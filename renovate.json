@@ -35,6 +35,11 @@
       "automerge": true
     },
     {
+      "description": "Ignore our own operator image (tag set by CI at build time)",
+      "matchPackageNames": ["felixnotka/audicia-operator"],
+      "enabled": false
+    },
+    {
       "description": "Group and auto-merge Docker base image updates",
       "matchManagers": ["dockerfile"],
       "matchUpdateTypes": ["minor", "patch", "digest"],
