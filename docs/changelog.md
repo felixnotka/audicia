@@ -7,13 +7,43 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
-## 0.3.2
+## 0.3.3
 
 ### Added
 
-- **Example values files** — per-mode Helm values files in `deploy/helm/` for
-  file mode, webhook (ClusterIP, mTLS, hostPort), and cloud providers (AKS, EKS,
-  GKE)
+- **`excessRules` and `uncoveredRules` in ComplianceReport** — the CRD status
+  now includes the full rule lists for excess and uncovered permissions, making
+  reports self-contained. Previously only counts were reported, requiring manual
+  diffs to identify specific unused or ungranted rules
+- **"How mTLS Works" section** in the Webhook Setup Guide — clear conceptual
+  explanation of the three-step mTLS handshake, moved from the standalone guide
+- **"Verify mTLS Is Working" section** in the Webhook Setup Guide — includes
+  curl test for unauthorized client rejection
+
+### Changed
+
+- **Getting-started guides use values files** — all installation guides now show
+  named `values-*.yaml` files (`values-file.yaml`, `values-webhook.yaml`,
+  `values-webhook-mtls.yaml`, `values-dual.yaml`) instead of long `--set` chains
+- **File-based `kubectl apply`** — quick-start guides use
+  `kubectl apply -f <file>.yaml` instead of heredoc (`<<EOF`) patterns
+- **Self-contained quick starts** — file and webhook quick-start guides now
+  include their own Helm install steps instead of deferring to the installation
+  page
+- **mTLS documentation consolidated** — `webhook-setup.md` is now the single
+  source of truth for all webhook TLS and mTLS configuration; `mtls-setup.md`
+  replaced with a redirect page preserving existing bookmarks
+- **Cross-references updated** — 7 links across 5 files now point to the correct
+  `webhook-setup.md` anchors instead of `mtls-setup.md`
+
+### Fixed
+
+- SonarQube quality gate failure on `zz_generated.deepcopy.go` — excluded
+  generated deepcopy files (`**/zz_generated.*.go`) from duplication analysis
+
+---
+
+## 0.3.2
 
 ### Fixed
 
