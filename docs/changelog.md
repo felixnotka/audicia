@@ -7,6 +7,24 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.4
+
+### Fixed
+
+- **Helm resource naming** — set `fullnameOverride: "audicia-operator"` so that
+  all resources (Deployment, ServiceAccount, ClusterRole, etc.) are named
+  `audicia-operator` regardless of the Helm release name. Previously, using
+  `helm install audicia` produced `audicia-audicia-operator`, breaking the
+  ServiceAccount name documented in the cloud setup guides for IRSA and Workload
+  Identity
+- **CI operator build detection on merge to main** — the `detect-changes` job
+  now uses `fetch-depth: 0` so that `dorny/paths-filter` can reliably compare
+  against the previous main HEAD on fast-forward merges. With the default
+  shallow checkout, operator path changes were not detected and the operator
+  build was silently skipped
+
+---
+
 ## 0.3.3
 
 ### Added

@@ -16,8 +16,9 @@ imagePullSecrets: []
 
 # -- Override the release name.
 nameOverride: ""
-# -- Override the full release name.
-fullnameOverride: ""
+# -- Override the full resource name. Defaults to "audicia-operator" so that
+# resource names are predictable regardless of the Helm release name.
+fullnameOverride: "audicia-operator"
 
 serviceAccount:
   # -- Whether to create a ServiceAccount.
