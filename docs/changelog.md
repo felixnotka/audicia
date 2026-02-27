@@ -22,6 +22,16 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ### Changed
 
+- **GCP Pub/Sub v1 → v2** — migrated `cloud.google.com/go/pubsub` to
+  `cloud.google.com/go/pubsub/v2`. The v1 library is deprecated and will stop
+  receiving patches in mid-2026. `Subscription` renamed to `Subscriber`, import
+  path updated; all other APIs unchanged
+- **GitHub Actions major upgrades** — `actions/upload-artifact` v6 → v7,
+  `actions/download-artifact` v7 → v8 in CI and nightly workflows
+- **Go module updates** — Kubernetes client libs `0.35.0` → `0.35.2`, AWS SDK
+  `v1.36` → `v1.41`, Google Cloud/gRPC libraries, `golang.org/x/*` packages
+- **Site dependency updates** — Deno runtime `2.6.10` → `2.7.1`, KaTeX `0.16.32`
+  → `0.16.33`
 - **Getting-started guides use values files** — all installation guides now show
   named `values-*.yaml` files (`values-file.yaml`, `values-webhook.yaml`,
   `values-webhook-mtls.yaml`, `values-dual.yaml`) instead of long `--set` chains
@@ -35,6 +45,9 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
   replaced with a redirect page preserving existing bookmarks
 - **Cross-references updated** — 7 links across 5 files now point to the correct
   `webhook-setup.md` anchors instead of `mtls-setup.md`
+- **Renovate config** — excluded own operator image
+  (`felixnotka/audicia-operator`) from digest pinning since the tag is set by CI
+  at build time
 
 ### Fixed
 
