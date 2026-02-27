@@ -40,6 +40,23 @@ status:
     severity: Yellow
     usedCount: 4
     excessCount: 4
+    excessRules:
+      - apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get", "list", "watch"]
+        namespace: my-team
+      - apiGroups: [""]
+        resources: ["services"]
+        verbs: ["get", "list"]
+        namespace: my-team
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list", "watch"]
+        namespace: my-team
+      - apiGroups: [""]
+        resources: ["events"]
+        verbs: ["create", "patch"]
+        namespace: my-team
     hasSensitiveExcess: true
     sensitiveExcess:
       - secrets
@@ -82,16 +99,31 @@ For a full example with suggested policy manifests, see
 
 ## status.compliance
 
-| Field                           | Type      | Description                                         |
-| ------------------------------- | --------- | --------------------------------------------------- |
-| `compliance.score`              | int32     | Compliance score (0-100, higher is better)          |
-| `compliance.severity`           | string    | `Green` (>= 80), `Yellow` (>= 50), `Red` (< 50)     |
-| `compliance.usedCount`          | int32     | Effective rules that were observed in use           |
-| `compliance.excessCount`        | int32     | Effective rules never observed (overprivilege)      |
-| `compliance.uncoveredCount`     | int32     | Observed actions not covered by any effective rule  |
-| `compliance.hasSensitiveExcess` | bool      | True when excess grants include sensitive resources |
-| `compliance.sensitiveExcess`    | string[]  | Sensitive resources with unused grants (detail)     |
-| `compliance.lastEvaluatedTime`  | date-time | When compliance was last evaluated                  |
+| Field                           | Type             | Description                                         |
+| ------------------------------- | ---------------- | --------------------------------------------------- |
+| `compliance.score`              | int32            | Compliance score (0-100, higher is better)          |
+| `compliance.severity`           | string           | `Green` (>= 80), `Yellow` (>= 50), `Red` (< 50)     |
+| `compliance.usedCount`          | int32            | Effective rules that were observed in use           |
+| `compliance.excessCount`        | int32            | Effective rules never observed (overprivilege)      |
+| `compliance.uncoveredCount`     | int32            | Observed actions not covered by any effective rule  |
+| `compliance.excessRules[]`      | ComplianceRule[] | The specific excess RBAC rules (details below)      |
+| `compliance.uncoveredRules[]`   | ComplianceRule[] | The specific uncovered observed rules               |
+| `compliance.hasSensitiveExcess` | bool             | True when excess grants include sensitive resources |
+| `compliance.sensitiveExcess`    | string[]         | Sensitive resources with unused grants (detail)     |
+| `compliance.lastEvaluatedTime`  | date-time        | When compliance was last evaluated                  |
+
+### ComplianceRule
+
+Each entry in `excessRules` or `uncoveredRules` describes a single RBAC
+permission:
+
+| Field             | Type     | Description                               |
+| ----------------- | -------- | ----------------------------------------- |
+| `apiGroups`       | string[] | API groups (e.g., `""`, `apps`)           |
+| `resources`       | string[] | Resources (e.g., `secrets`, `pods`)       |
+| `verbs`           | string[] | Verbs (e.g., `get`, `create`)             |
+| `nonResourceURLs` | string[] | Non-resource URL paths (e.g., `/metrics`) |
+| `namespace`       | string   | Namespace scope (empty for cluster-wide)  |
 
 ## status (top-level)
 

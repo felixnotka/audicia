@@ -110,6 +110,12 @@ func TestEvaluate_PerfectMatch(t *testing.T) {
 	if report.UncoveredCount != 0 {
 		t.Errorf("expected 0 uncovered, got %d", report.UncoveredCount)
 	}
+	if len(report.ExcessRules) != 0 {
+		t.Errorf("expected empty ExcessRules, got %v", report.ExcessRules)
+	}
+	if len(report.UncoveredRules) != 0 {
+		t.Errorf("expected empty UncoveredRules, got %v", report.UncoveredRules)
+	}
 }
 
 func TestEvaluate_SignificantExcess_Red(t *testing.T) {
@@ -146,6 +152,9 @@ func TestEvaluate_SignificantExcess_Red(t *testing.T) {
 	}
 	if len(report.SensitiveExcess) < 2 {
 		t.Errorf("expected at least 2 sensitive excess entries, got %d: %v", len(report.SensitiveExcess), report.SensitiveExcess)
+	}
+	if len(report.ExcessRules) != 9 {
+		t.Errorf("expected 9 ExcessRules, got %d", len(report.ExcessRules))
 	}
 }
 
@@ -214,6 +223,15 @@ func TestEvaluate_NamespaceScopedDoesNotCrossNamespace(t *testing.T) {
 	}
 	if report.UncoveredCount != 1 {
 		t.Errorf("expected 1 uncovered, got %d", report.UncoveredCount)
+	}
+	if len(report.UncoveredRules) != 1 {
+		t.Fatalf("expected 1 UncoveredRule, got %d", len(report.UncoveredRules))
+	}
+	if report.UncoveredRules[0].Namespace != "kube-system" {
+		t.Errorf("expected uncovered namespace kube-system, got %s", report.UncoveredRules[0].Namespace)
+	}
+	if report.UncoveredRules[0].Resources[0] != "pods" {
+		t.Errorf("expected uncovered resource pods, got %s", report.UncoveredRules[0].Resources[0])
 	}
 }
 
@@ -292,6 +310,12 @@ func TestEvaluate_ResourceNamesNotCovering(t *testing.T) {
 	if report.UncoveredCount != 1 {
 		t.Errorf("expected 1 uncovered, got %d", report.UncoveredCount)
 	}
+	if len(report.UncoveredRules) != 1 {
+		t.Fatalf("expected 1 UncoveredRule, got %d", len(report.UncoveredRules))
+	}
+	if report.UncoveredRules[0].Resources[0] != "configmaps" {
+		t.Errorf("expected uncovered resource configmaps, got %s", report.UncoveredRules[0].Resources[0])
+	}
 }
 
 func TestEvaluate_NonResourceURLs(t *testing.T) {
@@ -321,6 +345,12 @@ func TestEvaluate_NonResourceURLs(t *testing.T) {
 	}
 	if report.Severity != audiciav1alpha1.ComplianceSeverityYellow {
 		t.Errorf("expected Yellow, got %s", report.Severity)
+	}
+	if len(report.ExcessRules) != 1 {
+		t.Fatalf("expected 1 ExcessRule, got %d", len(report.ExcessRules))
+	}
+	if report.ExcessRules[0].NonResourceURLs[0] != "/readyz" {
+		t.Errorf("expected excess NonResourceURL /readyz, got %v", report.ExcessRules[0].NonResourceURLs)
 	}
 }
 
@@ -389,6 +419,15 @@ func TestEvaluate_NoObserved_AllExcess(t *testing.T) {
 	}
 	if report.ExcessCount != 2 {
 		t.Errorf("expected 2 excess, got %d", report.ExcessCount)
+	}
+	if len(report.ExcessRules) != 2 {
+		t.Fatalf("expected 2 ExcessRules, got %d", len(report.ExcessRules))
+	}
+	if report.ExcessRules[0].Resources[0] != "pods" {
+		t.Errorf("expected excess resource pods, got %s", report.ExcessRules[0].Resources[0])
+	}
+	if report.ExcessRules[1].Resources[0] != "secrets" {
+		t.Errorf("expected excess resource secrets, got %s", report.ExcessRules[1].Resources[0])
 	}
 }
 
@@ -466,6 +505,12 @@ func TestEvaluate_MixedResourceAndNonResource(t *testing.T) {
 	if report.Score != 66 {
 		t.Errorf("expected score 66, got %d", report.Score)
 	}
+	if len(report.ExcessRules) != 1 {
+		t.Fatalf("expected 1 ExcessRule, got %d", len(report.ExcessRules))
+	}
+	if report.ExcessRules[0].NonResourceURLs[0] != "/healthz" {
+		t.Errorf("expected excess NonResourceURL /healthz, got %v", report.ExcessRules[0].NonResourceURLs)
+	}
 }
 
 // --- classifyEffective ---
@@ -477,7 +522,7 @@ func TestClassifyEffective_AllUsed(t *testing.T) {
 	}
 	used := []bool{true, true}
 
-	usedCount, excessCount, sensitive := classifyEffective(effective, used)
+	usedCount, excessCount, sensitive, excessRules := classifyEffective(effective, used)
 	if usedCount != 2 {
 		t.Errorf("usedCount = %d, want 2", usedCount)
 	}
@@ -486,6 +531,9 @@ func TestClassifyEffective_AllUsed(t *testing.T) {
 	}
 	if len(sensitive) != 0 {
 		t.Errorf("sensitive = %v, want empty", sensitive)
+	}
+	if len(excessRules) != 0 {
+		t.Errorf("excessRules = %v, want empty", excessRules)
 	}
 }
 
@@ -496,7 +544,7 @@ func TestClassifyEffective_AllExcess(t *testing.T) {
 	}
 	used := []bool{false, false}
 
-	usedCount, excessCount, sensitive := classifyEffective(effective, used)
+	usedCount, excessCount, sensitive, excessRules := classifyEffective(effective, used)
 	if usedCount != 0 {
 		t.Errorf("usedCount = %d, want 0", usedCount)
 	}
@@ -505,6 +553,9 @@ func TestClassifyEffective_AllExcess(t *testing.T) {
 	}
 	if len(sensitive) != 1 || sensitive[0] != "secrets" {
 		t.Errorf("sensitive = %v, want [secrets]", sensitive)
+	}
+	if len(excessRules) != 2 {
+		t.Errorf("excessRules length = %d, want 2", len(excessRules))
 	}
 }
 
@@ -516,7 +567,7 @@ func TestClassifyEffective_Mixed(t *testing.T) {
 	}
 	used := []bool{true, false, false}
 
-	usedCount, excessCount, sensitive := classifyEffective(effective, used)
+	usedCount, excessCount, sensitive, excessRules := classifyEffective(effective, used)
 	if usedCount != 1 {
 		t.Errorf("usedCount = %d, want 1", usedCount)
 	}
@@ -527,13 +578,22 @@ func TestClassifyEffective_Mixed(t *testing.T) {
 	if len(sensitive) != 2 || sensitive[0] != "nodes" || sensitive[1] != "secrets" {
 		t.Errorf("sensitive = %v, want [nodes, secrets]", sensitive)
 	}
+	if len(excessRules) != 2 {
+		t.Errorf("excessRules length = %d, want 2", len(excessRules))
+	}
+	if excessRules[0].Resources[0] != "secrets" {
+		t.Errorf("excessRules[0].Resources = %v, want [secrets]", excessRules[0].Resources)
+	}
+	if excessRules[1].Resources[0] != "nodes" {
+		t.Errorf("excessRules[1].Resources = %v, want [nodes]", excessRules[1].Resources)
+	}
 }
 
 func TestClassifyEffective_Empty(t *testing.T) {
-	usedCount, excessCount, sensitive := classifyEffective(nil, nil)
-	if usedCount != 0 || excessCount != 0 || len(sensitive) != 0 {
-		t.Errorf("expected all zeros for empty input, got used=%d excess=%d sensitive=%v",
-			usedCount, excessCount, sensitive)
+	usedCount, excessCount, sensitive, excessRules := classifyEffective(nil, nil)
+	if usedCount != 0 || excessCount != 0 || len(sensitive) != 0 || len(excessRules) != 0 {
+		t.Errorf("expected all zeros for empty input, got used=%d excess=%d sensitive=%v excessRules=%v",
+			usedCount, excessCount, sensitive, excessRules)
 	}
 }
 
@@ -832,6 +892,12 @@ func TestEvaluate_ScoreBoundary_80_Green(t *testing.T) {
 	if report.Severity != audiciav1alpha1.ComplianceSeverityGreen {
 		t.Errorf("expected Green at score 80, got %s", report.Severity)
 	}
+	if len(report.ExcessRules) != 1 {
+		t.Fatalf("expected 1 ExcessRule, got %d", len(report.ExcessRules))
+	}
+	if report.ExcessRules[0].Resources[0] != "secrets" {
+		t.Errorf("expected excess resource secrets, got %s", report.ExcessRules[0].Resources[0])
+	}
 }
 
 func TestEvaluate_ScoreBoundary_50_Yellow(t *testing.T) {
@@ -882,5 +948,75 @@ func TestEvaluate_OneEffectiveCoversMultipleObserved(t *testing.T) {
 	}
 	if report.UncoveredCount != 0 {
 		t.Errorf("expected 0 uncovered, got %d", report.UncoveredCount)
+	}
+	if len(report.ExcessRules) != 0 {
+		t.Errorf("expected empty ExcessRules, got %v", report.ExcessRules)
+	}
+	if len(report.UncoveredRules) != 0 {
+		t.Errorf("expected empty UncoveredRules, got %v", report.UncoveredRules)
+	}
+}
+
+func TestEvaluate_ExcessAndUncoveredRulesPopulated(t *testing.T) {
+	// 2 observed rules: one covered, one uncovered (wrong namespace).
+	// 3 effective rules: one used, two excess (including a sensitive one).
+	observed := []audiciav1alpha1.ObservedRule{
+		obs("", "pods", "get", "default"),
+		obs("apps", "deployments", "list", "production"), // uncovered
+	}
+	effective := []rbac.ScopedRule{
+		eff("", "pods", []string{"get"}, "default"),            // used
+		eff("", "secrets", []string{"get", "list"}, "default"), // excess, sensitive
+		eff("", "events", []string{"create"}, "default"),       // excess
+	}
+
+	report := Evaluate(observed, effective)
+	if report == nil {
+		t.Fatal("expected non-nil report")
+	}
+
+	// Score: 1 used / 3 total = 33 → Red
+	if report.Score != 33 {
+		t.Errorf("expected score 33, got %d", report.Score)
+	}
+	if report.Severity != audiciav1alpha1.ComplianceSeverityRed {
+		t.Errorf("expected Red, got %s", report.Severity)
+	}
+
+	// Excess rules
+	if report.ExcessCount != 2 {
+		t.Errorf("expected 2 excess, got %d", report.ExcessCount)
+	}
+	if len(report.ExcessRules) != 2 {
+		t.Fatalf("expected 2 ExcessRules, got %d", len(report.ExcessRules))
+	}
+	if report.ExcessRules[0].Resources[0] != "secrets" {
+		t.Errorf("expected first excess resource secrets, got %s", report.ExcessRules[0].Resources[0])
+	}
+	if report.ExcessRules[0].Namespace != "default" {
+		t.Errorf("expected excess namespace default, got %s", report.ExcessRules[0].Namespace)
+	}
+	if report.ExcessRules[1].Resources[0] != "events" {
+		t.Errorf("expected second excess resource events, got %s", report.ExcessRules[1].Resources[0])
+	}
+
+	// Uncovered rules
+	if report.UncoveredCount != 1 {
+		t.Errorf("expected 1 uncovered, got %d", report.UncoveredCount)
+	}
+	if len(report.UncoveredRules) != 1 {
+		t.Fatalf("expected 1 UncoveredRule, got %d", len(report.UncoveredRules))
+	}
+	if report.UncoveredRules[0].Resources[0] != "deployments" {
+		t.Errorf("expected uncovered resource deployments, got %s", report.UncoveredRules[0].Resources[0])
+	}
+	if report.UncoveredRules[0].APIGroups[0] != "apps" {
+		t.Errorf("expected uncovered apiGroup apps, got %s", report.UncoveredRules[0].APIGroups[0])
+	}
+	if report.UncoveredRules[0].Namespace != "production" {
+		t.Errorf("expected uncovered namespace production, got %s", report.UncoveredRules[0].Namespace)
+	}
+	if report.UncoveredRules[0].Verbs[0] != "list" {
+		t.Errorf("expected uncovered verb list, got %s", report.UncoveredRules[0].Verbs[0])
 	}
 }

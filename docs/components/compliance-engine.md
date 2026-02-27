@@ -62,9 +62,10 @@ The diff engine is a pure function:
 
 **Score:** `usedEffective / totalEffective × 100` — classifies each effective
 rule as **used** (exercised by an observed action), **excess** (never observed),
-or flags observed actions with no effective rule as **uncovered**. Excess grants
-on sensitive resources (secrets, nodes, webhook configurations, CRDs, etc.) are
-flagged in `sensitiveExcess`.
+or flags observed actions with no effective rule as **uncovered**. The full list
+of excess and uncovered rules is available in `compliance.excessRules` and
+`compliance.uncoveredRules`. Excess grants on sensitive resources (secrets,
+nodes, webhook configurations, CRDs, etc.) are flagged in `sensitiveExcess`.
 
 See [Compliance Scoring](../concepts/compliance-scoring.md) for the full
 formula, severity thresholds, matching rules, and the complete sensitive
