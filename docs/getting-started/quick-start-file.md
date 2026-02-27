@@ -6,18 +6,68 @@ report.
 
 ## Prerequisites
 
-- Audicia installed with `auditLog.enabled=true` (see
-  [Installation](installation.md))
-- Audit logging enabled on your cluster
+- Audit logging enabled on your cluster (see
+  [Audit Policy Guide](../guides/audit-policy.md))
 - `kubectl` configured
+- Helm 3
 
-## Step 1: Create an AudiciaSource
+## Step 1: Install Audicia
 
-Apply the following manifest (see the
+Create a `values-file.yaml` file with your cluster-specific configuration:
+
+```yaml
+# values-file.yaml
+auditLog:
+  enabled: true
+  hostPath: /var/log/kubernetes/audit/audit.log
+
+hostNetwork: true
+
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    effect: NoSchedule
+```
+
+Install with Helm:
+
+```bash
+helm repo add audicia https://charts.audicia.io
+
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  -f values-file.yaml
+```
+
+> **Kube-proxy-free cluster (Cilium, eBPF)?** The `hostNetwork: true` setting in
+> the values file ensures the operator can reach the Kubernetes API from the
+> control plane node. See the
+> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork)
+> for details. If your cluster uses kube-proxy, you can remove this setting.
+
+> **Permission denied?** Audit logs are typically owned by root. If the operator
+> cannot read the log, add the following to your `values-file.yaml` to run as
+> root:
+>
+> ```yaml
+> podSecurityContext:
+>   runAsUser: 0
+>   runAsNonRoot: false
+> ```
+>
+> Alternatively, relax file permissions on the host with
+> `chmod 644 /var/log/kubernetes/audit/audit.log`.
+
+## Step 2: Create an AudiciaSource
+
+Save the following manifest as `audicia-source-file.yaml` (see the
 [File Mode Example](../examples/audicia-source-file.md) for customization
 options):
 
 ```yaml
+# audicia-source-file.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -46,6 +96,10 @@ spec:
     retentionDays: 30
 ```
 
+```bash
+kubectl apply -f audicia-source-file.yaml
+```
+
 Verify the source started:
 
 ```bash
@@ -54,7 +108,7 @@ kubectl describe audiciasource dev-cluster-audit
 
 Look for the `Ready` condition in the status.
 
-## Step 2: Generate Some API Traffic
+## Step 3: Generate Some API Traffic
 
 If you don't already have workloads generating audit events, create some:
 
@@ -71,7 +125,7 @@ kubectl get services -n demo
 
 Wait 30-60 seconds for the flush cycle to process the events.
 
-## Step 3: View the Policy Report
+## Step 4: View the Policy Report
 
 ```bash
 kubectl get audiciapolicyreports --all-namespaces
@@ -119,7 +173,7 @@ status:
           ...
 ```
 
-## Step 4: Apply the Suggested Policy
+## Step 5: Apply the Suggested Policy
 
 Review and apply the generated manifests:
 
@@ -143,7 +197,7 @@ kubectl get audiciapolicyreport report-demo-app -n demo \
 >   > policies/demo/demo-app-rbac.yaml
 > ```
 
-## Step 5: Verify Compliance
+## Step 6: Verify Compliance
 
 After applying the policy and the next flush cycle:
 

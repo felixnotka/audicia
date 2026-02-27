@@ -109,8 +109,37 @@ type ComplianceReport struct {
 	// +optional
 	SensitiveExcess []string `json:"sensitiveExcess,omitempty"`
 
+	// ExcessRules lists effective RBAC rules that were never observed in use.
+	// +optional
+	ExcessRules []ComplianceRule `json:"excessRules,omitempty"`
+
+	// UncoveredRules lists observed actions not covered by any effective RBAC grant.
+	// +optional
+	UncoveredRules []ComplianceRule `json:"uncoveredRules,omitempty"`
+
 	// LastEvaluatedTime is when the compliance check was last run.
 	LastEvaluatedTime metav1.Time `json:"lastEvaluatedTime"`
+}
+
+// ComplianceRule describes a single RBAC permission used in excess/uncovered lists.
+type ComplianceRule struct {
+	// APIGroups is the list of API groups for this rule.
+	APIGroups []string `json:"apiGroups"`
+
+	// Resources is the list of resources.
+	Resources []string `json:"resources"`
+
+	// Verbs is the list of verbs.
+	Verbs []string `json:"verbs"`
+
+	// NonResourceURLs is the list of non-resource URLs (e.g., "/metrics").
+	// +optional
+	NonResourceURLs []string `json:"nonResourceURLs,omitempty"`
+
+	// Namespace is the namespace this rule applies in.
+	// Empty for cluster-scoped rules.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // ObservedRule represents a single observed RBAC rule with metadata.

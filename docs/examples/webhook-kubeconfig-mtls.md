@@ -3,8 +3,9 @@
 Kubeconfig with mutual TLS for the kube-apiserver audit webhook backend. The
 apiserver presents a client certificate so Audicia can verify the caller.
 
-**See also:** [mTLS Setup Guide](../guides/mtls-setup.md) |
-[Webhook Setup Guide](../guides/webhook-setup.md)
+**See also:**
+[Webhook Setup Guide](../guides/webhook-setup.md#mtls-kubeconfig-recommended-for-production)
+| [How mTLS Works](../guides/webhook-setup.md#how-mtls-works)
 
 Replace `<CLUSTER-IP>` with your webhook Service ClusterIP
 (`kubectl get svc -n audicia-system`).

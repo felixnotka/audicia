@@ -7,13 +7,56 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
-## 0.3.2
+## 0.3.3
 
 ### Added
 
-- **Example values files** — per-mode Helm values files in `deploy/helm/` for
-  file mode, webhook (ClusterIP, mTLS, hostPort), and cloud providers (AKS, EKS,
-  GKE)
+- **`excessRules` and `uncoveredRules` in ComplianceReport** — the CRD status
+  now includes the full rule lists for excess and uncovered permissions, making
+  reports self-contained. Previously only counts were reported, requiring manual
+  diffs to identify specific unused or ungranted rules
+- **"How mTLS Works" section** in the Webhook Setup Guide — clear conceptual
+  explanation of the three-step mTLS handshake, moved from the standalone guide
+- **"Verify mTLS Is Working" section** in the Webhook Setup Guide — includes
+  curl test for unauthorized client rejection
+
+### Changed
+
+- **GCP Pub/Sub v1 → v2** — migrated `cloud.google.com/go/pubsub` to
+  `cloud.google.com/go/pubsub/v2`. The v1 library is deprecated and will stop
+  receiving patches in mid-2026. `Subscription` renamed to `Subscriber`, import
+  path updated; all other APIs unchanged
+- **GitHub Actions major upgrades** — `actions/upload-artifact` v6 → v7,
+  `actions/download-artifact` v7 → v8 in CI and nightly workflows
+- **Go module updates** — Kubernetes client libs `0.35.0` → `0.35.2`, AWS SDK
+  `v1.36` → `v1.41`, Google Cloud/gRPC libraries, `golang.org/x/*` packages
+- **Site dependency updates** — Deno runtime `2.6.10` → `2.7.1`, KaTeX `0.16.32`
+  → `0.16.33`
+- **Getting-started guides use values files** — all installation guides now show
+  named `values-*.yaml` files (`values-file.yaml`, `values-webhook.yaml`,
+  `values-webhook-mtls.yaml`, `values-dual.yaml`) instead of long `--set` chains
+- **File-based `kubectl apply`** — quick-start guides use
+  `kubectl apply -f <file>.yaml` instead of heredoc (`<<EOF`) patterns
+- **Self-contained quick starts** — file and webhook quick-start guides now
+  include their own Helm install steps instead of deferring to the installation
+  page
+- **mTLS documentation consolidated** — `webhook-setup.md` is now the single
+  source of truth for all webhook TLS and mTLS configuration; `mtls-setup.md`
+  replaced with a redirect page preserving existing bookmarks
+- **Cross-references updated** — 7 links across 5 files now point to the correct
+  `webhook-setup.md` anchors instead of `mtls-setup.md`
+- **Renovate config** — excluded own operator image
+  (`felixnotka/audicia-operator`) from digest pinning since the tag is set by CI
+  at build time
+
+### Fixed
+
+- SonarQube quality gate failure on `zz_generated.deepcopy.go` — excluded
+  generated deepcopy files (`**/zz_generated.*.go`) from duplication analysis
+
+---
+
+## 0.3.2
 
 ### Fixed
 

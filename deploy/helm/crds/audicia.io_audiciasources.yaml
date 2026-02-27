@@ -86,6 +86,11 @@ spec:
                         description: LogStreamPrefix is an optional stream name prefix
                           filter.
                         type: string
+                      region:
+                        description: |-
+                          Region is the AWS region for CloudWatch API calls.
+                          If empty, uses AWS_REGION from environment (set by IRSA).
+                        type: string
                     required:
                     - logGroupName
                     type: object

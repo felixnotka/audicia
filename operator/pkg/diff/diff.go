@@ -69,15 +69,18 @@ func Evaluate(observed []audiciav1alpha1.ObservedRule, effective []rbac.ScopedRu
 	used := make([]bool, len(effective))
 	var uncoveredCount int
 
+	var uncoveredRules []audiciav1alpha1.ComplianceRule
+
 	for _, obs := range observed {
 		if !isCovered(obs, effective) {
 			uncoveredCount++
+			uncoveredRules = append(uncoveredRules, observedToComplianceRule(obs))
 		}
 		markUsed(obs, effective, used)
 	}
 
 	// Count used and excess effective rules, detect sensitive excess.
-	usedCount, excessCount, sensitiveExcess := classifyEffective(effective, used)
+	usedCount, excessCount, sensitiveExcess, excessRules := classifyEffective(effective, used)
 
 	// Calculate score: ratio of used effective rules to total effective rules.
 	var score int32
@@ -95,13 +98,15 @@ func Evaluate(observed []audiciav1alpha1.ObservedRule, effective []rbac.ScopedRu
 		UncoveredCount:     int32(uncoveredCount),
 		HasSensitiveExcess: len(sensitiveExcess) > 0,
 		SensitiveExcess:    sensitiveExcess,
+		ExcessRules:        excessRules,
+		UncoveredRules:     uncoveredRules,
 		LastEvaluatedTime:  metav1.NewTime(time.Now()),
 	}
 }
 
 // classifyEffective partitions effective rules into used and excess, and
 // detects sensitive resources among the excess grants.
-func classifyEffective(effective []rbac.ScopedRule, used []bool) (usedCount, excessCount int, sensitiveExcess []string) {
+func classifyEffective(effective []rbac.ScopedRule, used []bool) (usedCount, excessCount int, sensitiveExcess []string, excessRules []audiciav1alpha1.ComplianceRule) {
 	sensitiveSet := make(map[string]bool)
 
 	for i, eff := range effective {
@@ -110,6 +115,7 @@ func classifyEffective(effective []rbac.ScopedRule, used []bool) (usedCount, exc
 			continue
 		}
 		excessCount++
+		excessRules = append(excessRules, scopedToComplianceRule(eff))
 		collectSensitive(eff.Resources, sensitiveSet, &sensitiveExcess)
 	}
 
@@ -230,6 +236,28 @@ func matchesNonResourceURL(obs audiciav1alpha1.ObservedRule, eff rbac.ScopedRule
 		return false
 	}
 	return true
+}
+
+// scopedToComplianceRule converts a ScopedRule to a ComplianceRule for CRD output.
+func scopedToComplianceRule(r rbac.ScopedRule) audiciav1alpha1.ComplianceRule {
+	return audiciav1alpha1.ComplianceRule{
+		APIGroups:       r.APIGroups,
+		Resources:       r.Resources,
+		Verbs:           r.Verbs,
+		NonResourceURLs: r.NonResourceURLs,
+		Namespace:       r.Namespace,
+	}
+}
+
+// observedToComplianceRule converts an ObservedRule to a ComplianceRule for CRD output.
+func observedToComplianceRule(o audiciav1alpha1.ObservedRule) audiciav1alpha1.ComplianceRule {
+	return audiciav1alpha1.ComplianceRule{
+		APIGroups:       o.APIGroups,
+		Resources:       o.Resources,
+		Verbs:           o.Verbs,
+		NonResourceURLs: o.NonResourceURLs,
+		Namespace:       o.Namespace,
+	}
 }
 
 // sliceCovers returns true if every element in required is present in granted.

@@ -31,10 +31,11 @@ observed action?**
 
 - **Used**: The effective rule was exercised at least once.
 - **Excess**: The effective rule was never observed in use — this is
-  overprivilege.
+  overprivilege. Each excess rule is listed in `compliance.excessRules` so you
+  can see exactly which permissions are unused.
 - **Uncovered**: An observed action that isn't covered by any effective rule
   (may indicate aggregated ClusterRoles or other mechanisms the resolver doesn't
-  handle).
+  handle). Each uncovered rule is listed in `compliance.uncoveredRules`.
 
 ### Step 3: Calculate Score
 
@@ -115,13 +116,27 @@ status:
     usedCount: 2
     excessCount: 3
     uncoveredCount: 0
+    excessRules:
+      - apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get", "list", "watch"]
+        namespace: my-team
+      - apiGroups: [""]
+        resources: ["services"]
+        verbs: ["get", "list"]
+        namespace: my-team
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list", "watch"]
+        namespace: my-team
     sensitiveExcess:
       - secrets
     lastEvaluatedTime: "2026-02-20T12:00:00Z"
 ```
 
 This tells you: the SA uses only 2 of its 5 granted permissions, and has unused
-access to secrets.
+access to secrets, services, and deployments. The `excessRules` list shows
+exactly which permissions to remove.
 
 ## Edge Cases
 

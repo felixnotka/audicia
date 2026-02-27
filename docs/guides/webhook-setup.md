@@ -106,6 +106,18 @@ kubectl create secret tls audicia-webhook-tls \
   -n audicia-system
 ```
 
+### How mTLS Works
+
+In basic TLS mode, Audicia presents a server certificate and the kube-apiserver
+verifies it (one-way TLS). With mTLS:
+
+1. Audicia presents its server certificate (same as basic TLS).
+2. The kube-apiserver presents a **client certificate** signed by a trusted CA.
+3. Audicia verifies the client certificate against a CA bundle you provide.
+
+This ensures only the kube-apiserver — not any arbitrary network client — can
+send audit events.
+
 ### Optional: mTLS Client CA Secret
 
 If you want the webhook server to verify that requests come from your
@@ -128,23 +140,39 @@ CA (i.e., the kube-apiserver) can send events to the webhook.
 
 ### Basic TLS (no mTLS)
 
+Create a `values-webhook.yaml`:
+
+```yaml
+# values-webhook.yaml
+webhook:
+  enabled: true
+  port: 8443
+  tlsSecretName: audicia-webhook-tls
+```
+
 ```bash
 helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.port=8443 \
-  --set webhook.tlsSecretName=audicia-webhook-tls
+  -n audicia-system --create-namespace \
+  -f values-webhook.yaml
 ```
 
 ### With mTLS (recommended for production)
 
+Create a `values-webhook-mtls.yaml`:
+
+```yaml
+# values-webhook-mtls.yaml
+webhook:
+  enabled: true
+  port: 8443
+  tlsSecretName: audicia-webhook-tls
+  clientCASecretName: kube-apiserver-client-ca
+```
+
 ```bash
 helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.port=8443 \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.clientCASecretName=kube-apiserver-client-ca
+  -n audicia-system --create-namespace \
+  -f values-webhook-mtls.yaml
 ```
 
 ### Upgrading from Basic TLS to mTLS
@@ -161,53 +189,17 @@ kubectl create secret generic kube-apiserver-client-ca \
   -n audicia-system
 ```
 
-**Step B: Switch the AudiciaSource to the hardened example:**
+**Step B: Update the AudiciaSource to enable mTLS:**
+
+Either apply the [hardened example](../examples/audicia-source-hardened.md)
+(which includes `clientCASecretName`):
 
 ```bash
-# Delete the basic TLS AudiciaSource
 kubectl delete audiciasource realtime-audit -n audicia-system
-
-# Apply the hardened example (includes clientCASecretName)
-# See: docs/examples/audicia-source-hardened.md for full manifest
-kubectl apply -f - <<EOF
-apiVersion: audicia.io/v1alpha1
-kind: AudiciaSource
-metadata:
-  name: realtime-audit-hardened
-  namespace: audicia-system
-spec:
-  sourceType: Webhook
-  webhook:
-    port: 8443
-    tlsSecretName: audicia-webhook-tls
-    clientCASecretName: kube-apiserver-client-ca
-    rateLimitPerSecond: 100
-    maxRequestBodyBytes: 1048576
-  policyStrategy:
-    scopeMode: NamespaceStrict
-    verbMerge: Smart
-    wildcards: Forbidden
-  checkpoint:
-    intervalSeconds: 30
-    batchSize: 500
-  limits:
-    maxRulesPerReport: 200
-    retentionDays: 30
-  filters:
-    - action: Deny
-      userPattern: "^system:anonymous$"
-    - action: Deny
-      userPattern: "^system:kube-proxy$"
-    - action: Deny
-      userPattern: "^system:kube-scheduler$"
-    - action: Deny
-      userPattern: "^system:kube-controller-manager$"
-    - action: Allow
-      userPattern: ".*"
-EOF
+kubectl apply -f realtime-audit-hardened.yaml
 ```
 
-Or if you prefer to patch your existing AudiciaSource in-place:
+Or patch your existing AudiciaSource in-place:
 
 ```bash
 kubectl patch audiciasource realtime-audit -n audicia-system --type=merge \
@@ -218,14 +210,12 @@ kubectl patch audiciasource realtime-audit -n audicia-system --type=merge \
 
 ```bash
 helm upgrade audicia audicia/audicia-operator \
-  --namespace audicia-system \
-  --set image.repository=felixnotka/audicia-operator \
-  --set image.tag=latest \
-  --set webhook.enabled=true \
-  --set webhook.port=8443 \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.clientCASecretName=kube-apiserver-client-ca
+  -n audicia-system \
+  -f values-webhook-mtls.yaml
 ```
+
+(Using the `values-webhook-mtls.yaml` from
+[Step 3](#with-mtls-recommended-for-production).)
 
 The pod will restart. Verify mTLS is active:
 
@@ -298,11 +288,12 @@ kubectl get deploy -n audicia-system -o jsonpath='{.items[0].spec.template.spec.
 
 ## Step 5: Create the Webhook AudiciaSource
 
-Apply the [Webhook AudiciaSource](../examples/audicia-source-webhook.md) example
-or create your own:
+Save the following manifest as `realtime-audit.yaml` (see the
+[Webhook AudiciaSource](../examples/audicia-source-webhook.md) example for
+customization options):
 
-```bash
-kubectl apply -f - <<EOF
+```yaml
+# realtime-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -330,7 +321,10 @@ spec:
       userPattern: "^system:kube-controller-manager$"
     - action: Allow
       userPattern: ".*"
-EOF
+```
+
+```bash
+kubectl apply -f realtime-audit.yaml
 ```
 
 Verify the pipeline started:
@@ -550,6 +544,24 @@ Check operator logs:
 kubectl logs -n audicia-system deploy/audicia --tail=50
 ```
 
+### Verify mTLS Is Working
+
+If you installed with mTLS, verify it's active:
+
+1. **Operator logs** should show `"mTLS enabled"` and no TLS errors:
+   ```bash
+   kubectl logs -n audicia-system deploy/audicia --tail=50 | grep mTLS
+   # Expected: "mTLS enabled" clientCA="/etc/audicia/webhook-client-ca/ca.crt"
+   ```
+
+2. **Unauthorized clients should be rejected.** Test from a pod without a client
+   cert:
+   ```bash
+   kubectl run test-curl --rm -it --image=curlimages/curl -- \
+     curl -k -v -X POST https://<SERVICE-CLUSTER-IP>:8443/ -d '{}'
+   # Expected: TLS handshake failure
+   ```
+
 ---
 
 ## Dual Mode: File + Webhook
@@ -558,27 +570,45 @@ You can run both ingestion modes simultaneously. Each `AudiciaSource` gets its
 own pipeline goroutine. The kube-apiserver supports both `--audit-log-path`
 (file) and `--audit-webhook-config-file` (webhook) at the same time.
 
+Create a `values-dual.yaml`:
+
+```yaml
+# values-dual.yaml
+auditLog:
+  enabled: true
+  hostPath: /var/log/kubernetes/audit/audit.log
+
+webhook:
+  enabled: true
+  port: 8443
+  tlsSecretName: audicia-webhook-tls
+  clientCASecretName: kube-apiserver-client-ca
+
+hostNetwork: true
+
+nodeSelector:
+  kubernetes.io/hostname: "<CONTROL-PLANE-NODE>"
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+podSecurityContext:
+  runAsUser: 0
+  runAsNonRoot: false
+```
+
 ```bash
 helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
-  --set webhook.enabled=true \
-  --set webhook.port=8443 \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.clientCASecretName=kube-apiserver-client-ca \
-  --set nodeSelector."kubernetes\.io/hostname"=<CONTROL-PLANE-NODE> \
-  --set tolerations[0].key="node-role.kubernetes.io/control-plane" \
-  --set tolerations[0].operator="Exists" \
-  --set tolerations[0].effect="NoSchedule" \
-  --set podSecurityContext.runAsUser=0 \
-  --set podSecurityContext.runAsNonRoot=false
+  -n audicia-system --create-namespace \
+  -f values-dual.yaml
 ```
 
 > **Note:** Dual mode requires control plane scheduling because the file
 > ingestor needs hostPath access. On kube-proxy-free clusters, add
-> `--set webhook.hostPort=true` since the operator is already on the control
-> plane node. See the [Kube-Proxy-Free Guide](kube-proxy-free.md).
+> `webhook.hostPort: true` to the values file since the operator is already on
+> the control plane node. See the [Kube-Proxy-Free Guide](kube-proxy-free.md).
 
 Then apply both AudiciaSource CRs. See the
 [File Mode](../examples/audicia-source-file.md) and

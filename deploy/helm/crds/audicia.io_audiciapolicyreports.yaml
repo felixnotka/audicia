@@ -127,6 +127,46 @@ spec:
                       that were never observed in use.
                     format: int32
                     type: integer
+                  excessRules:
+                    description: ExcessRules lists effective RBAC rules that were
+                      never observed in use.
+                    items:
+                      description: ComplianceRule describes a single RBAC permission
+                        used in excess/uncovered lists.
+                      properties:
+                        apiGroups:
+                          description: APIGroups is the list of API groups for this
+                            rule.
+                          items:
+                            type: string
+                          type: array
+                        namespace:
+                          description: |-
+                            Namespace is the namespace this rule applies in.
+                            Empty for cluster-scoped rules.
+                          type: string
+                        nonResourceURLs:
+                          description: NonResourceURLs is the list of non-resource
+                            URLs (e.g., "/metrics").
+                          items:
+                            type: string
+                          type: array
+                        resources:
+                          description: Resources is the list of resources.
+                          items:
+                            type: string
+                          type: array
+                        verbs:
+                          description: Verbs is the list of verbs.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - apiGroups
+                      - resources
+                      - verbs
+                      type: object
+                    type: array
                   hasSensitiveExcess:
                     description: |-
                       HasSensitiveExcess is true when excess RBAC grants include sensitive
@@ -166,6 +206,46 @@ spec:
                       (possible via aggregated ClusterRoles or other mechanisms not yet resolved).
                     format: int32
                     type: integer
+                  uncoveredRules:
+                    description: UncoveredRules lists observed actions not covered
+                      by any effective RBAC grant.
+                    items:
+                      description: ComplianceRule describes a single RBAC permission
+                        used in excess/uncovered lists.
+                      properties:
+                        apiGroups:
+                          description: APIGroups is the list of API groups for this
+                            rule.
+                          items:
+                            type: string
+                          type: array
+                        namespace:
+                          description: |-
+                            Namespace is the namespace this rule applies in.
+                            Empty for cluster-scoped rules.
+                          type: string
+                        nonResourceURLs:
+                          description: NonResourceURLs is the list of non-resource
+                            URLs (e.g., "/metrics").
+                          items:
+                            type: string
+                          type: array
+                        resources:
+                          description: Resources is the list of resources.
+                          items:
+                            type: string
+                          type: array
+                        verbs:
+                          description: Verbs is the list of verbs.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - apiGroups
+                      - resources
+                      - verbs
+                      type: object
+                    type: array
                   usedCount:
                     description: |-
                       UsedCount is the number of effective RBAC rules that were exercised by

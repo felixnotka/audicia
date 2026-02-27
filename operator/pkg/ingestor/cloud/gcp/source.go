@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/felixnotka/audicia/operator/pkg/ingestor/cloud"
@@ -36,7 +36,7 @@ type PubSubSource struct {
 
 	mu         sync.Mutex
 	client     *pubsub.Client
-	sub        *pubsub.Subscription
+	sub        *pubsub.Subscriber
 	msgCh      chan *pubsub.Message       // callback → Receive() bridge
 	cancelRecv context.CancelFunc         // cancels the background sub.Receive()
 	recvDone   chan struct{}              // closed when background receive exits
@@ -49,7 +49,7 @@ func (s *PubSubSource) Connect(ctx context.Context) error {
 		return fmt.Errorf("creating Pub/Sub client: %w", err)
 	}
 
-	sub := client.Subscription(s.SubscriptionID)
+	sub := client.Subscriber(s.SubscriptionID)
 	sub.ReceiveSettings.MaxOutstandingMessages = maxOutstandingMessages
 
 	s.mu.Lock()
