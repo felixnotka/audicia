@@ -1,91 +1,62 @@
 # Kube-Proxy-Free Clusters (Cilium, eBPF)
 
-Running Audicia on clusters that replace kube-proxy with a CNI-native
-implementation (e.g. Cilium with `kubeProxyReplacement: true`). This guide
-covers the networking gotchas and their solutions for **both file mode and
-webhook mode**.
+Guide for running Audicia on clusters that replace kube-proxy with a CNI-native
+implementation (e.g. Cilium with `kubeProxyReplacement: true`). Covers both file
+mode and webhook mode.
 
-> **Standard kube-proxy clusters?** You don't need this guide. Follow the normal
-> [Installation](../getting-started/installation.md) or
-> [Webhook Setup Guide](webhook-setup.md).
+If your cluster uses standard kube-proxy, you don't need this guide — follow the
+normal [Installation](../getting-started/installation.md) or
+[Webhook Setup Guide](webhook-setup.md).
 
 ---
 
 ## The Problem
 
-On standard clusters, kube-proxy programs iptables rules that translate
-ClusterIP addresses into pod IPs. This routing works in both directions — from
-pods to the Kubernetes API server, and from the host namespace to pod
-ClusterIPs.
+On kube-proxy-free clusters, **ClusterIP traffic may not be routed correctly**
+between the host namespace and pod network. This breaks Audicia in two ways:
 
-On kube-proxy-free clusters, the CNI handles service routing differently.
-Cilium, for example, uses eBPF socket-level load balancing. Depending on the
-Cilium version and configuration, **ClusterIP traffic may not be routed
-correctly** between the host namespace and pod network. This breaks Audicia in
-two ways:
+- **File mode (pod → apiserver):** The operator pod cannot reach the Kubernetes
+  API server ClusterIP. Symptoms: pod crashes with
+  `dial tcp 10.96.0.1:443: i/o timeout`, never reaches `Ready`.
 
-1. **File mode (pod → apiserver):** The operator pod cannot reach the Kubernetes
-   API server ClusterIP (`10.96.0.1:443`) to start its informer caches.
-2. **Webhook mode (apiserver → pod):** The kube-apiserver (which runs with
-   `hostNetwork: true`) cannot reach Audicia's webhook Service via its
-   ClusterIP.
-
-### File Mode Symptoms
-
-- Operator pod starts but crashes with: `dial tcp 10.96.0.1:443: i/o timeout`
-- Operator logs show `failed to prime RBAC cache informer` or the manager fails
-  to start
-- The pod never reaches `Ready`
-
-### Webhook Mode Symptoms
-
-- Audicia pod is running, webhook HTTPS server is listening on port 8443
-- `curl -k https://<POD-IP>:8443` from the control plane node **works**
-- `curl -k https://<CLUSTER-IP>:8443` from the control plane node **hangs or
-  times out**
-- No audit events arrive despite the apiserver having the webhook flag
-  configured
-- No errors in apiserver logs (batch mode silently drops failed deliveries)
+- **Webhook mode (apiserver → pod):** The kube-apiserver (running with
+  `hostNetwork: true`) cannot reach Audicia's webhook Service via ClusterIP.
+  Symptoms: `curl -k https://<POD-IP>:8443` works but
+  `curl -k https://<CLUSTER-IP>:8443` hangs. No audit events arrive.
 
 ---
 
-## File Mode: hostNetwork {#file-mode-hostnetwork}
+## File Mode: hostNetwork
 
-The simplest fix for file mode: run the operator pod with `hostNetwork: true`.
-This makes the pod share the node's network namespace, bypassing the CNI
-datapath entirely. The pod can then reach the Kubernetes API server directly
-through the host's network stack.
+Run the operator pod with `hostNetwork: true` to bypass the CNI datapath.
 
-This is safe because file-mode pods already run on the control plane node with
-`hostPath` access to the audit log. Adding `hostNetwork` does not grant any
-additional privilege beyond what `hostPath` already implies.
+Create a `values-file.yaml`:
+
+```yaml
+# values-file.yaml
+auditLog:
+  enabled: true
+  hostPath: /var/log/kubernetes/audit/audit.log
+
+hostNetwork: true
+
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    effect: NoSchedule
+
+podSecurityContext:
+  runAsUser: 0
+  runAsNonRoot: false
+```
 
 ```bash
 helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
-  --set hostNetwork=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule \
-  --set podSecurityContext.runAsUser=0 \
-  --set podSecurityContext.runAsNonRoot=false
+  -n audicia-system --create-namespace \
+  -f values-file.yaml
 ```
-
-The Helm chart automatically sets `dnsPolicy: ClusterFirstWithHostNet` when
-`hostNetwork` is enabled, so cluster DNS (e.g. for leader election lease
-lookups) continues to work.
-
-> **Already deployed without hostNetwork?** Patch the existing deployment:
->
-> ```bash
-> kubectl patch deployment -n audicia-system audicia-audicia-operator \
->   --type=json -p='[
->     {"op":"add","path":"/spec/template/spec/hostNetwork","value":true},
->     {"op":"add","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirstWithHostNet"}
->   ]'
-> ```
 
 ---
 
@@ -122,27 +93,35 @@ kubectl create secret tls audicia-webhook-tls \
 ### Step 3: Install with hostPort Enabled
 
 The operator must be scheduled on the control plane node so the apiserver can
-reach it via loopback:
+reach it via loopback.
+
+Create a `values-webhook-hostport.yaml`:
+
+```yaml
+# values-webhook-hostport.yaml
+webhook:
+  enabled: true
+  port: 8443
+  tlsSecretName: audicia-webhook-tls
+  hostPort: true
+  clientCASecretName: kube-apiserver-client-ca # optional: remove for basic TLS
+
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    effect: NoSchedule
+```
 
 ```bash
 helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.port=8443 \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.hostPort=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule
+  -n audicia-system --create-namespace \
+  -f values-webhook-hostport.yaml
 ```
 
-To add mTLS, append:
-
-```
---set webhook.clientCASecretName=kube-apiserver-client-ca
-```
-
-See the [Webhook Setup Guide](webhook-setup.md#optional-mtls-client-ca-secret)
+See the
+[Webhook Setup Guide](webhook-setup.md#step-1-create-the-namespace-and-secrets)
 for creating the client CA Secret.
 
 ### Step 4: Create the Webhook Kubeconfig
@@ -187,28 +166,29 @@ manifest.
 ## Alternative: NodePort Mode
 
 If hostPort doesn't fit your setup (e.g. port conflicts), you can use NodePort
-instead. Set `webhook.service.nodePort` to a port in the 30000-32767 range:
+instead. Note that NodePort still goes through the CNI's service routing layer
+and is not guaranteed to work on all Cilium configurations.
+
+Create a `values-webhook-nodeport.yaml`:
+
+```yaml
+# values-webhook-nodeport.yaml
+webhook:
+  enabled: true
+  tlsSecretName: audicia-webhook-tls
+  service:
+    nodePort: 30443
+```
 
 ```bash
 helm install audicia audicia/audicia-operator \
-  --create-namespace --namespace audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.tlsSecretName=audicia-webhook-tls \
-  --set webhook.service.nodePort=30443
+  -n audicia-system --create-namespace \
+  -f values-webhook-nodeport.yaml
 ```
 
-The webhook kubeconfig then uses the node IP and NodePort:
-
-```yaml
-server: https://<NODE-IP>:30443
-```
-
-And the TLS certificate SAN must include that node IP.
-
-> **Caveat:** NodePort still goes through the CNI's service routing layer. On
-> some Cilium configurations, NodePort works from the host namespace even when
-> ClusterIP doesn't, but this is not guaranteed. hostPort is the most reliable
-> option.
+The webhook kubeconfig then uses the node IP and NodePort
+(`server: https://<NODE-IP>:30443`), and the TLS certificate SAN must include
+that node IP.
 
 ---
 
@@ -233,18 +213,6 @@ curl -k https://${CLUSTER_IP}:8443 -v --connect-timeout 5
 If the pod IP responds but the ClusterIP hangs, you need hostPort or NodePort
 mode.
 
-### Cilium socket LB
-
-Cilium's `socketLB.enabled: true` (also known as `bpf-lb-sock`) is designed to
-enable host-to-ClusterIP routing. However:
-
-- It may require a **node reboot** after enabling (not just a Cilium agent
-  restart)
-- Behavior depends on your `socketLB.hostNamespaceOnly` setting
-- It doesn't work in all kernel versions and Cilium configurations
-
-hostPort bypasses all of this and is the recommended workaround.
-
 ---
 
 ## Helm Values Reference
@@ -258,14 +226,3 @@ hostPort bypasses all of this and is the recommended workaround.
 
 See the full [Helm Values Reference](../configuration/helm-values.md) for all
 options.
-
----
-
-## Related
-
-- [Installation](../getting-started/installation.md) — Standard installation
-  guide
-- [Webhook Setup Guide](webhook-setup.md) — Full webhook setup (ClusterIP mode)
-- [mTLS Setup](webhook-setup.md#upgrading-from-basic-tls-to-mtls) — Mutual TLS
-  for webhook security
-- [Troubleshooting](../troubleshooting.md) — Common issues and solutions

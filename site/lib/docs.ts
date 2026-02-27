@@ -46,17 +46,22 @@ export const DOCS_NAV: NavSection[] = [
     ],
   },
   {
-    section: "Guides",
+    section: "Setup Guides",
     slug: "guides",
     pages: [
       { slug: "audit-policy", title: "Audit Policy" },
       { slug: "webhook-setup", title: "Webhook Setup" },
-      { slug: "mtls-setup", title: "mTLS Setup" },
-      { slug: "filter-recipes", title: "Filter Recipes" },
       { slug: "kube-proxy-free", title: "Kube-Proxy-Free Clusters" },
       { slug: "aks-setup", title: "AKS Setup (Event Hub)" },
       { slug: "eks-setup", title: "EKS Setup (CloudWatch Logs)" },
       { slug: "gke-setup", title: "GKE Setup (Pub/Sub)" },
+    ],
+  },
+  {
+    section: "Guides",
+    slug: "guides",
+    pages: [
+      { slug: "filter-recipes", title: "Filter Recipes" },
       { slug: "demo-walkthrough", title: "Demo Walkthrough" },
     ],
   },

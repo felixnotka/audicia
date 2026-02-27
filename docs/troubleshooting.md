@@ -125,7 +125,7 @@ helm upgrade audicia audicia/audicia-operator -n audicia-system \
 Or patch an existing deployment:
 
 ```bash
-kubectl patch deployment -n audicia-system audicia-audicia-operator \
+kubectl patch deployment -n audicia-system audicia-operator \
   --type=json -p='[
     {"op":"add","path":"/spec/template/spec/hostNetwork","value":true},
     {"op":"add","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirstWithHostNet"}
@@ -185,7 +185,7 @@ vi /etc/kubernetes/audit-webhook-kubeconfig.yaml
 
 Also ensure the TLS certificate has the IP as a SAN. If it only has DNS SANs,
 regenerate it. See
-[Webhook Setup Guide](guides/webhook-setup.md#step-1-generate-a-self-signed-tls-certificate).
+[Webhook Setup Guide](guides/webhook-setup.md#step-3-generate-the-tls-certificate-and-create-the-tls-secret).
 
 After updating, restart the apiserver:
 
