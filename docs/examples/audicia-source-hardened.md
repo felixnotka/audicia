@@ -4,7 +4,7 @@ Production-hardened AudiciaSource with mTLS, rate limiting, checkpointing, and
 retention limits.
 
 **See also:** [Webhook Setup Guide](../guides/webhook-setup.md) |
-[mTLS Setup](../guides/mtls-setup.md) |
+[mTLS Setup](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls) |
 [Filter Recipes](../guides/filter-recipes.md)
 
 ```yaml

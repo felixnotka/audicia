@@ -55,46 +55,48 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 ### For File-Based Ingestion
 
 The operator needs to run on a control plane node with access to the audit log
-file:
+file. Create a `values-file.yaml`:
 
-```bash
-helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
-  --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
-  --set hostNetwork=true \
-  --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set tolerations[0].key=node-role.kubernetes.io/control-plane \
-  --set tolerations[0].effect=NoSchedule
+```yaml
+# values-file.yaml
+auditLog:
+  enabled: true
+  hostPath: /var/log/kubernetes/audit/audit.log
+
+hostNetwork: true
+
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    effect: NoSchedule
 ```
 
-> **Why `hostNetwork=true`?** On Cilium and other kube-proxy-free CNIs, pods on
+```bash
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace \
+  -f values-file.yaml
+```
+
+> **Why `hostNetwork: true`?** On Cilium and other kube-proxy-free CNIs, pods on
 > control plane nodes cannot reach the Kubernetes service ClusterIP.
 > `hostNetwork` lets the pod use the node's network stack, bypassing the CNI
 > datapath. This is safe because the pod already runs on the control plane with
 > `hostPath` access. See the
 > [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork).
-> If you are certain your cluster uses kube-proxy, you can omit this flag.
+> If you are certain your cluster uses kube-proxy, you can remove this setting.
 
-> **Permission denied?** Kubernetes audit logs are a sensitive resource — they
-> are typically owned by root and restricted to root-only access. The operator
-> runs as a non-root user (UID 10000) by default, which means it cannot read the
-> audit log without elevated privileges.
+> **Permission denied?** Audit logs are typically owned by root. The operator
+> runs as non-root (UID 10000) by default, so it cannot read the log without
+> elevated privileges.
 >
-> You have two options:
+> **Option A: Run as root** — add the following to your `values-file.yaml`:
 >
-> **Option A: Run the operator as root** (simplest, recommended for dedicated
-> operator nodes):
->
-> ```bash
-> helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
->   --set auditLog.enabled=true \
->   --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
->   --set hostNetwork=true \
->   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
->   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
->   --set tolerations[0].effect=NoSchedule \
->   --set podSecurityContext.runAsUser=0 \
->   --set podSecurityContext.runAsNonRoot=false
+> ```yaml
+> podSecurityContext:
+>   runAsUser: 0
+>   runAsNonRoot: false
 > ```
 >
 > **Option B: Relax file permissions on the host** (keeps the operator
@@ -123,11 +125,21 @@ openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-serve
 kubectl create namespace audicia-system
 kubectl create secret tls audicia-webhook-tls \
   --cert=webhook-server.crt --key=webhook-server.key -n audicia-system
+```
 
-# Install with webhook mode
-helm install audicia audicia/audicia-operator -n audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.tlsSecretName=audicia-webhook-tls
+Create a `values-webhook.yaml`:
+
+```yaml
+# values-webhook.yaml
+webhook:
+  enabled: true
+  tlsSecretName: audicia-webhook-tls
+```
+
+```bash
+helm install audicia audicia/audicia-operator \
+  -n audicia-system \
+  -f values-webhook.yaml
 ```
 
 > **ClusterIP unreachable?** On Cilium or other kube-proxy-free CNIs, the

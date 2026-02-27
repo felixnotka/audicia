@@ -11,12 +11,20 @@ control plane node scheduling.
 
 ## Prerequisites
 
-- Audicia installed with `webhook.enabled=true` (see
-  [Installation](installation.md))
 - `kubectl` configured
+- Helm 3
 - Access to the control plane node (for apiserver configuration)
 
-## Step 1: Create TLS Certificates
+## Step 1: Install Audicia (Base)
+
+```bash
+helm repo add audicia https://charts.audicia.io
+
+helm install audicia audicia/audicia-operator \
+  -n audicia-system --create-namespace
+```
+
+## Step 2: Create TLS Certificates
 
 The webhook receiver requires TLS. For production, use certificates from your
 PKI. For testing:
@@ -31,24 +39,40 @@ openssl req -x509 -newkey rsa:4096 -keyout webhook-server.key -out webhook-serve
   -addext "subjectAltName=IP:${CLUSTER_IP}"
 ```
 
-## Step 2: Create the TLS Secret
+## Step 3: Create the TLS Secret
 
 ```bash
 kubectl create secret tls audicia-webhook-tls \
   --cert=webhook-server.crt --key=webhook-server.key -n audicia-system
 ```
 
-## Step 3: Install Audicia with Webhook Mode
+## Step 4: Enable Webhook Mode
 
-```bash
-helm upgrade audicia audicia/audicia-operator -n audicia-system \
-  --set webhook.enabled=true \
-  --set webhook.tlsSecretName=audicia-webhook-tls
-```
-
-## Step 4: Create an AudiciaSource
+Create a `values-webhook.yaml` file:
 
 ```yaml
+# values-webhook.yaml
+webhook:
+  enabled: true
+  tlsSecretName: audicia-webhook-tls
+```
+
+Upgrade the Helm release:
+
+```bash
+helm upgrade audicia audicia/audicia-operator \
+  -n audicia-system \
+  -f values-webhook.yaml
+```
+
+## Step 5: Create an AudiciaSource
+
+Save the following manifest as `webhook-audit.yaml` (see the
+[Webhook Example](../examples/audicia-source-webhook.md) for customization
+options):
+
+```yaml
+# webhook-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -79,15 +103,13 @@ spec:
 ```
 
 ```bash
-kubectl apply -f - <<EOF
-# (paste the YAML above)
-EOF
+kubectl apply -f webhook-audit.yaml
 ```
 
-## Step 5: Configure the kube-apiserver
+## Step 6: Configure the kube-apiserver
 
 Create the webhook kubeconfig on the control plane node. Use the ClusterIP from
-Step 1:
+Step 2:
 
 ```bash
 echo $CLUSTER_IP
@@ -137,7 +159,7 @@ The apiserver will restart automatically.
 See the [Webhook Kubeconfig](../examples/webhook-kubeconfig.md) example for the
 complete template.
 
-## Step 6: Verify Events Flow
+## Step 7: Verify Events Flow
 
 Check the operator logs:
 
@@ -162,15 +184,13 @@ Reports should start appearing for active subjects.
 ## Optional: Enable mTLS
 
 For production, enable mTLS so only the kube-apiserver (presenting a valid
-client certificate) can send events. See the
-[mTLS Setup Guide](../guides/mtls-setup.md) or the
-[Webhook Setup Guide](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls)
-for the full walkthrough.
+client certificate) can send events. See
+[Upgrading from Basic TLS to mTLS](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls)
+in the Webhook Setup Guide.
 
 ## What's Next
 
-- [mTLS Setup](../guides/mtls-setup.md) — Harden the webhook with mutual TLS
 - [Webhook Setup Guide](../guides/webhook-setup.md) — Complete reference for
-  webhook configuration
+  webhook configuration including mTLS
 - [Filter Recipes](../guides/filter-recipes.md) — Production filter
   configurations

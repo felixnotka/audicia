@@ -185,7 +185,8 @@ scheduling.
 - [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
 - [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration
   walkthrough
-- [mTLS Setup Guide](../guides/mtls-setup.md) — Client certificate verification
+- [mTLS Setup](../guides/webhook-setup.md#how-mtls-works) — Client certificate
+  verification
 - [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full field reference
 - [Cloud Ingestion](../concepts/cloud-ingestion.md) — Cloud ingestion
   architecture and design

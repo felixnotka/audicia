@@ -142,7 +142,8 @@ To add mTLS, append:
 --set webhook.clientCASecretName=kube-apiserver-client-ca
 ```
 
-See the [mTLS Setup Guide](mtls-setup.md) for creating the client CA Secret.
+See the [Webhook Setup Guide](webhook-setup.md#optional-mtls-client-ca-secret)
+for creating the client CA Secret.
 
 ### Step 4: Create the Webhook Kubeconfig
 
@@ -265,5 +266,6 @@ options.
 - [Installation](../getting-started/installation.md) — Standard installation
   guide
 - [Webhook Setup Guide](webhook-setup.md) — Full webhook setup (ClusterIP mode)
-- [mTLS Setup Guide](mtls-setup.md) — Mutual TLS for webhook security
+- [mTLS Setup](webhook-setup.md#upgrading-from-basic-tls-to-mtls) — Mutual TLS
+  for webhook security
 - [Troubleshooting](../troubleshooting.md) — Common issues and solutions
