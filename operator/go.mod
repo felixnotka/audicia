@@ -12,11 +12,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.63.2
 	github.com/go-logr/logr v1.4.3
 	github.com/prometheus/client_golang v1.23.2
-	k8s.io/api v0.35.0
-	k8s.io/apimachinery v0.35.0
-	k8s.io/apiserver v0.35.0
-	k8s.io/client-go v0.35.0
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
+	k8s.io/api v0.35.2
+	k8s.io/apimachinery v0.35.2
+	k8s.io/apiserver v0.35.2
+	k8s.io/client-go v0.35.2
+	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/controller-runtime v0.23.1
 	sigs.k8s.io/yaml v1.6.0
 )
