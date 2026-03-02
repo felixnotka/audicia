@@ -92,7 +92,8 @@ eksctl create iamserviceaccount \
 
 ## Step 3: Install Audicia
 
-Create a `values-eks.yaml` file with your cluster-specific configuration:
+Since `eksctl create iamserviceaccount` already created and annotated the
+ServiceAccount in Step 2, tell Helm to reuse it instead of creating a new one:
 
 ```yaml
 # values-eks.yaml
@@ -107,8 +108,8 @@ image:
   tag: "<VERSION>-aws"
 
 serviceAccount:
-  annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::<ACCOUNT_ID>:role/audicia-operator"
+  create: false
+  name: audicia-operator
 ```
 
 Install with Helm:
@@ -126,11 +127,13 @@ helm install audicia audicia/audicia-operator \
 > deployments. Check in `values-eks.yaml` alongside your other infrastructure
 > config.
 
-The `eks.amazonaws.com/role-arn` ServiceAccount annotation is used by
-[IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)
-(IAM Roles for Service Accounts). The IRSA mutating webhook injects
-`AWS_ROLE_ARN` and `AWS_WEB_IDENTITY_TOKEN_FILE` into the pod, which the AWS SDK
-picks up automatically.
+> **Do not** set `serviceAccount.annotations.eks.amazonaws.com/role-arn` in Helm
+> values when using `eksctl create iamserviceaccount`. Doing so creates two
+> competing sources of truth for the role ARN — the annotation that `eksctl` set
+> and the one Helm would set — which frequently causes
+> `sts:AssumeRoleWithWebIdentity AccessDenied` errors. Pick one approach: let
+> `eksctl` own the SA annotation (this guide), or manage it via Helm (see the
+> [full EKS Setup Guide](../guides/eks-setup.md) for the manual approach).
 
 ## Step 4: Create an AudiciaSource
 
@@ -161,7 +164,27 @@ spec:
 EOF
 ```
 
-## Step 5: Verify Events Flow
+## Step 5: Verify IRSA and Events Flow
+
+Before checking logs, confirm that IRSA credentials were injected into the pod:
+
+```bash
+# Verify the SA annotation points to the expected role
+kubectl get sa audicia-operator -n audicia-system -o jsonpath='{.metadata.annotations.eks\.amazonaws\.com/role-arn}'
+
+# Verify the pod has IRSA environment variables
+kubectl set env deploy/audicia-operator -n audicia-system --list | grep AWS_
+# Expected: AWS_ROLE_ARN=arn:aws:iam::<ACCOUNT_ID>:role/...
+#           AWS_WEB_IDENTITY_TOKEN_FILE=/var/run/secrets/...
+```
+
+> **STS AccessDenied?** If operator logs show
+> `Not authorized to perform sts:AssumeRoleWithWebIdentity`, the problem is IRSA
+> trust — not CloudWatch Logs permissions. Verify that the IAM role's trust
+> policy references the correct OIDC provider, namespace, and ServiceAccount
+> name. See the
+> [EKS Setup Guide troubleshooting](../guides/eks-setup.md#troubleshooting) for
+> details.
 
 Check that the operator is ingesting events:
 
