@@ -188,7 +188,7 @@ kubectl describe audiciasource realtime-audit -n audicia-system
 Check operator logs:
 
 ```bash
-kubectl logs -n audicia-system deploy/audicia-operator -f | grep webhook
+kubectl logs -f -n audicia-system deploy/audicia-operator | grep webhook
 # Expected: "starting webhook HTTPS server" port=8443
 # With mTLS: "mTLS enabled" clientCA="/etc/audicia/webhook-client-ca/ca.crt"
 ```
@@ -303,7 +303,7 @@ kubectl get audiciapolicyreports --all-namespaces
 Check operator logs:
 
 ```bash
-kubectl logs -n audicia-system deploy/audicia-operator --tail=50
+kubectl logs -f -n audicia-system deploy/audicia-operator
 ```
 
 ---

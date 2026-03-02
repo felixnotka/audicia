@@ -124,7 +124,8 @@ discover automatically via Application Default Credentials (ADC).
 
 ## Step 4: Create an AudiciaSource
 
-```yaml
+```bash
+kubectl apply -f - <<'EOF'
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -146,10 +147,7 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
-```
-
-```bash
-kubectl apply -f gke-cloud-audit.yaml
+EOF
 ```
 
 ## Step 5: Verify Events Flow
@@ -161,7 +159,7 @@ Check that the operator is ingesting events:
 kubectl get audiciasource gke-cloud-audit -n audicia-system
 
 # Check operator logs
-kubectl logs -l app.kubernetes.io/name=audicia -n audicia-system --tail=20
+kubectl logs -f -n audicia-system deploy/audicia-operator
 ```
 
 You should see `audicia_cloud_messages_received_total` incrementing. After a

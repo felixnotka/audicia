@@ -164,7 +164,7 @@ complete template.
 Check the operator logs:
 
 ```bash
-kubectl logs -n audicia-system -l app.kubernetes.io/name=audicia-operator --tail=20
+kubectl logs -f -n audicia-system deploy/audicia-operator
 ```
 
 You should see:

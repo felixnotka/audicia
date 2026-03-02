@@ -183,7 +183,8 @@ default credential chain.
 
 ## Step 5: Create an AudiciaSource
 
-```yaml
+```bash
+kubectl apply -f - <<'EOF'
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -206,6 +207,7 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
+EOF
 ```
 
 ## Step 6: Verify
@@ -217,7 +219,7 @@ Check that the operator is ingesting events:
 kubectl get audiciasource eks-cloud-audit -n audicia-system -o yaml
 
 # Check operator logs
-kubectl logs -l app.kubernetes.io/name=audicia -n audicia-system
+kubectl logs -f -n audicia-system deploy/audicia-operator
 
 # Check metrics
 kubectl port-forward svc/audicia-metrics 8080:8080 -n audicia-system
