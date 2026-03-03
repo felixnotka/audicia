@@ -29,13 +29,19 @@ jobs:
 
       - name: Detect changed paths
         id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          base: 'HEAD~1'
-          filters: |
-            operator:
-              - 'operator/**'
-              - 'deploy/helm/**'
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Compare only the pushed commit, not the full batch
+            BASE="HEAD~1"
+          else
+            # PR: compare against the base branch
+            BASE="origin/${{ github.base_ref }}"
+          fi
+          if git diff --name-only "$BASE" HEAD | grep -qE '^(operator/|deploy/helm/)'; then
+            echo "operator=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "operator=false" >> "$GITHUB_OUTPUT"
+          fi
 
   lint-and-test:
     needs: [detect-changes]
