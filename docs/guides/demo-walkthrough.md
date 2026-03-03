@@ -68,7 +68,8 @@ The kube-apiserver audit log now contains this event:
 
 Create an `AudiciaSource` pointing to the audit log:
 
-```yaml
+```bash
+kubectl apply -f - <<'EOF'
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -83,12 +84,7 @@ spec:
   filters:
     - action: Deny
       userPattern: "^system:.*"
-```
-
-Save the above manifest and apply it:
-
-```bash
-kubectl apply -f audicia-source.yaml
+EOF
 ```
 
 Audicia begins tailing the audit log from the current position. Check that it

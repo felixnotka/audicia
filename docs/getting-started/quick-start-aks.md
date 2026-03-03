@@ -92,13 +92,11 @@ helm repo add audicia https://charts.audicia.io
 
 helm install audicia audicia/audicia-operator \
   -n audicia-system --create-namespace \
-  --version <VERSION> \
   -f values-aks.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible
-> deployments. Check in `values-aks.yaml` alongside your other infrastructure
-> config.
+> **Tip:** Check in `values-aks.yaml` alongside your other infrastructure config
+> for reproducible deployments.
 
 The Helm chart automatically adds the `azure.workload.identity/use: "true"` pod
 label when the Azure provider is configured, which causes the Workload Identity
@@ -106,8 +104,11 @@ webhook to inject the required credentials into the pod.
 
 ## Step 4: Create an AudiciaSource
 
-```bash
-kubectl apply -f - <<'EOF'
+Save the following manifest as `aks-cloud-audit.yaml` and replace the
+placeholder values:
+
+```yaml
+# aks-cloud-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -130,7 +131,12 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
-EOF
+```
+
+Apply it:
+
+```bash
+kubectl apply -f aks-cloud-audit.yaml
 ```
 
 ## Step 5: Verify Events Flow

@@ -317,6 +317,8 @@ func TestSanitizeName(t *testing.T) {
 		{"system:kube-scheduler", "system-kube-scheduler"},
 		{"ns/sa-name", "ns-sa-name"},
 		{"dotted.name", "dotted-name"},
+		{"felix_notka_admin", "felix-notka-admin"},
+		{"arn:aws:iam::123:user/felix_notka", "arn-aws-iam--123-user-felix-notka"},
 	}
 	for _, tt := range tests {
 		got := sanitizeName(tt.input)
@@ -951,7 +953,7 @@ func TestCreateCloudIngestor_NilConfig(t *testing.T) {
 
 // --- processEvent edge cases ---
 
-func TestProcessEvent_NilObjectRef(t *testing.T) {
+func TestProcessEvent_NilObjectRef_NoRequestURI_Skipped(t *testing.T) {
 	r := &Reconciler{}
 	source := audiciav1alpha1.AudiciaSource{
 		Spec: audiciav1alpha1.AudiciaSourceSpec{
@@ -966,13 +968,39 @@ func TestProcessEvent_NilObjectRef(t *testing.T) {
 	event := auditv1.Event{
 		Verb:      "get",
 		User:      authnv1.UserInfo{Username: "system:serviceaccount:default:my-sa"},
-		ObjectRef: nil, // No ObjectRef — resource/namespace should be empty.
+		ObjectRef: nil, // No ObjectRef and no RequestURI — unresolvable, should be skipped.
+	}
+
+	r.processEvent(event, source, chain, aggregators, subjects)
+
+	if len(aggregators) != 0 {
+		t.Errorf("expected 0 aggregators (unresolvable event skipped), got %d", len(aggregators))
+	}
+}
+
+func TestProcessEvent_NilObjectRef_WithRequestURI(t *testing.T) {
+	r := &Reconciler{}
+	source := audiciav1alpha1.AudiciaSource{
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			IgnoreSystemUsers: false,
+		},
+	}
+
+	chain, _ := filter.NewChain(nil)
+	aggregators := make(map[string]*aggregator.Aggregator)
+	subjects := make(map[string]audiciav1alpha1.Subject)
+
+	event := auditv1.Event{
+		Verb:       "get",
+		User:       authnv1.UserInfo{Username: "system:serviceaccount:default:my-sa"},
+		ObjectRef:  nil,
+		RequestURI: "/metrics", // Non-resource URL — should be accepted.
 	}
 
 	r.processEvent(event, source, chain, aggregators, subjects)
 
 	if len(aggregators) != 1 {
-		t.Errorf("expected 1 aggregator, got %d", len(aggregators))
+		t.Errorf("expected 1 aggregator (non-resource URL), got %d", len(aggregators))
 	}
 }
 

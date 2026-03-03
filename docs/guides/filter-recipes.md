@@ -148,7 +148,7 @@ If reports aren't appearing for expected subjects:
 
 1. **Check operator logs** for filtered event counts:
    ```bash
-   kubectl logs -n audicia-system -l app.kubernetes.io/name=audicia-operator | grep filtered
+   kubectl logs -f -n audicia-system deploy/audicia-operator | grep filtered
    ```
 
 2. **Temporarily remove all filters** to confirm events flow:

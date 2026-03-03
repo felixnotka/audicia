@@ -7,6 +7,60 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.7
+
+### Added
+
+- **IRSA verification steps** — EKS guides now include ServiceAccount annotation
+  and pod environment variable checks before verifying event flow
+- **STS AccessDenied callout** — quick-start EKS includes a diagnostic note
+  distinguishing IRSA trust errors from CloudWatch Logs permission errors
+- **Expanded EKS troubleshooting** — three new rows covering STS
+  AssumeRoleWithWebIdentity failures, eksctl/Helm role ARN mismatches, and IRSA
+  webhook injection issues
+
+### Changed
+
+- **File-based patterns for editable manifests** — guides that require
+  user-specific values (IAM policies, trust policies, AudiciaSource YAMLs) now
+  instruct users to create and edit files before applying, while static
+  manifests use inline heredocs
+- **EKS IRSA setup split into two options** — the EKS Setup Guide now presents
+  eksctl (recommended) and manual IAM role as mutually exclusive options with
+  separate Helm values, preventing the double-ownership bug where both eksctl
+  and Helm manage the ServiceAccount annotation
+- **Standardized log commands** — all guides consistently use
+  `kubectl logs -f -n audicia-system deploy/audicia-operator`
+
+### Fixed
+
+- **Empty-subject report names** — `NormalizeSubject` now rejects empty
+  usernames, preventing invalid report names like `report-` that fail Kubernetes
+  naming validation
+- **Unresolvable audit events** — `processEvent` now skips events with no
+  `objectRef` and no `requestURI`, which previously produced rules with empty
+  `apiGroups`/`resources` that fail CRD validation
+  (`status.observedRules[].apiGroups: Required value`)
+- **Underscore in report names** — `sanitizeName` now replaces underscores with
+  hyphens, and trims leading hyphens in addition to trailing ones, producing RFC
+  1123-compliant resource names (e.g., `felix_notka_admin` →
+  `felix-notka-admin`)
+- **EKS IAM policy missing log-stream resource** — CloudWatch Logs
+  `FilterLogEvents` requires a separate `log-stream:*` resource ARN; both EKS
+  guides now include both resource patterns in the IAM policy
+- **EKS IRSA double ownership** — quick-start EKS now uses
+  `serviceAccount.create: false` when eksctl manages the ServiceAccount, with a
+  warning against mixing approaches
+- **Premature verification step** — removed ServiceAccount check from EKS setup
+  that ran before the namespace existed
+- **Typo** — fixed `deploy/audciia-operator` → `deploy/audicia-operator` in EKS
+  Setup Guide
+- **Redundant `--version` in Helm install** — all cloud guides (EKS, AKS, GKE)
+  no longer pass `--version` to `helm install`, since the chart version is
+  independent of the image tag set in the values file
+
+---
+
 ## 0.3.4
 
 ### Fixed

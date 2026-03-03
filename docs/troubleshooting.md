@@ -339,7 +339,7 @@ The operator can't read the audit log file.
 Check pod logs:
 
 ```bash
-kubectl logs -n audicia-system -l app.kubernetes.io/name=audicia-operator
+kubectl logs -f -n audicia-system deploy/audicia-operator
 ```
 
 ---

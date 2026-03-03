@@ -44,11 +44,12 @@ aws logs filter-log-events \
 
 ## Step 2: Set Up IRSA
 
-Create an IAM policy, role, and associate it with the Audicia ServiceAccount:
+Create an IAM policy, role, and associate it with the Audicia ServiceAccount.
 
-```bash
-# Create IAM policy for CloudWatch read access
-cat > audicia-cloudwatch-policy.json <<'EOF'
+Create an `audicia-cloudwatch-policy.json` file and replace the placeholder
+values:
+
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -58,12 +59,18 @@ cat > audicia-cloudwatch-policy.json <<'EOF'
         "logs:FilterLogEvents",
         "logs:DescribeLogStreams"
       ],
-      "Resource": "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*"
+      "Resource": [
+        "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*",
+        "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:log-stream:*"
+      ]
     }
   ]
 }
-EOF
+```
 
+Create the policy:
+
+```bash
 aws iam create-policy \
   --policy-name AudiciaCloudWatchReadOnly \
   --policy-document file://audicia-cloudwatch-policy.json
@@ -119,13 +126,11 @@ helm repo add audicia https://charts.audicia.io
 
 helm install audicia audicia/audicia-operator \
   -n audicia-system --create-namespace \
-  --version <VERSION> \
   -f values-eks.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible
-> deployments. Check in `values-eks.yaml` alongside your other infrastructure
-> config.
+> **Tip:** Check in `values-eks.yaml` alongside your other infrastructure config
+> for reproducible deployments.
 
 > **Do not** set `serviceAccount.annotations.eks.amazonaws.com/role-arn` in Helm
 > values when using `eksctl create iamserviceaccount`. Doing so creates two
@@ -137,8 +142,11 @@ helm install audicia audicia/audicia-operator \
 
 ## Step 4: Create an AudiciaSource
 
-```bash
-kubectl apply -f - <<'EOF'
+Save the following manifest as `eks-cloud-audit.yaml` and replace the
+placeholder values:
+
+```yaml
+# eks-cloud-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -161,7 +169,12 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
-EOF
+```
+
+Apply it:
+
+```bash
+kubectl apply -f eks-cloud-audit.yaml
 ```
 
 ## Step 5: Verify IRSA and Events Flow

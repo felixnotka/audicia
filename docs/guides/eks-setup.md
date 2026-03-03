@@ -47,10 +47,12 @@ aws logs filter-log-events \
 
 ## Step 2: Create an IAM Policy
 
-Create an IAM policy that grants read access to the CloudWatch Logs group:
+Create an IAM policy that grants read access to the CloudWatch Logs group.
 
-```bash
-cat > audicia-cloudwatch-policy.json <<'EOF'
+Create an `audicia-cloudwatch-policy.json` file and replace the placeholder
+values:
+
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -60,12 +62,18 @@ cat > audicia-cloudwatch-policy.json <<'EOF'
         "logs:FilterLogEvents",
         "logs:DescribeLogStreams"
       ],
-      "Resource": "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*"
+      "Resource": [
+        "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*",
+        "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:log-stream:*"
+      ]
     }
   ]
 }
-EOF
+```
 
+Create the policy:
+
+```bash
 aws iam create-policy \
   --policy-name AudiciaCloudWatchReadOnly \
   --policy-document file://audicia-cloudwatch-policy.json
@@ -113,45 +121,45 @@ eksctl create iamserviceaccount \
 > `eksctl-<CLUSTER>-addon-iamserviceaccount-audicia-...` which is easy to lose
 > track of.
 
-**3. Verify the role ARN that `eksctl` annotated on the ServiceAccount:**
-
-```bash
-kubectl get sa audicia-operator -n audicia-system \
-  -o jsonpath='{.metadata.annotations.eks\.amazonaws\.com/role-arn}'
-```
-
-Continue to [Step 4 (Option A Helm values)](#step-4-install-with-helm).
-
 ### Option B: Manual IAM role + Helm-managed annotation
 
 Create the IAM role and trust policy yourself. Helm will set the
 `eks.amazonaws.com/role-arn` annotation on the ServiceAccount it creates.
 
-```bash
-OIDC_PROVIDER=$(aws eks describe-cluster --name <CLUSTER_NAME> \
-  --query "cluster.identity.oidc.issuer" --output text | sed 's|https://||')
+Get your cluster's OIDC provider URL:
 
-cat > trust-policy.json <<EOF
+```bash
+aws eks describe-cluster --name <CLUSTER_NAME> \
+  --query "cluster.identity.oidc.issuer" --output text | sed 's|https://||'
+```
+
+Create a `trust-policy.json` file and replace the placeholder values (use the
+OIDC provider value from the command above):
+
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/${OIDC_PROVIDER}"
+        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/<OIDC_PROVIDER>"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "${OIDC_PROVIDER}:sub": "system:serviceaccount:audicia-system:audicia-operator",
-          "${OIDC_PROVIDER}:aud": "sts.amazonaws.com"
+          "<OIDC_PROVIDER>:sub": "system:serviceaccount:audicia-system:audicia-operator",
+          "<OIDC_PROVIDER>:aud": "sts.amazonaws.com"
         }
       }
     }
   ]
 }
-EOF
+```
 
+Create the role and attach the policy:
+
+```bash
 aws iam create-role \
   --role-name audicia-operator \
   --assume-role-policy-document file://trust-policy.json
@@ -169,8 +177,6 @@ aws iam attach-role-policy \
 > `sts:AssumeRoleWithWebIdentity
 > AccessDenied` even when everything else is
 > correct.
-
-Continue to [Step 4 (Option B Helm values)](#step-4-install-with-helm).
 
 ## Step 4: Install with Helm
 
@@ -224,13 +230,11 @@ helm repo add audicia https://charts.audicia.io
 
 helm install audicia audicia/audicia-operator \
   -n audicia-system --create-namespace \
-  --version <VERSION> \
   -f values-eks.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible
-> deployments. Check in `values-eks.yaml` alongside your other infrastructure
-> config.
+> **Tip:** Check in `values-eks.yaml` alongside your other infrastructure config
+> for reproducible deployments.
 
 The `eks.amazonaws.com/role-arn` ServiceAccount annotation is used by
 [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)
@@ -241,8 +245,11 @@ default credential chain.
 
 ## Step 5: Create an AudiciaSource
 
-```bash
-kubectl apply -f - <<'EOF'
+Save the following manifest as `eks-cloud-audit.yaml` and replace the
+placeholder values:
+
+```yaml
+# eks-cloud-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -265,7 +272,12 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
-EOF
+```
+
+Apply it:
+
+```bash
+kubectl apply -f eks-cloud-audit.yaml
 ```
 
 ## Step 6: Verify
@@ -345,7 +357,10 @@ For regulated environments, add conditions to restrict the IAM policy:
         "logs:FilterLogEvents",
         "logs:DescribeLogStreams"
       ],
-      "Resource": "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*",
+      "Resource": [
+        "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:*",
+        "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:/aws/eks/<CLUSTER_NAME>/cluster:log-stream:*"
+      ],
       "Condition": {
         "StringEquals": {
           "aws:RequestedRegion": "<REGION>"
@@ -387,7 +402,7 @@ endpoints.
 | ------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No messages received                              | Audit logging not enabled on EKS cluster                                             | Enable via `aws eks update-cluster-config --logging`                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | No messages received                              | Wrong log group name                                                                 | Verify with `aws logs describe-log-groups`                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `AccessDeniedException` on CloudWatch             | Missing `logs:FilterLogEvents` permission                                            | Verify the IAM policy grants `logs:FilterLogEvents` and `logs:DescribeLogStreams` on the correct log group ARN                                                                                                                                                                                                                                                                                                                                                                    |
+| `AccessDeniedException` on CloudWatch             | Missing `logs:FilterLogEvents` permission or incomplete resource ARN                 | Verify the IAM policy grants `logs:FilterLogEvents` and `logs:DescribeLogStreams` on **both** the log group ARN (`...:cluster:*`) and the log stream ARN (`...:cluster:log-stream:*`). `FilterLogEvents` requires the `log-stream:*` resource.                                                                                                                                                                                                                                    |
 | `AccessDenied` on `sts:AssumeRoleWithWebIdentity` | Trust policy mismatch — the IAM role being assumed does not trust the pod's identity | 1. Check which role the pod is using: `kubectl set env deploy/audicia-operator -n audicia-system --list \| grep AWS_ROLE_ARN`. 2. Inspect that role's trust policy: `aws iam get-role --role-name <ROLE>`. 3. Verify the trust policy's OIDC provider ARN, `:sub` condition (`system:serviceaccount:audicia-system:audicia-operator`), and `:aud` condition (`sts.amazonaws.com`) all match. 4. Verify the OIDC provider exists in IAM: `aws iam list-open-id-connect-providers`. |
 | `AccessDenied` on STS                             | eksctl/Helm role ARN mismatch                                                        | If you used `eksctl create iamserviceaccount` without `--role-name`, the role has an auto-generated name. Verify the SA annotation matches the role whose trust policy you configured.                                                                                                                                                                                                                                                                                            |
 | Authentication error                              | IRSA not configured                                                                  | Check SA annotation and OIDC provider setup                                                                                                                                                                                                                                                                                                                                                                                                                                       |

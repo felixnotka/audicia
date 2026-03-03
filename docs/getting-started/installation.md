@@ -181,7 +181,7 @@ kubectl get pods -n audicia-system
 kubectl get crd audiciasources.audicia.io audiciapolicyreports.audicia.io
 
 # Check operator logs
-kubectl logs -n audicia-system -l app.kubernetes.io/name=audicia-operator
+kubectl logs -f -n audicia-system deploy/audicia-operator
 ```
 
 ## What's Next

@@ -92,8 +92,11 @@ volume into the pod.
 
 ## Step 4: Create an AudiciaSource
 
-```bash
-kubectl apply -f - <<'EOF'
+Save the following manifest as `aks-cloud-audit.yaml` and replace the
+placeholder values:
+
+```yaml
+# aks-cloud-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -116,7 +119,12 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
-EOF
+```
+
+Apply it:
+
+```bash
+kubectl apply -f aks-cloud-audit.yaml
 ```
 
 ## Step 5: Verify

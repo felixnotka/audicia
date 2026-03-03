@@ -140,13 +140,11 @@ helm repo add audicia https://charts.audicia.io
 
 helm install audicia audicia/audicia-operator \
   -n audicia-system --create-namespace \
-  --version <VERSION> \
   -f values-gke.yaml
 ```
 
-> **Tip:** Pin `--version` to a specific chart version for reproducible
-> deployments. Check in `values-gke.yaml` alongside your other infrastructure
-> config.
+> **Tip:** Check in `values-gke.yaml` alongside your other infrastructure config
+> for reproducible deployments.
 
 The `iam.gke.io/gcp-service-account` ServiceAccount annotation enables
 [Workload Identity Federation](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
@@ -155,8 +153,11 @@ discover automatically via Application Default Credentials (ADC).
 
 ## Step 6: Create an AudiciaSource
 
-```bash
-kubectl apply -f - <<'EOF'
+Save the following manifest as `gke-cloud-audit.yaml` and replace the
+placeholder values:
+
+```yaml
+# gke-cloud-audit.yaml
 apiVersion: audicia.io/v1alpha1
 kind: AudiciaSource
 metadata:
@@ -178,7 +179,12 @@ spec:
   checkpoint:
     intervalSeconds: 30
     batchSize: 500
-EOF
+```
+
+Apply it:
+
+```bash
+kubectl apply -f gke-cloud-audit.yaml
 ```
 
 ## Step 7: Verify

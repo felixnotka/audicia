@@ -119,15 +119,16 @@ func TestNormalizeSubject_MalformedServiceAccount(t *testing.T) {
 }
 
 func TestNormalizeSubject_EmptyUsername(t *testing.T) {
-	subject, include := NormalizeSubject("", true)
-	if !include {
-		t.Fatal("empty username should be included (not a system user)")
+	_, include := NormalizeSubject("", true)
+	if include {
+		t.Error("empty username should be excluded (cannot produce a valid report name)")
 	}
-	if subject.Kind != audiciav1alpha1.SubjectKindUser {
-		t.Errorf("Kind = %q, want User", subject.Kind)
-	}
-	if subject.Name != "" {
-		t.Errorf("Name = %q, want empty", subject.Name)
+}
+
+func TestNormalizeSubject_EmptyUsername_NotIgnored(t *testing.T) {
+	_, include := NormalizeSubject("", false)
+	if include {
+		t.Error("empty username should be excluded regardless of ignoreSystemUsers")
 	}
 }
 

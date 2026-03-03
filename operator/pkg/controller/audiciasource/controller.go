@@ -379,6 +379,14 @@ func (r *Reconciler) processEvent(
 		event.ObjectRef != nil,
 	)
 
+	// Skip events that resolved to neither a resource nor a non-resource URL
+	// (e.g., no objectRef and empty requestURI). These produce empty
+	// apiGroups/resources which fail CRD validation.
+	if rule.Resource == "" && rule.NonResourceURL == "" {
+		metrics.EventsFilteredTotal.WithLabelValues("unresolvable").Inc()
+		return
+	}
+
 	// Aggregate per subject.
 	subjectKey := subjectKeyString(subject)
 	if _, exists := aggregators[subjectKey]; !exists {
@@ -654,18 +662,20 @@ func subjectKeyString(s audiciav1alpha1.Subject) string {
 	return fmt.Sprintf("%s/%s", s.Kind, s.Name)
 }
 
-// sanitizeName converts a subject name into a valid Kubernetes object name.
+// sanitizeName converts a subject name into a valid Kubernetes object name
+// (RFC 1123 label: lowercase alphanumeric, '-', or '.').
 func sanitizeName(name string) string {
 	s := strings.ToLower(name)
 	s = strings.ReplaceAll(s, "@", "-at-")
 	s = strings.ReplaceAll(s, ":", "-")
 	s = strings.ReplaceAll(s, "/", "-")
 	s = strings.ReplaceAll(s, ".", "-")
+	s = strings.ReplaceAll(s, "_", "-")
 	// Trim to max 63 characters (Kubernetes name limit).
 	if len(s) > 63 {
 		s = s[:63]
 	}
-	// Remove trailing hyphens.
-	s = strings.TrimRight(s, "-")
+	// Remove leading/trailing hyphens.
+	s = strings.Trim(s, "-")
 	return s
 }

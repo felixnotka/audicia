@@ -13,6 +13,11 @@ const (
 // NormalizeSubject converts a raw Kubernetes username into a structured Subject.
 // Returns the subject and whether it should be included (false = system user to skip).
 func NormalizeSubject(username string, ignoreSystemUsers bool) (audiciav1alpha1.Subject, bool) {
+	// Empty usernames cannot produce a valid report name — skip them.
+	if username == "" {
+		return audiciav1alpha1.Subject{}, false
+	}
+
 	// Service accounts: system:serviceaccount:<namespace>:<name>
 	if strings.HasPrefix(username, serviceAccountPrefix) {
 		parts := strings.SplitN(strings.TrimPrefix(username, serviceAccountPrefix), ":", 2)
