@@ -22,6 +22,11 @@ func NormalizeSubject(username string, ignoreSystemUsers bool) (audiciav1alpha1.
 	if strings.HasPrefix(username, serviceAccountPrefix) {
 		parts := strings.SplitN(strings.TrimPrefix(username, serviceAccountPrefix), ":", 2)
 		if len(parts) == 2 {
+			if parts[1] == "" {
+				// Malformed SA with empty name (e.g., "system:serviceaccount:ns:").
+				// Cannot produce a valid report name — skip unconditionally.
+				return audiciav1alpha1.Subject{}, false
+			}
 			return audiciav1alpha1.Subject{
 				Kind:      audiciav1alpha1.SubjectKindServiceAccount,
 				Namespace: parts[0],

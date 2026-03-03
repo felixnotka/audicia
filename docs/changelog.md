@@ -7,6 +7,26 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.8
+
+### Fixed
+
+- **Malformed ServiceAccount empty name** — `NormalizeSubject` now rejects
+  usernames like `system:serviceaccount:ns:` where the SA name after the final
+  colon is empty, which previously produced a `Subject` with `Name: ""` and
+  invalid report names (`report-`)
+- **NonResourceURL rules fail CRD validation** — the aggregator now initialises
+  `APIGroups` and `Resources` to empty slices (`[]`) for NonResourceURL rules
+  instead of leaving them nil, which serialised as `null` and failed the
+  required-field validation
+  (`status.observedRules[].apiGroups: Required value`)
+- **Nil slices in ComplianceRule output** — `scopedToComplianceRule` and
+  `observedToComplianceRule` now use `emptyIfNil` to guarantee `[]` instead of
+  `null` for `apiGroups`, `resources`, and `verbs` in excess/uncovered rule
+  lists
+
+---
+
 ## 0.3.7
 
 ### Added

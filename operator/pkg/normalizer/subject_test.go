@@ -168,3 +168,20 @@ func TestNormalizeSubject_ServiceAccount_EmptyNamespace(t *testing.T) {
 		t.Errorf("Name = %q, want myapp", subject.Name)
 	}
 }
+
+func TestNormalizeSubject_ServiceAccount_EmptyName(t *testing.T) {
+	// "system:serviceaccount:ns:" — valid namespace but empty SA name.
+	// Should be excluded because an empty name produces invalid report names.
+	_, include := NormalizeSubject("system:serviceaccount:ns:", true)
+	if include {
+		t.Error("SA with empty name should be excluded")
+	}
+}
+
+func TestNormalizeSubject_ServiceAccount_EmptyName_NotIgnored(t *testing.T) {
+	// Even with ignoreSystemUsers=false, an empty SA name should be excluded.
+	_, include := NormalizeSubject("system:serviceaccount:ns:", false)
+	if include {
+		t.Error("SA with empty name should be excluded regardless of ignoreSystemUsers")
+	}
+}

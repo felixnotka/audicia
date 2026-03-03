@@ -67,6 +67,8 @@ func (a *Aggregator) Add(rule normalizer.CanonicalRule, timestamp time.Time) {
 
 	if rule.NonResourceURL != "" {
 		observed.NonResourceURLs = []string{rule.NonResourceURL}
+		observed.APIGroups = []string{}
+		observed.Resources = []string{}
 	} else {
 		observed.APIGroups = []string{rule.APIGroup}
 		observed.Resources = []string{rule.Resource}

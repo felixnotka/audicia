@@ -241,9 +241,9 @@ func matchesNonResourceURL(obs audiciav1alpha1.ObservedRule, eff rbac.ScopedRule
 // scopedToComplianceRule converts a ScopedRule to a ComplianceRule for CRD output.
 func scopedToComplianceRule(r rbac.ScopedRule) audiciav1alpha1.ComplianceRule {
 	return audiciav1alpha1.ComplianceRule{
-		APIGroups:       r.APIGroups,
-		Resources:       r.Resources,
-		Verbs:           r.Verbs,
+		APIGroups:       emptyIfNil(r.APIGroups),
+		Resources:       emptyIfNil(r.Resources),
+		Verbs:           emptyIfNil(r.Verbs),
 		NonResourceURLs: r.NonResourceURLs,
 		Namespace:       r.Namespace,
 	}
@@ -252,12 +252,21 @@ func scopedToComplianceRule(r rbac.ScopedRule) audiciav1alpha1.ComplianceRule {
 // observedToComplianceRule converts an ObservedRule to a ComplianceRule for CRD output.
 func observedToComplianceRule(o audiciav1alpha1.ObservedRule) audiciav1alpha1.ComplianceRule {
 	return audiciav1alpha1.ComplianceRule{
-		APIGroups:       o.APIGroups,
-		Resources:       o.Resources,
-		Verbs:           o.Verbs,
+		APIGroups:       emptyIfNil(o.APIGroups),
+		Resources:       emptyIfNil(o.Resources),
+		Verbs:           emptyIfNil(o.Verbs),
 		NonResourceURLs: o.NonResourceURLs,
 		Namespace:       o.Namespace,
 	}
+}
+
+// emptyIfNil returns an empty slice if the input is nil, ensuring JSON
+// serialization produces [] instead of null for required CRD fields.
+func emptyIfNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 // sliceCovers returns true if every element in required is present in granted.
