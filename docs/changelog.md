@@ -7,6 +7,19 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.10
+
+**Released:** 2026-03-04
+
+### Fixed
+
+- **Operator build triggering on docs-only pushes** — `dorny/paths-filter` in
+  the pipeline workflow now compares against `HEAD~1` instead of the push
+  event's `before` SHA, preventing multi-commit pushes from falsely detecting
+  operator changes
+
+---
+
 ## 0.3.9
 
 **Released:** 2026-03-04
