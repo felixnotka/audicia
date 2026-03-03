@@ -9,6 +9,8 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ## 0.3.8
 
+**Released:** 2026-03-03
+
 ### Fixed
 
 - **Malformed ServiceAccount empty name** — `NormalizeSubject` now rejects
@@ -18,8 +20,7 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 - **NonResourceURL rules fail CRD validation** — the aggregator now initialises
   `APIGroups` and `Resources` to empty slices (`[]`) for NonResourceURL rules
   instead of leaving them nil, which serialised as `null` and failed the
-  required-field validation
-  (`status.observedRules[].apiGroups: Required value`)
+  required-field validation (`status.observedRules[].apiGroups: Required value`)
 - **Nil slices in ComplianceRule output** — `scopedToComplianceRule` and
   `observedToComplianceRule` now use `emptyIfNil` to guarantee `[]` instead of
   `null` for `apiGroups`, `resources`, and `verbs` in excess/uncovered rule
@@ -28,6 +29,34 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 ---
 
 ## 0.3.7
+
+**Released:** 2026-03-03
+
+### Fixed
+
+- **Empty-subject report names** — `NormalizeSubject` now rejects empty
+  usernames, preventing invalid report names like `report-` that fail Kubernetes
+  naming validation
+- **Unresolvable audit events** — `processEvent` now skips events with no
+  `objectRef` and no `requestURI`, which previously produced rules with empty
+  `apiGroups`/`resources` that fail CRD validation
+  (`status.observedRules[].apiGroups: Required value`)
+- **Underscore in report names** — `sanitizeName` now replaces underscores with
+  hyphens, and trims leading hyphens in addition to trailing ones, producing RFC
+  1123-compliant resource names (e.g., `felix_notka_admin` →
+  `felix-notka-admin`)
+- **EKS IAM policy missing log-stream resource** — CloudWatch Logs
+  `FilterLogEvents` requires a separate `log-stream:*` resource ARN; both EKS
+  guides now include both resource patterns in the IAM policy
+- **Redundant `--version` in Helm install** — all cloud guides (EKS, AKS, GKE)
+  no longer pass `--version` to `helm install`, since the chart version is
+  independent of the image tag set in the values file
+
+---
+
+## 0.3.6
+
+**Released:** 2026-03-02
 
 ### Added
 
@@ -54,20 +83,6 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ### Fixed
 
-- **Empty-subject report names** — `NormalizeSubject` now rejects empty
-  usernames, preventing invalid report names like `report-` that fail Kubernetes
-  naming validation
-- **Unresolvable audit events** — `processEvent` now skips events with no
-  `objectRef` and no `requestURI`, which previously produced rules with empty
-  `apiGroups`/`resources` that fail CRD validation
-  (`status.observedRules[].apiGroups: Required value`)
-- **Underscore in report names** — `sanitizeName` now replaces underscores with
-  hyphens, and trims leading hyphens in addition to trailing ones, producing RFC
-  1123-compliant resource names (e.g., `felix_notka_admin` →
-  `felix-notka-admin`)
-- **EKS IAM policy missing log-stream resource** — CloudWatch Logs
-  `FilterLogEvents` requires a separate `log-stream:*` resource ARN; both EKS
-  guides now include both resource patterns in the IAM policy
 - **EKS IRSA double ownership** — quick-start EKS now uses
   `serviceAccount.create: false` when eksctl manages the ServiceAccount, with a
   warning against mixing approaches
@@ -75,13 +90,31 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
   that ran before the namespace existed
 - **Typo** — fixed `deploy/audciia-operator` → `deploy/audicia-operator` in EKS
   Setup Guide
-- **Redundant `--version` in Helm install** — all cloud guides (EKS, AKS, GKE)
-  no longer pass `--version` to `helm install`, since the chart version is
-  independent of the image tag set in the values file
+
+---
+
+## 0.3.5
+
+**Released:** 2026-02-27
+
+### Changed
+
+- **Streamlined webhook and kube-proxy-free guides** — trimmed
+  `webhook-setup.md` from ~530 to ~440 lines and `kube-proxy-free.md` from ~300
+  to ~210 lines by removing repeated warnings, edge-case notes, and tangential
+  explanations
+- **Deleted redundant `mtls-setup.md` stub** — the redirect page from 0.3.3 is
+  no longer needed now that all cross-references point to `webhook-setup.md`
+- **Docs navigation restructured** — split into "Setup Guides" and "Guides"
+  sections
+- Fixed `audicia-audicia-operator` naming across docs and broken anchors from
+  the restructure
 
 ---
 
 ## 0.3.4
+
+**Released:** 2026-02-27
 
 ### Fixed
 
@@ -100,6 +133,8 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 ---
 
 ## 0.3.3
+
+**Released:** 2026-02-27
 
 ### Added
 
@@ -150,6 +185,8 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ## 0.3.2
 
+**Released:** 2026-02-26
+
 ### Fixed
 
 - E2E file-mode tests failing after audit log path migration: the kube-apiserver
@@ -163,6 +200,8 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 ---
 
 ## 0.3.1
+
+**Released:** 2026-02-26
 
 ### Added
 
@@ -208,6 +247,8 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ## 0.3.0
 
+**Released:** 2026-02-25
+
 ### Added
 
 - **SonarQube quality gate enforcement** — PRs that fail the SonarQube quality
@@ -249,6 +290,8 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ## 0.2.1
 
+**Released:** 2026-02-24
+
 ### Added
 
 - **AWS CloudWatch adapter** — Adapter for EKS audit logs via CloudWatch Logs
@@ -268,6 +311,34 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 ---
 
 ## 0.2.0
+
+**Released:** 2026-02-23
+
+Minor version bump consolidating cloud ingestion features from 0.1.3–0.1.4.
+
+### Changed
+
+- **Native cross-compilation for multi-arch Docker build** — replaced
+  `GOARCH=amd64` with `TARGETARCH` from Buildx for cleaner multi-platform builds
+
+---
+
+## 0.1.4
+
+**Released:** 2026-02-23
+
+### Added
+
+- **AKS Quick Start** — Streamlined getting-started guide for AKS cloud
+  ingestion via Workload Identity
+- **Multi-arch Docker images** — CI now builds `linux/amd64` and `linux/arm64`
+  images for ARM-based AKS node pools
+
+---
+
+## 0.1.3
+
+**Released:** 2026-02-23
 
 ### Added
 
@@ -298,21 +369,25 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
   MessageSource/EnvelopeParser abstractions and provider registry
 - **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration
   with Workload Identity
-- **AKS Quick Start** — Streamlined getting-started guide for AKS cloud
-  ingestion via Workload Identity
 - **Cloud AKS example** — AudiciaSource YAML example for AKS Event Hub ingestion
-- **Multi-arch Docker images** — CI now builds `linux/amd64` and `linux/arm64`
-  images for ARM-based AKS node pools
 - **Azure build tag in CI** — Lint, test, and Docker build pipelines include
   `-tags azure` so the Azure adapter is compiled, tested, and shipped
+- **[RBAC Policy Generation](concepts/rbac-generation.md) concept page** —
+  explains what gets generated, the observation-to-RBAC pipeline, safety
+  guardrails, and how to use the output
 
 ### Changed
 
+- **Consolidated kube-proxy-free content** into a single dedicated
+  [Kube-Proxy-Free Guide](guides/kube-proxy-free.md) instead of duplicating
+  across 7 files
+- Main webhook docs (setup, quick start, mTLS, installation, helm values) now
+  focus on the standard ClusterIP path with callout links to the kube-proxy-free
+  guide
 - Platform compatibility table updated across docs: AKS now shows "Full support"
   for Cloud Mode
 - Managed Kubernetes limitation updated: AKS addressed via cloud ingestion,
   EKS/GKE planned
-- Dockerfile uses `TARGETARCH` from Buildx instead of hardcoded `GOARCH=amd64`
 - AKS guide now includes full Workload Identity setup steps (managed identity,
   role assignment, federated credential)
 - Helm install commands in AKS docs include `helm repo add` and Workload
@@ -321,9 +396,16 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
   Identity exclusively
 - Removed `credentialSecretName` from CRD, Helm values, and deployment template
 
+### Fixed
+
+- SonarQube code smells, security hotspots, and CSS bugs
+- Removed unrelated Istio IP preservation section from kube-proxy-free guide
+
 ---
 
 ## 0.1.2
+
+**Released:** 2026-02-23
 
 ### Added
 
@@ -331,11 +413,6 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
   bypassing ClusterIP routing issues with Cilium and other kube-proxy-free CNIs
 - `webhook.service.nodePort` Helm value — optional NodePort service type for the
   webhook
-- Dedicated [Kube-Proxy-Free Guide](guides/kube-proxy-free.md) covering hostPort
-  setup, NodePort, and ClusterIP diagnostics
-- [RBAC Policy Generation](concepts/rbac-generation.md) concept page — explains
-  what gets generated, the observation-to-RBAC pipeline, safety guardrails, and
-  how to use the output
 
 ### Fixed
 
@@ -343,17 +420,11 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 - Documented audit log file permissions (root-owned) and two workarounds
 - Documented kube-apiserver restart procedure for kubeadm clusters
 
-### Changed
-
-- Consolidated all kube-proxy-free / hostPort content into a single dedicated
-  guide instead of duplicating across 7 files
-- Main webhook docs (setup, quick start, mTLS, installation, helm values) now
-  focus on the standard ClusterIP path with callout links to the kube-proxy-free
-  guide
-
 ---
 
 ## 0.1.1
+
+**Released:** 2026-02-23
 
 ### Fixed
 
