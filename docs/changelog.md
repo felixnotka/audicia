@@ -7,6 +7,35 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.3.9
+
+**Released:** 2026-03-04
+
+### Changed
+
+- **Changelog backfill** — added release dates (from git tags) to all 16
+  versions and added missing entries for 0.1.3, 0.1.4, 0.3.5, and 0.3.6
+- **Brand assets** — added logo variants (mark and text in dark-on-white,
+  green-on-navy, white-on-navy) and SVG source, replaced favicon, added OG
+  image
+
+### Removed
+
+- **Kubestronaut image** — removed unused `kubestronaut.png` from site static
+  assets
+- **Cloud vendor quick start guides** — deleted `quick-start-eks.md`,
+  `quick-start-aks.md`, and `quick-start-gke.md` which were full infrastructure
+  setup procedures mislabeled as quick starts; the dedicated setup guides
+  (`eks-setup.md`, `aks-setup.md`, `gke-setup.md`) already cover this content
+
+### Fixed
+
+- **Broken AKS link in blog post** — the Kubernetes audit logging guide now
+  links to the AKS setup guide (`guides/aks-setup`) instead of the deleted quick
+  start
+
+---
+
 ## 0.3.8
 
 **Released:** 2026-03-03

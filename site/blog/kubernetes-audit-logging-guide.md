@@ -284,8 +284,7 @@ spec:
       consumerGroup: "$Default"
 ```
 
-See the [AKS setup guide](/docs/getting-started/quick-start-aks) for the full
-walkthrough.
+See the [AKS setup guide](/docs/guides/aks-setup) for the full walkthrough.
 
 ## Production Tuning
 
