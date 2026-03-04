@@ -7,6 +7,22 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.4.0
+
+**Released:** 2026-03-04
+
+Official public launch.
+
+### Changed
+
+- **Version bump to 0.4.0** — first publicly announced release
+- **OG social preview image** — centered layout with larger logo and text for
+  better rendering in Teams, WhatsApp, and LinkedIn link previews
+- **Helm chart appVersion** — updated from `0.1.0` to `0.4.0` to match the
+  release version
+
+---
+
 ## 0.3.10
 
 **Released:** 2026-03-04
