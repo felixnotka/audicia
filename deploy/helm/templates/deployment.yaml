@@ -24,12 +24,6 @@ spec:
         azure.workload.identity/use: "true"
         {{- end }}
     spec:
-      {{- if .Values.hostNetwork }}
-      hostNetwork: true
-      dnsPolicy: {{ .Values.dnsPolicy | default "ClusterFirstWithHostNet" }}
-      {{- else if .Values.dnsPolicy }}
-      dnsPolicy: {{ .Values.dnsPolicy }}
-      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -67,9 +61,6 @@ spec:
             - name: webhook
               containerPort: {{ .Values.webhook.port }}
               protocol: TCP
-              {{- if .Values.webhook.hostPort }}
-              hostPort: {{ .Values.webhook.port }}
-              {{- end }}
             {{- end }}
           livenessProbe:
             httpGet:

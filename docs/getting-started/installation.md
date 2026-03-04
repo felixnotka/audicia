@@ -63,8 +63,6 @@ auditLog:
   enabled: true
   hostPath: /var/log/kubernetes/audit/audit.log
 
-hostNetwork: true
-
 nodeSelector:
   node-role.kubernetes.io/control-plane: ""
 
@@ -78,14 +76,6 @@ helm install audicia audicia/audicia-operator \
   -n audicia-system --create-namespace \
   -f values-file.yaml
 ```
-
-> **Why `hostNetwork: true`?** On Cilium and other kube-proxy-free CNIs, pods on
-> control plane nodes cannot reach the Kubernetes service ClusterIP.
-> `hostNetwork` lets the pod use the node's network stack, bypassing the CNI
-> datapath. This is safe because the pod already runs on the control plane with
-> `hostPath` access. See the
-> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork).
-> If you are certain your cluster uses kube-proxy, you can remove this setting.
 
 > **Permission denied?** Audit logs are typically owned by root. The operator
 > runs as non-root (UID 10000) by default, so it cannot read the log without
@@ -141,11 +131,6 @@ helm install audicia audicia/audicia-operator \
   -n audicia-system \
   -f values-webhook.yaml
 ```
-
-> **ClusterIP unreachable?** On Cilium or other kube-proxy-free CNIs, the
-> kube-apiserver may not be able to route traffic to a ClusterIP. See the
-> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) for the hostPort-based
-> setup.
 
 After installing, you must configure the kube-apiserver to send audit events to
 the webhook. This requires adding a flag and restarting the apiserver. See the

@@ -7,6 +7,32 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.4.1
+
+### Removed
+
+- **Kube-proxy-free workarounds** — removed `hostNetwork`, `dnsPolicy`,
+  `webhook.hostPort`, and `webhook.service.nodePort` Helm values and all
+  associated template logic. These were workarounds for a misconfigured host
+  firewall, not an inherent kube-proxy-free issue. The operator is a normal
+  Kubernetes operator that expects cluster networking to work.
+- **Startup retry with exponential backoff** — removed `startWithRetry` and the
+  `STARTUP_MAX_RETRIES` environment variable from the operator binary. The
+  operator now starts directly; Kubernetes' own restart policy handles transient
+  failures.
+- **Kube-Proxy-Free Guide** — deleted `docs/guides/kube-proxy-free.md` and
+  removed it from the site navigation. Added a one-line troubleshooting entry
+  instead: ensure your host firewall allows traffic from the pod CIDR.
+
+### Changed
+
+- **Leader election re-enabled by default** — `operator.leaderElection.enabled`
+  now defaults to `true`, matching standard operator behaviour. Disable
+  explicitly with `operator.leaderElection.enabled=false` for single-replica
+  deployments.
+
+---
+
 ## 0.4.0
 
 **Released:** 2026-03-04

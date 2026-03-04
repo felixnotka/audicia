@@ -15,22 +15,12 @@ Audicia operator has been installed.
 Webhook endpoint is enabled:
 
   Service: {{ include "audicia.fullname" . }}-webhook.{{ .Release.Namespace }}.svc:{{ .Values.webhook.port }}
-{{- if .Values.webhook.service.clusterIP }}
-  ClusterIP: {{ .Values.webhook.service.clusterIP }} (pinned)
-{{- else }}
 
-  ⚠ No fixed ClusterIP set. The ClusterIP will change on every reinstall,
-  breaking the kube-apiserver webhook kubeconfig. To avoid this, set:
-
-    --set webhook.service.clusterIP=<CLUSTER-IP>
-
-  Find the current ClusterIP with:
+  Get the ClusterIP:
 
     kubectl get svc {{ include "audicia.fullname" . }}-webhook -n {{ .Release.Namespace }} -o jsonpath='{.spec.clusterIP}'
-{{- end }}
 
-  IMPORTANT: The kube-apiserver runs on hostNetwork and cannot resolve cluster
-  DNS. Your audit-webhook-kubeconfig.yaml must use the ClusterIP directly:
+  Your audit-webhook-kubeconfig.yaml must use the ClusterIP (not a DNS name):
 
     server: https://<CLUSTER-IP>:{{ .Values.webhook.port }}
 

@@ -5,10 +5,6 @@ events via the kube-apiserver's webhook backend. This is the recommended mode
 for production — it provides sub-second event delivery and doesn't require
 control plane node scheduling.
 
-> **Kube-proxy-free cluster (Cilium, eBPF)?** ClusterIP may not be routable from
-> the host namespace. See the dedicated
-> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md) instead.
-
 ## Prerequisites
 
 - `kubectl` configured

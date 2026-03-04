@@ -48,7 +48,6 @@ export const DOCS_NAV: NavSection[] = [
     pages: [
       { slug: "audit-policy", title: "Audit Policy" },
       { slug: "webhook-setup", title: "Webhook Setup" },
-      { slug: "kube-proxy-free", title: "Kube-Proxy-Free Clusters" },
       { slug: "aks-setup", title: "AKS Setup (Event Hub)" },
       { slug: "eks-setup", title: "EKS Setup (CloudWatch Logs)" },
       { slug: "gke-setup", title: "GKE Setup (Pub/Sub)" },
