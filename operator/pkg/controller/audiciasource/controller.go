@@ -16,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,8 +46,10 @@ type pipelineState struct {
 // Reconciler reconciles AudiciaSource objects.
 type Reconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	Resolver  *rbac.Resolver
+	Scheme   *runtime.Scheme
+	Resolver *rbac.Resolver
+	Recorder record.EventRecorder
+
 	mu        sync.Mutex
 	pipelines map[types.NamespacedName]*pipelineState
 }
@@ -63,6 +67,7 @@ func SetupWithManager(mgr ctrl.Manager, maxConcurrent int) error {
 			Client:    mgr.GetClient(),
 			Scheme:    mgr.GetScheme(),
 			Resolver:  rbac.NewResolver(mgr.GetClient()),
+			Recorder:  mgr.GetEventRecorderFor("audicia-operator"),
 			pipelines: make(map[types.NamespacedName]*pipelineState),
 		})
 }
@@ -122,6 +127,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	go r.runPipeline(pipelineCtx, req.NamespacedName, source)
 
 	logger.Info("pipeline started", "sourceType", source.Spec.SourceType)
+	r.Recorder.Eventf(&source, corev1.EventTypeNormal, "PipelineStarted",
+		"Ingestion pipeline started (sourceType=%s)", source.Spec.SourceType)
 	return ctrl.Result{}, nil
 }
 
@@ -416,17 +423,26 @@ func (r *Reconciler) flushReports(
 
 	for subjectKey, agg := range aggregators {
 		subject := subjects[subjectKey]
-		rules := compactRules(agg.Rules(), source.Spec.Limits, subject.Name, logger)
+		rules, dropped := compactRules(agg.Rules(), source.Spec.Limits, subject.Name, logger)
+
+		if dropped > 0 {
+			r.Recorder.Eventf(&source, corev1.EventTypeWarning, "CompactionTriggered",
+				"Subject %s has %d rules, exceeds limit; dropped %d oldest rules",
+				subject.Name, len(rules)+dropped, dropped)
+		}
 
 		if err := r.flushSubjectReport(ctx, source, engine, subject, rules, agg.EventsProcessed(), logger); err != nil {
 			logger.Error(err, "failed to flush report", "subject", subject.Name)
 			metrics.ReconcileErrorsTotal.Inc()
+			r.Recorder.Eventf(&source, corev1.EventTypeWarning, "FlushFailed",
+				"Failed to flush report for %s: %v", subject.Name, err)
 		}
 	}
 }
 
 // compactRules applies retention and truncation limits to observed rules.
-func compactRules(rules []audiciav1alpha1.ObservedRule, limits audiciav1alpha1.LimitsConfig, subjectName string, logger logr.Logger) []audiciav1alpha1.ObservedRule {
+// Returns the compacted rules and the number of rules dropped by truncation.
+func compactRules(rules []audiciav1alpha1.ObservedRule, limits audiciav1alpha1.LimitsConfig, subjectName string, logger logr.Logger) ([]audiciav1alpha1.ObservedRule, int) {
 	retentionDays := int(limits.RetentionDays)
 	if retentionDays <= 0 {
 		retentionDays = 30
@@ -449,13 +465,15 @@ func compactRules(rules []audiciav1alpha1.ObservedRule, limits audiciav1alpha1.L
 	if maxRules <= 0 {
 		maxRules = 200
 	}
+	dropped := 0
 	if len(rules) > maxRules {
+		dropped = len(rules) - maxRules
 		logger.Info("compacting rules", "subject", subjectName,
 			"total", len(rules), "max", maxRules,
-			"dropped", len(rules)-maxRules)
+			"dropped", dropped)
 		rules = rules[:maxRules]
 	}
-	return rules
+	return rules, dropped
 }
 
 // flushSubjectReport creates/updates a single AudiciaPolicyReport for one subject.
@@ -486,41 +504,73 @@ func (r *Reconciler) flushSubjectReport(
 		},
 	}
 
-	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, report, func() error {
-		if reportNamespace == source.Namespace {
-			if err := controllerutil.SetControllerReference(&source, report, r.Scheme); err != nil {
-				return err
-			}
-		}
-		report.Spec.Subject = subject
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("creating/updating report: %w", err)
-	}
+	// Track whether the report was newly created and the previous compliance
+	// severity so we can emit events after a successful flush.
+	var created bool
+	var prevSeverity audiciav1alpha1.ComplianceSeverity
 
-	if result != controllerutil.OperationResultNone {
-		logger.Info("report spec updated", "report", reportName, "result", result)
-	}
-
-	// Update status with retry for conflict/not-found races.
+	// Create/update spec and status in a single retry loop so that a report
+	// deleted between the two phases is re-created automatically.
 	err = retry.OnError(retry.DefaultRetry, func(err error) bool {
 		return errors.IsConflict(err) || errors.IsNotFound(err)
 	}, func() error {
-		if err := r.Get(ctx, types.NamespacedName{Name: reportName, Namespace: reportNamespace}, report); err != nil {
+		result, err := controllerutil.CreateOrUpdate(ctx, r.Client, report, func() error {
+			if reportNamespace == source.Namespace {
+				if err := controllerutil.SetControllerReference(&source, report, r.Scheme); err != nil {
+					return err
+				}
+			}
+			report.Spec.Subject = subject
+			return nil
+		})
+		if err != nil {
 			return err
+		}
+		created = result == controllerutil.OperationResultCreated
+		if result != controllerutil.OperationResultNone {
+			logger.Info("report spec updated", "report", reportName, "result", result)
+		}
+		if report.Status.Compliance != nil {
+			prevSeverity = report.Status.Compliance.Severity
 		}
 		r.populateReportStatus(ctx, report, subject, rules, manifests, eventsProcessed, logger)
 		return r.Status().Update(ctx, report)
 	})
 	if err != nil {
-		return fmt.Errorf("updating report status: %w", err)
+		return fmt.Errorf("flush report %s: %w", reportName, err)
+	}
+
+	// Emit Kubernetes events for visibility.
+	if created {
+		r.Recorder.Eventf(report, corev1.EventTypeNormal, "ReportCreated",
+			"Created policy report for %s %s", subject.Kind, subject.Name)
+	}
+	if report.Status.Compliance != nil {
+		newSeverity := report.Status.Compliance.Severity
+		if !created && newSeverity != prevSeverity && severityWorsened(prevSeverity, newSeverity) {
+			r.Recorder.Eventf(report, corev1.EventTypeWarning, "DriftDetected",
+				"Compliance degraded from %s to %s (score=%d, excess=%d, uncovered=%d)",
+				prevSeverity, newSeverity,
+				report.Status.Compliance.Score,
+				report.Status.Compliance.ExcessCount,
+				report.Status.Compliance.UncoveredCount)
+		}
 	}
 
 	metrics.ReportsUpdatedTotal.Inc()
 	metrics.ReportRulesCount.WithLabelValues(reportName).Set(float64(len(rules)))
 	metrics.RulesGeneratedTotal.Add(float64(len(rules)))
 	return nil
+}
+
+// severityWorsened returns true if the compliance severity degraded.
+func severityWorsened(old, new audiciav1alpha1.ComplianceSeverity) bool {
+	order := map[audiciav1alpha1.ComplianceSeverity]int{
+		audiciav1alpha1.ComplianceSeverityGreen:  0,
+		audiciav1alpha1.ComplianceSeverityYellow: 1,
+		audiciav1alpha1.ComplianceSeverityRed:    2,
+	}
+	return order[new] > order[old]
 }
 
 // populateReportStatus fills in the status fields of an AudiciaPolicyReport.

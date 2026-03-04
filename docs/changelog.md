@@ -7,6 +7,30 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.4.2
+
+### Added
+
+- **Kubernetes Events** — the operator now emits events for operational
+  visibility. Events appear in `kubectl describe` and `kubectl get events`:
+  - `PipelineStarted` (Normal) on AudiciaSource when ingestion begins.
+  - `CompactionTriggered` (Warning) on AudiciaSource when rules exceed
+    `maxRulesPerReport` and oldest rules are dropped.
+  - `FlushFailed` (Warning) on AudiciaSource when a report write fails.
+  - `ReportCreated` (Normal) on AudiciaPolicyReport when a subject's report is
+    first generated.
+  - `DriftDetected` (Warning) on AudiciaPolicyReport when compliance severity
+    degrades (e.g., Green to Yellow).
+
+### Fixed
+
+- **Report flush race condition** — the two-phase report write (create spec,
+  then update status) could fail with "not found" if the report was deleted
+  between phases. Both phases now run inside a single retry loop so the report
+  is re-created automatically.
+
+---
+
 ## 0.4.1
 
 ### Removed

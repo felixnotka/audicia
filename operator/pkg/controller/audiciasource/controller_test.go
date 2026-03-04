@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -46,7 +47,10 @@ func makeObservedRule(resource, verb, ns string, lastSeen time.Time) audiciav1al
 
 func TestCompactRules_NoRules(t *testing.T) {
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 200, RetentionDays: 30}
-	result := compactRules(nil, limits, "test", logr.Discard())
+	result, dropped := compactRules(nil, limits, "test", logr.Discard())
+	if dropped != 0 {
+		t.Errorf("got dropped=%d, want 0", dropped)
+	}
 	if len(result) != 0 {
 		t.Errorf("got %d rules, want 0", len(result))
 	}
@@ -63,7 +67,7 @@ func TestCompactRules_RetentionFiltering(t *testing.T) {
 	}
 
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 200, RetentionDays: 30}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, _ := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 1 {
 		t.Errorf("got %d rules, want 1 (old rule should be dropped)", len(result))
 	}
@@ -80,9 +84,12 @@ func TestCompactRules_Truncation(t *testing.T) {
 	}
 
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 5, RetentionDays: 30}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, dropped := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 5 {
 		t.Errorf("got %d rules, want 5 (truncated)", len(result))
+	}
+	if dropped != 5 {
+		t.Errorf("got dropped=%d, want 5", dropped)
 	}
 }
 
@@ -94,7 +101,7 @@ func TestCompactRules_TruncationKeepsMostRecent(t *testing.T) {
 	}
 
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 1, RetentionDays: 30}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, _ := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 1 {
 		t.Fatalf("got %d rules, want 1", len(result))
 	}
@@ -112,7 +119,7 @@ func TestCompactRules_DefaultLimits(t *testing.T) {
 
 	// Zero values should use defaults (200 max, 30 days retention).
 	limits := audiciav1alpha1.LimitsConfig{}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, _ := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 1 {
 		t.Errorf("got %d rules, want 1", len(result))
 	}
@@ -386,6 +393,7 @@ func newTestReconciler(objs ...client.Object) *Reconciler {
 	return &Reconciler{
 		Client:    fakeClient,
 		Scheme:    s,
+		Recorder:  record.NewFakeRecorder(100),
 		pipelines: make(map[types.NamespacedName]*pipelineState),
 	}
 }
