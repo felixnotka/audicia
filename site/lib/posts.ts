@@ -57,6 +57,7 @@ export async function getPosts(): Promise<Post[]> {
 
 export async function getPost(slug: string): Promise<Post | null> {
   try {
+    slug = slug.replace(/\.md$/, "");
     const filePath = join(DIRECTORY, `${slug}.md`);
     const text = await Deno.readTextFile(filePath);
     const { attrs, body } = extract<FrontMatter>(text);

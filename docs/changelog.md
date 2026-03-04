@@ -21,6 +21,13 @@ Official public launch.
 - **Helm chart appVersion** — updated from `0.1.0` to `0.4.0` to match the
   release version
 
+### Fixed
+
+- **Double `.md` extension in doc/blog routes** — requests ending in `.md` (e.g.
+  `/docs/getting-started/introduction.md`) no longer 404 with a
+  `readfile 'introduction.md.md'` error; the slug is now stripped before
+  building the file path
+
 ---
 
 ## 0.3.10
@@ -45,8 +52,7 @@ Official public launch.
 - **Changelog backfill** — added release dates (from git tags) to all 16
   versions and added missing entries for 0.1.3, 0.1.4, 0.3.5, and 0.3.6
 - **Brand assets** — added logo variants (mark and text in dark-on-white,
-  green-on-navy, white-on-navy) and SVG source, replaced favicon, added OG
-  image
+  green-on-navy, white-on-navy) and SVG source, replaced favicon, added OG image
 
 ### Removed
 

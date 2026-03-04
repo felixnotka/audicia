@@ -182,6 +182,11 @@ export async function getDoc(
   ...slugParts: string[]
 ): Promise<DocPage | null> {
   try {
+    // Strip .md suffix from the last slug part so requests like
+    // /docs/getting-started/introduction.md don't produce double
+    // extensions (introduction.md.md).
+    slugParts = slugParts.map((s) => s.replace(/\.md$/, ""));
+
     let filePath: string;
     let category: string | null;
 
