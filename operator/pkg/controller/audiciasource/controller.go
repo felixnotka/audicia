@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -492,10 +492,7 @@ func (r *Reconciler) flushSubjectReport(
 	}
 
 	reportName := fmt.Sprintf("report-%s", sanitizeName(subject.Name))
-	reportNamespace := source.Namespace
-	if subject.Kind == audiciav1alpha1.SubjectKindServiceAccount && subject.Namespace != "" {
-		reportNamespace = subject.Namespace
-	}
+	reportNamespace := reportNamespaceFor(source, subject)
 
 	report := &audiciav1alpha1.AudiciaPolicyReport{
 		ObjectMeta: metav1.ObjectMeta{
@@ -511,28 +508,18 @@ func (r *Reconciler) flushSubjectReport(
 
 	// Create/update spec and status in a single retry loop so that a report
 	// deleted between the two phases is re-created automatically.
-	err = retry.OnError(retry.DefaultRetry, func(err error) bool {
-		return errors.IsConflict(err) || errors.IsNotFound(err)
-	}, func() error {
-		result, err := controllerutil.CreateOrUpdate(ctx, r.Client, report, func() error {
-			if reportNamespace == source.Namespace {
-				if err := controllerutil.SetControllerReference(&source, report, r.Scheme); err != nil {
-					return err
-				}
-			}
-			report.Spec.Subject = subject
-			return nil
+	err = retry.OnError(retry.DefaultRetry, retryOnConflictOrNotFound, func() error {
+		result, createErr := controllerutil.CreateOrUpdate(ctx, r.Client, report, func() error {
+			return r.applyReportSpec(source, report, subject, reportNamespace)
 		})
-		if err != nil {
-			return err
+		if createErr != nil {
+			return createErr
 		}
 		created = result == controllerutil.OperationResultCreated
 		if result != controllerutil.OperationResultNone {
 			logger.Info("report spec updated", "report", reportName, "result", result)
 		}
-		if report.Status.Compliance != nil {
-			prevSeverity = report.Status.Compliance.Severity
-		}
+		prevSeverity = currentSeverity(report)
 		r.populateReportStatus(ctx, report, subject, rules, manifests, eventsProcessed, logger)
 		return r.Status().Update(ctx, report)
 	})
@@ -540,27 +527,75 @@ func (r *Reconciler) flushSubjectReport(
 		return fmt.Errorf("flush report %s: %w", reportName, err)
 	}
 
-	// Emit Kubernetes events for visibility.
-	if created {
-		r.Recorder.Eventf(report, corev1.EventTypeNormal, "ReportCreated",
-			"Created policy report for %s %s", subject.Kind, subject.Name)
-	}
-	if report.Status.Compliance != nil {
-		newSeverity := report.Status.Compliance.Severity
-		if !created && newSeverity != prevSeverity && severityWorsened(prevSeverity, newSeverity) {
-			r.Recorder.Eventf(report, corev1.EventTypeWarning, "DriftDetected",
-				"Compliance degraded from %s to %s (score=%d, excess=%d, uncovered=%d)",
-				prevSeverity, newSeverity,
-				report.Status.Compliance.Score,
-				report.Status.Compliance.ExcessCount,
-				report.Status.Compliance.UncoveredCount)
-		}
-	}
+	r.emitReportEvents(report, subject, created, prevSeverity)
 
 	metrics.ReportsUpdatedTotal.Inc()
 	metrics.ReportRulesCount.WithLabelValues(reportName).Set(float64(len(rules)))
 	metrics.RulesGeneratedTotal.Add(float64(len(rules)))
 	return nil
+}
+
+// reportNamespaceFor returns the namespace where the report should be written.
+func reportNamespaceFor(source audiciav1alpha1.AudiciaSource, subject audiciav1alpha1.Subject) string {
+	if subject.Kind == audiciav1alpha1.SubjectKindServiceAccount && subject.Namespace != "" {
+		return subject.Namespace
+	}
+	return source.Namespace
+}
+
+// retryOnConflictOrNotFound returns true for retriable errors.
+func retryOnConflictOrNotFound(err error) bool {
+	return errors.IsConflict(err) || errors.IsNotFound(err)
+}
+
+// applyReportSpec sets the owner reference and subject on the report.
+func (r *Reconciler) applyReportSpec(
+	source audiciav1alpha1.AudiciaSource,
+	report *audiciav1alpha1.AudiciaPolicyReport,
+	subject audiciav1alpha1.Subject,
+	reportNamespace string,
+) error {
+	if reportNamespace == source.Namespace {
+		if err := controllerutil.SetControllerReference(&source, report, r.Scheme); err != nil {
+			return err
+		}
+	}
+	report.Spec.Subject = subject
+	return nil
+}
+
+// currentSeverity returns the compliance severity of a report, or empty if unset.
+func currentSeverity(report *audiciav1alpha1.AudiciaPolicyReport) audiciav1alpha1.ComplianceSeverity {
+	if report.Status.Compliance != nil {
+		return report.Status.Compliance.Severity
+	}
+	return ""
+}
+
+// emitReportEvents emits Kubernetes events for report creation and drift detection.
+func (r *Reconciler) emitReportEvents(
+	report *audiciav1alpha1.AudiciaPolicyReport,
+	subject audiciav1alpha1.Subject,
+	created bool,
+	prevSeverity audiciav1alpha1.ComplianceSeverity,
+) {
+	if created {
+		r.Recorder.Eventf(report, corev1.EventTypeNormal, "ReportCreated",
+			"Created policy report for %s %s", subject.Kind, subject.Name)
+		return
+	}
+	if report.Status.Compliance == nil {
+		return
+	}
+	newSeverity := report.Status.Compliance.Severity
+	if newSeverity != prevSeverity && severityWorsened(prevSeverity, newSeverity) {
+		r.Recorder.Eventf(report, corev1.EventTypeWarning, "DriftDetected",
+			"Compliance degraded from %s to %s (score=%d, excess=%d, uncovered=%d)",
+			prevSeverity, newSeverity,
+			report.Status.Compliance.Score,
+			report.Status.Compliance.ExcessCount,
+			report.Status.Compliance.UncoveredCount)
+	}
 }
 
 // severityWorsened returns true if the compliance severity degraded.
