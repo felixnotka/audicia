@@ -87,9 +87,9 @@ const notFoundHtml = `<!DOCTYPE html>
 </html>`;
 
 export const app = new App()
+  .use(loggingMiddleware)
   .use(chartsMiddleware)
   .use(staticFiles())
-  .use(loggingMiddleware)
   .onError("*", (ctx) => {
     console.log(`Error: ${ctx.error}`);
     if (ctx.error?.status === 404) {
