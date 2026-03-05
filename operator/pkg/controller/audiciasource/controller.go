@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,7 +48,7 @@ type Reconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Resolver *rbac.Resolver
-	Recorder record.EventRecorder
+	Recorder events.EventRecorder
 
 	mu        sync.Mutex
 	pipelines map[types.NamespacedName]*pipelineState
@@ -68,7 +68,7 @@ func SetupWithManager(mgr ctrl.Manager, maxConcurrent int) error {
 			Client:    mgr.GetClient(),
 			Scheme:    mgr.GetScheme(),
 			Resolver:  rbac.NewResolver(mgr.GetClient()),
-			Recorder:  mgr.GetEventRecorderFor("audicia-operator"),
+			Recorder:  mgr.GetEventRecorder("audicia-operator"),
 			pipelines: make(map[types.NamespacedName]*pipelineState),
 		})
 }
@@ -128,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	go r.runPipeline(pipelineCtx, req.NamespacedName, source)
 
 	logger.Info("pipeline started", "sourceType", source.Spec.SourceType)
-	r.Recorder.Eventf(&source, corev1.EventTypeNormal, "PipelineStarted",
+	r.Recorder.Eventf(&source, nil, corev1.EventTypeNormal, "PipelineStarted", "Start",
 		"Ingestion pipeline started (sourceType=%s)", source.Spec.SourceType)
 	return ctrl.Result{}, nil
 }
@@ -427,7 +427,7 @@ func (r *Reconciler) flushReports(
 		rules, dropped := compactRules(agg.Rules(), source.Spec.Limits, subject.Name, logger)
 
 		if dropped > 0 {
-			r.Recorder.Eventf(&source, corev1.EventTypeWarning, "CompactionTriggered",
+			r.Recorder.Eventf(&source, nil, corev1.EventTypeWarning, "CompactionTriggered", "Compact",
 				"Subject %s has %d rules, exceeds limit; dropped %d oldest rules",
 				subject.Name, len(rules)+dropped, dropped)
 		}
@@ -435,14 +435,14 @@ func (r *Reconciler) flushReports(
 		if err := r.flushReport(ctx, source, subject, rules, agg.EventsProcessed(), logger); err != nil {
 			logger.Error(err, "failed to flush report", "subject", subject.Name)
 			metrics.ReconcileErrorsTotal.Inc()
-			r.Recorder.Eventf(&source, corev1.EventTypeWarning, "FlushFailed",
+			r.Recorder.Eventf(&source, nil, corev1.EventTypeWarning, "FlushFailed", "Flush",
 				"Failed to flush report for %s: %v", subject.Name, err)
 		}
 
 		if err := r.flushPolicy(ctx, source, engine, subject, rules, logger); err != nil {
 			logger.Error(err, "failed to flush policy", "subject", subject.Name)
 			metrics.ReconcileErrorsTotal.Inc()
-			r.Recorder.Eventf(&source, corev1.EventTypeWarning, "FlushFailed",
+			r.Recorder.Eventf(&source, nil, corev1.EventTypeWarning, "FlushFailed", "Flush",
 				"Failed to flush policy for %s: %v", subject.Name, err)
 		}
 	}
@@ -537,16 +537,21 @@ func (r *Reconciler) flushReport(
 	return nil
 }
 
+// manifestGenerator generates RBAC manifests for a subject.
+type manifestGenerator interface {
+	GenerateManifests(subject audiciav1alpha1.Subject, rules []audiciav1alpha1.ObservedRule) ([]string, error)
+}
+
 // flushPolicy creates/updates a single AudiciaPolicy for one subject.
 func (r *Reconciler) flushPolicy(
 	ctx context.Context,
 	source audiciav1alpha1.AudiciaSource,
-	engine *strategy.Engine,
+	gen manifestGenerator,
 	subject audiciav1alpha1.Subject,
 	rules []audiciav1alpha1.ObservedRule,
 	logger logr.Logger,
 ) error {
-	manifests, err := engine.GenerateManifests(subject, rules)
+	manifests, err := gen.GenerateManifests(subject, rules)
 	if err != nil {
 		return fmt.Errorf("generating manifests: %w", err)
 	}
@@ -563,29 +568,15 @@ func (r *Reconciler) flushPolicy(
 
 	err = retry.OnError(retry.DefaultRetry, retryOnConflictOrNotFound, func() error {
 		result, createErr := controllerutil.CreateOrUpdate(ctx, r.Client, policy, func() error {
-			// Set owner reference if in the same namespace.
-			if policyNamespace == source.Namespace {
-				if err := controllerutil.SetControllerReference(&source, policy, r.Scheme); err != nil {
-					return err
-				}
-			}
-			policy.Spec.Subject = subject
-			policy.Spec.SourceRef = source.Name
-			policy.Spec.Manifests = manifests
-			return nil
+			return r.applyPolicySpec(source, policy, subject, policyNamespace, manifests)
 		})
 		if createErr != nil {
 			return createErr
 		}
-		if result == controllerutil.OperationResultCreated {
-			policy.Status.State = audiciav1alpha1.PolicyStatePending
-		} else if result == controllerutil.OperationResultUpdated {
-			// Manifests changed on an existing policy → mark Outdated
-			// unless it's already Pending.
-			if policy.Status.State != audiciav1alpha1.PolicyStatePending {
-				policy.Status.State = audiciav1alpha1.PolicyStateOutdated
-			}
+		if result != controllerutil.OperationResultNone {
+			logger.Info("policy updated", "policy", policyName, "result", result)
 		}
+		policy.Status.State = determinePolicyState(result, policy.Status.State)
 		policy.Status.RuleCount = int32(len(rules))
 		return r.Status().Update(ctx, policy)
 	})
@@ -594,6 +585,43 @@ func (r *Reconciler) flushPolicy(
 	}
 
 	metrics.PoliciesUpdatedTotal.Inc()
+	return nil
+}
+
+// determinePolicyState returns the appropriate state for a policy based on the
+// operation result and its current state.
+func determinePolicyState(result controllerutil.OperationResult, current audiciav1alpha1.PolicyState) audiciav1alpha1.PolicyState {
+	switch result {
+	case controllerutil.OperationResultCreated:
+		return audiciav1alpha1.PolicyStatePending
+	case controllerutil.OperationResultUpdated:
+		// Manifests changed on an existing policy – mark Outdated
+		// unless it's already Pending.
+		if current != audiciav1alpha1.PolicyStatePending {
+			return audiciav1alpha1.PolicyStateOutdated
+		}
+		return current
+	default:
+		return current
+	}
+}
+
+// applyPolicySpec sets the owner reference, subject, source ref, and manifests on the policy.
+func (r *Reconciler) applyPolicySpec(
+	source audiciav1alpha1.AudiciaSource,
+	policy *audiciav1alpha1.AudiciaPolicy,
+	subject audiciav1alpha1.Subject,
+	policyNamespace string,
+	manifests []string,
+) error {
+	if policyNamespace == source.Namespace {
+		if err := controllerutil.SetControllerReference(&source, policy, r.Scheme); err != nil {
+			return err
+		}
+	}
+	policy.Spec.Subject = subject
+	policy.Spec.SourceRef = source.Name
+	policy.Spec.Manifests = manifests
 	return nil
 }
 
@@ -642,7 +670,7 @@ func (r *Reconciler) emitReportEvents(
 	prevSeverity audiciav1alpha1.ComplianceSeverity,
 ) {
 	if created {
-		r.Recorder.Eventf(report, corev1.EventTypeNormal, "ReportCreated",
+		r.Recorder.Eventf(report, nil, corev1.EventTypeNormal, "ReportCreated", "Create",
 			"Created policy report for %s %s", subject.Kind, subject.Name)
 		return
 	}
@@ -651,7 +679,7 @@ func (r *Reconciler) emitReportEvents(
 	}
 	newSeverity := report.Status.Compliance.Severity
 	if newSeverity != prevSeverity && severityWorsened(prevSeverity, newSeverity) {
-		r.Recorder.Eventf(report, corev1.EventTypeWarning, "DriftDetected",
+		r.Recorder.Eventf(report, nil, corev1.EventTypeWarning, "DriftDetected", "Evaluate",
 			"Compliance degraded from %s to %s (score=%d, excess=%d, uncovered=%d)",
 			prevSeverity, newSeverity,
 			report.Status.Compliance.Score,

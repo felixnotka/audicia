@@ -18,10 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/felixnotka/audicia/operator/pkg/aggregator"
 	audiciav1alpha1 "github.com/felixnotka/audicia/operator/pkg/apis/audicia.io/v1alpha1"
@@ -396,7 +397,7 @@ func newTestReconciler(objs ...client.Object) *Reconciler {
 	return &Reconciler{
 		Client:    fakeClient,
 		Scheme:    s,
-		Recorder:  record.NewFakeRecorder(100),
+		Recorder:  events.NewFakeRecorder(100),
 		pipelines: make(map[types.NamespacedName]*pipelineState),
 	}
 }
@@ -1490,7 +1491,7 @@ func TestReportNamespaceFor(t *testing.T) {
 
 // --- emitReportEvents ---
 
-func drainEvents(rec *record.FakeRecorder) []string {
+func drainEvents(rec *events.FakeRecorder) []string {
 	var events []string
 	for {
 		select {
@@ -1503,7 +1504,7 @@ func drainEvents(rec *record.FakeRecorder) []string {
 }
 
 func TestEmitReportEvents_ReportCreated(t *testing.T) {
-	rec := record.NewFakeRecorder(10)
+	rec := events.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
 	report := &audiciav1alpha1.AudiciaReport{}
@@ -1527,7 +1528,7 @@ func TestEmitReportEvents_ReportCreated(t *testing.T) {
 }
 
 func TestEmitReportEvents_DriftDetected(t *testing.T) {
-	rec := record.NewFakeRecorder(10)
+	rec := events.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
 	report := &audiciav1alpha1.AudiciaReport{}
@@ -1560,7 +1561,7 @@ func TestEmitReportEvents_DriftDetected(t *testing.T) {
 }
 
 func TestEmitReportEvents_NoDriftWhenImproved(t *testing.T) {
-	rec := record.NewFakeRecorder(10)
+	rec := events.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
 	report := &audiciav1alpha1.AudiciaReport{}
@@ -1586,7 +1587,7 @@ func TestEmitReportEvents_NoDriftWhenImproved(t *testing.T) {
 }
 
 func TestEmitReportEvents_NoDriftOnCreate(t *testing.T) {
-	rec := record.NewFakeRecorder(10)
+	rec := events.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
 	report := &audiciav1alpha1.AudiciaReport{}
@@ -1615,7 +1616,7 @@ func TestEmitReportEvents_NoDriftOnCreate(t *testing.T) {
 }
 
 func TestEmitReportEvents_NoComplianceNoEvent(t *testing.T) {
-	rec := record.NewFakeRecorder(10)
+	rec := events.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
 	report := &audiciav1alpha1.AudiciaReport{}
@@ -1652,7 +1653,7 @@ func TestFlushReports_CompactionEvent(t *testing.T) {
 		},
 	}
 
-	rec := record.NewFakeRecorder(10)
+	rec := events.NewFakeRecorder(10)
 	r := newTestReconciler(&source)
 	r.Recorder = rec
 
@@ -1859,5 +1860,90 @@ func TestFlushPolicy_CrossNamespace(t *testing.T) {
 	var policy audiciav1alpha1.AudiciaPolicy
 	if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "other-ns"}, &policy); err != nil {
 		t.Fatalf("expected policy in other-ns: %v", err)
+	}
+}
+
+// failingGenerator is a manifestGenerator that always returns an error.
+type failingGenerator struct{}
+
+func (f *failingGenerator) GenerateManifests(_ audiciav1alpha1.Subject, _ []audiciav1alpha1.ObservedRule) ([]string, error) {
+	return nil, fmt.Errorf("manifest generation failed")
+}
+
+func TestFlushPolicy_GenerateManifestsError(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gen-err-source",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(&source)
+	subject := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "gen-err-sa",
+		Namespace: "default",
+	}
+	rules := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "default", time.Now()),
+	}
+
+	err := r.flushPolicy(context.Background(), source, &failingGenerator{}, subject, rules, logr.Discard())
+	if err == nil {
+		t.Fatal("expected error from flushPolicy when GenerateManifests fails")
+	}
+	if !strings.Contains(err.Error(), "generating manifests") {
+		t.Errorf("expected 'generating manifests' in error, got %q", err)
+	}
+}
+
+// --- determinePolicyState ---
+
+func TestDeterminePolicyState(t *testing.T) {
+	tests := []struct {
+		name    string
+		result  controllerutil.OperationResult
+		current audiciav1alpha1.PolicyState
+		want    audiciav1alpha1.PolicyState
+	}{
+		{
+			name:    "created sets Pending",
+			result:  controllerutil.OperationResultCreated,
+			current: "",
+			want:    audiciav1alpha1.PolicyStatePending,
+		},
+		{
+			name:    "updated from Approved sets Outdated",
+			result:  controllerutil.OperationResultUpdated,
+			current: audiciav1alpha1.PolicyStateApproved,
+			want:    audiciav1alpha1.PolicyStateOutdated,
+		},
+		{
+			name:    "updated from Applied sets Outdated",
+			result:  controllerutil.OperationResultUpdated,
+			current: audiciav1alpha1.PolicyStateApplied,
+			want:    audiciav1alpha1.PolicyStateOutdated,
+		},
+		{
+			name:    "updated from Pending stays Pending",
+			result:  controllerutil.OperationResultUpdated,
+			current: audiciav1alpha1.PolicyStatePending,
+			want:    audiciav1alpha1.PolicyStatePending,
+		},
+		{
+			name:    "no-op preserves current state",
+			result:  controllerutil.OperationResultNone,
+			current: audiciav1alpha1.PolicyStateApproved,
+			want:    audiciav1alpha1.PolicyStateApproved,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := determinePolicyState(tt.result, tt.current)
+			if got != tt.want {
+				t.Errorf("determinePolicyState(%s, %s) = %s, want %s", tt.result, tt.current, got, tt.want)
+			}
+		})
 	}
 }
