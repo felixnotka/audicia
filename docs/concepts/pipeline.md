@@ -27,7 +27,7 @@ nothing about RBAC.
 last saved byte offset. Inode tracking (Linux-only) detects log rotation and
 resets the offset.
 
-**Webhook ingestion** is stateless — it handles deduplication via an in-memory
+**Webhook ingestion** is stateless – it handles deduplication via an in-memory
 LRU cache keyed by `auditID`. After restart, some duplicates may occur; the
 aggregator handles idempotent merging.
 
@@ -130,14 +130,20 @@ See [Compliance Scoring](compliance-scoring.md) for details.
 
 ## 8. Report Output
 
-The final output is an `AudiciaPolicyReport` CRD containing:
+The final output is split across two CRDs:
 
-- `status.observedRules` — Structured data for machine consumption
-- `status.suggestedPolicy.manifests` — Ready-to-apply RBAC YAML
-- `status.compliance` — Score, severity, excess/uncovered counts
+**`AudiciaReport`** – per-subject compliance data:
 
-See the [AudiciaPolicyReport CRD](../reference/crd-audiciapolicyreport.md) for
-the full field reference.
+- `status.observedRules` – Structured data for machine consumption
+- `status.compliance` – Score, severity, excess/uncovered counts
+
+**`AudiciaPolicy`** – per-subject suggested RBAC:
+
+- `spec.manifests` – Ready-to-apply RBAC YAML
+
+See the [AudiciaReport CRD](../reference/crd-audiciareport.md) and
+[AudiciaPolicy CRD](../reference/crd-audiciapolicy.md) for the full field
+references.
 
 ## Processing Model
 

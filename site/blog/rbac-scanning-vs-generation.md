@@ -11,8 +11,8 @@ description: "RBAC scanning finds problems in existing policies. RBAC generation
 Kubernetes RBAC tools are often discussed as if they solve the same problem.
 They don't. There are two fundamentally different problems:
 
-1. **"Is this RBAC policy bad?"** — scanning
-2. **"What should this RBAC policy be?"** — generation
+1. **"Is this RBAC policy bad?"** – scanning
+2. **"What should this RBAC policy be?"** – generation
 
 A scanner can tell you that a `cluster-admin` binding exists where it shouldn't.
 But it cannot tell you what the correct binding should be. A generator can
@@ -23,8 +23,8 @@ These are complementary, not interchangeable.
 
 ## What Scanners Do
 
-RBAC scanners analyze static Kubernetes manifests — YAML files, Helm charts,
-Kustomize overlays — and flag security issues.
+RBAC scanners analyze static Kubernetes manifests – YAML files, Helm charts,
+Kustomize overlays – and flag security issues.
 
 **Input:** Static YAML definitions (what you intend to deploy)
 
@@ -50,8 +50,8 @@ Scanning answers: _"Is this YAML bad?"_
 
 ## What Generators Do
 
-RBAC generators observe runtime API access patterns — from Kubernetes audit logs
-— and produce the minimal RBAC policy that satisfies those patterns.
+RBAC generators observe runtime API access patterns – from Kubernetes audit logs
+– and produce the minimal RBAC policy that satisfies those patterns.
 
 **Input:** Kubernetes audit log events (what workloads actually do)
 
@@ -79,7 +79,7 @@ Generation answers: _"What should this RBAC be?"_
 Consider this scenario:
 
 A service account has a ClusterRoleBinding to `cluster-admin`. A scanner flags
-it — correctly — as overprivileged.
+it – correctly – as overprivileged.
 
 Now what?
 
@@ -127,7 +127,7 @@ closes the loop.
 
 ## Adding Enforcement
 
-A third category — enforcers like OPA/Gatekeeper and Kyverno — adds runtime
+A third category – enforcers like OPA/Gatekeeper and Kyverno – adds runtime
 guardrails:
 
 | Category  | Question                        | When                 |
@@ -137,7 +137,7 @@ guardrails:
 | Enforcer  | Should this request be allowed? | Admission time       |
 
 Enforcers prevent overprivileged bindings from being created in the first place.
-But they still need policies to enforce — which generators provide.
+But they still need policies to enforce – which generators provide.
 
 For a detailed comparison of tools across all three categories, see
 [Kubernetes RBAC Tools Compared](/blog/kubernetes-rbac-tools-compared).
@@ -157,9 +157,9 @@ addresses is the foundation for a complete RBAC security stack.
 
 ## Further Reading
 
-- **[Kubernetes RBAC Tools Compared](/blog/kubernetes-rbac-tools-compared)** —
+- **[Kubernetes RBAC Tools Compared](/blog/kubernetes-rbac-tools-compared)** –
   detailed comparison across scanners, enforcers, and generators
-- **[audit2rbac vs Audicia](/blog/audit2rbac-vs-audicia)** — comparing two RBAC
+- **[audit2rbac vs Audicia](/blog/audit2rbac-vs-audicia)** – comparing two RBAC
   generators
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and start generating correct RBAC policies

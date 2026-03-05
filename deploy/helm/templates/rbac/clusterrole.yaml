@@ -13,12 +13,20 @@ rules:
     resources: ["audiciasources/status"]
     verbs: ["get", "update", "patch"]
 
-  # AudiciaPolicyReport: full CRUD (operator creates/updates reports)
+  # AudiciaReport: full CRUD (operator creates/updates compliance reports)
   - apiGroups: ["audicia.io"]
-    resources: ["audiciapolicyreports"]
+    resources: ["audiciareports"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["audicia.io"]
-    resources: ["audiciapolicyreports/status"]
+    resources: ["audiciareports/status"]
+    verbs: ["get", "update", "patch"]
+
+  # AudiciaPolicy: full CRUD (operator creates/updates suggested policies)
+  - apiGroups: ["audicia.io"]
+    resources: ["audiciapolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["audicia.io"]
+    resources: ["audiciapolicies/status"]
     verbs: ["get", "update", "patch"]
 
   # RBAC: read-only access for compliance resolver (diff engine)

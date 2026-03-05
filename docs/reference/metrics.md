@@ -13,7 +13,8 @@ All metrics use the `audicia_` namespace.
 | `audicia_events_processed_total`   | Counter   | `source`, `result` | Total audit events processed (increments after filter + normalizer, before aggregator). `result` is `accepted`, `filtered`, or `error`. A spike in `accepted` events is a reliable signal for new policy-relevant activity. |
 | `audicia_events_filtered_total`    | Counter   | `filter_rule`      | Events dropped by the noise filter. `filter_rule` is `deny` (explicit filter match) or `system_user` (ignoreSystemUsers).                                                                                                   |
 | `audicia_rules_generated_total`    | Counter   | -                  | Unique rules generated across all reports.                                                                                                                                                                                  |
-| `audicia_reports_updated_total`    | Counter   | -                  | Number of AudiciaPolicyReport status updates.                                                                                                                                                                               |
+| `audicia_reports_updated_total`    | Counter   | -                  | Number of AudiciaReport status updates.                                                                                                                                                                                     |
+| `audicia_policies_updated_total`   | Counter   | -                  | Number of AudiciaPolicy status updates.                                                                                                                                                                                     |
 | `audicia_pipeline_latency_seconds` | Histogram | -                  | End-to-end processing latency per flush cycle (seconds).                                                                                                                                                                    |
 | `audicia_checkpoint_lag_seconds`   | Gauge     | `source`           | Time since last successful checkpoint. Reset to 0 on each flush. Alerts if consistently high.                                                                                                                               |
 | `audicia_report_rules_count`       | Gauge     | `report_name`      | Number of rules in each report. Useful for monitoring report growth.                                                                                                                                                        |
@@ -64,7 +65,7 @@ scrape_configs:
 
 | Probe     | Endpoint   | Port | Description                                  |
 | --------- | ---------- | ---- | -------------------------------------------- |
-| Liveness  | `/healthz` | 8081 | Basic ping check — operator process is alive |
+| Liveness  | `/healthz` | 8081 | Basic ping check – operator process is alive |
 | Readiness | `/readyz`  | 8081 | Operator is ready to process events          |
 
 ## Example Alerts

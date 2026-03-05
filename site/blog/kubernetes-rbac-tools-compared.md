@@ -15,18 +15,18 @@ security stack.
 
 Every RBAC tool fits into one of three categories:
 
-1. **Scanners** — analyze static YAML and flag problems
-2. **Enforcers** — evaluate requests at admission time and block violations
-3. **Generators** — create correct policies from observed runtime data
+1. **Scanners** – analyze static YAML and flag problems
+2. **Enforcers** – evaluate requests at admission time and block violations
+3. **Generators** – create correct policies from observed runtime data
 
 These categories are complementary, not competitive. A production cluster
-benefits from all three. But confusing them leads to gaps — you can scan and
+benefits from all three. But confusing them leads to gaps – you can scan and
 enforce all day without ever generating the right policies in the first place.
 
 ## Scanners: Finding Problems in Static YAML
 
 Scanners read your Kubernetes manifests (YAML files, Helm charts, Kustomize
-overlays) and flag security issues. They operate on static definitions — what
+overlays) and flag security issues. They operate on static definitions – what
 you intend to deploy, not what is actually running.
 
 **Examples:** Trivy, KubeAudit, KubeLinter, Polaris
@@ -52,7 +52,7 @@ should this policy be?"_
 
 Trivy is an all-in-one security scanner. It analyzes container images,
 filesystem artifacts, and Kubernetes manifests. For RBAC, it checks static
-bindings against a set of security rules — flagging things like wildcard
+bindings against a set of security rules – flagging things like wildcard
 permissions, secrets access, and overprivileged service accounts.
 
 Trivy is excellent at catching known-bad patterns in YAML. But it cannot observe
@@ -69,7 +69,7 @@ policies from runtime data.
 ## Enforcers: Blocking Violations at Admission
 
 Enforcers sit in the Kubernetes admission pipeline. When a request arrives at
-the API server — create a pod, update a configmap, bind a role — the enforcer
+the API server – create a pod, update a configmap, bind a role – the enforcer
 evaluates it against a set of policies and either allows or denies the request.
 
 **Examples:** OPA/Gatekeeper, Kyverno
@@ -104,8 +104,8 @@ bindings that bypass them.
 
 ## Generators: Creating Policies from Observed Data
 
-Generators watch what your workloads actually do — which API endpoints they
-call, which verbs they use, which resources they access — and produce the
+Generators watch what your workloads actually do – which API endpoints they
+call, which verbs they use, which resources they access – and produce the
 minimal RBAC policy that satisfies those observed patterns.
 
 **Examples:** Audicia, audit2rbac
@@ -113,7 +113,7 @@ minimal RBAC policy that satisfies those observed patterns.
 **What they do well:**
 
 - Generate correct policies from real runtime behavior
-- Eliminate guesswork — the policy matches what the workload does
+- Eliminate guesswork – the policy matches what the workload does
 - Handle edge cases like subresource concatenation (`pods/exec`) and API group
   migration
 - Produce policies that are minimal by construction
@@ -124,25 +124,25 @@ minimal RBAC policy that satisfies those observed patterns.
 - Block overprivileged requests at admission time
 - Replace the need for scanning and enforcement
 
-Generators answer: _"What RBAC should exist?"_ — the question the other two
+Generators answer: _"What RBAC should exist?"_ – the question the other two
 categories cannot answer.
 
 ### Audicia
 
 Audicia is a Kubernetes Operator that runs continuously in your cluster. It
 reads audit logs (via file tailing or webhook), processes events through a
-six-stage pipeline, and produces `AudiciaPolicyReport` CRDs containing
-ready-to-apply Roles and ClusterRoles.
+six-stage pipeline, and produces `AudiciaReport` and `AudiciaPolicy` CRDs
+containing compliance scores and ready-to-apply Roles and ClusterRoles.
 
 Key differentiators:
 
-- **Continuous operation** — runs as an operator with checkpoint/resume, not a
+- **Continuous operation** – runs as an operator with checkpoint/resume, not a
   one-shot CLI
-- **CRD-native output** — reports are Kubernetes resources, ready for GitOps
-- **Compliance scoring** — each report includes a 0–100 score comparing observed
+- **CRD-native output** – reports are Kubernetes resources, ready for GitOps
+- **Compliance scoring** – each report includes a 0–100 score comparing observed
   vs. granted permissions
-- **Configurable strategy** — knobs for scope mode, verb merging, and wildcards
-- **Event normalization** — handles subresource concatenation, API group
+- **Configurable strategy** – knobs for scope mode, verb merging, and wildcards
+- **Event normalization** – handles subresource concatenation, API group
   migration, and identity parsing
 
 For a detailed walkthrough, see
@@ -192,15 +192,15 @@ This gives you:
 - Continuous compliance evidence (Audicia's compliance scoring)
 
 No single tool covers all three. But understanding which category each tool
-occupies makes it clear where the gaps are — and how to fill them.
+occupies makes it clear where the gaps are – and how to fill them.
 
 ## Further Reading
 
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full before/after walkthrough with Audicia
-- **[audit2rbac vs Audicia](/blog/audit2rbac-vs-audicia)** — detailed comparison
+- **[audit2rbac vs Audicia](/blog/audit2rbac-vs-audicia)** – detailed comparison
   of the two generators
 - **[The Difference Between RBAC Scanning and Generation](/blog/rbac-scanning-vs-generation)**
-  — why scanning alone is not enough
-- **[Getting Started](/docs/getting-started/introduction)** — install Audicia
+  – why scanning alone is not enough
+- **[Getting Started](/docs/getting-started/introduction)** – install Audicia
   and generate your first policy reports

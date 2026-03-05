@@ -116,8 +116,13 @@ func TestWebhookIngestion(t *testing.T) {
 		t.Errorf("expected >= 3 events processed, got %d", report.Status.EventsProcessed)
 	}
 
-	if report.Status.SuggestedPolicy == nil {
-		t.Error("expected non-nil suggestedPolicy")
+	// Assert the corresponding AudiciaPolicy exists.
+	policyName := expectedPolicyName(saName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
+	}, defaultTimeout)
+	if len(policy.Spec.Manifests) == 0 {
+		t.Error("expected non-empty manifests in AudiciaPolicy")
 	}
 
 	t.Logf("webhook test passed: %d rules, %d events",

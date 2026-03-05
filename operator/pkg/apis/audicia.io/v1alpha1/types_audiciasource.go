@@ -178,7 +178,7 @@ type CheckpointConfig struct {
 
 // LimitsConfig configures object size and retention limits.
 type LimitsConfig struct {
-	// MaxRulesPerReport is the maximum number of rules in a single AudiciaPolicyReport.
+	// MaxRulesPerReport is the maximum number of observed rules in a single AudiciaReport.
 	// +kubebuilder:default=200
 	// +kubebuilder:validation:Minimum=1
 	MaxRulesPerReport int32 `json:"maxRulesPerReport,omitempty"`

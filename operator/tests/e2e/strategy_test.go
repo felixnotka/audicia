@@ -19,7 +19,7 @@ import (
 )
 
 // TestStrategyKnobs verifies that PolicyStrategy knobs (VerbMerge, Wildcards)
-// produce the expected output in SuggestedPolicy manifests.
+// produce the expected output in AudiciaPolicy manifests.
 func TestStrategyKnobs(t *testing.T) {
 	t.Run("VerbMerge/Smart", testVerbMergeSmart)
 	t.Run("VerbMerge/Exact", testVerbMergeExact)
@@ -72,11 +72,14 @@ func testVerbMergeSmart(t *testing.T) {
 	postAuditEvents(t, httpClient, webhookURL, events)
 
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
-		return r.Status.SuggestedPolicy != nil && len(r.Status.SuggestedPolicy.Manifests) > 0
+	waitForPolicyReport(ctx, t, reportName, ns, defaultTimeout)
+
+	policyName := expectedPolicyName(saName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
 	}, defaultTimeout)
 
-	role := parseRoleFromManifests(t, report.Status.SuggestedPolicy.Manifests)
+	role := parseRoleFromManifests(t, policy.Spec.Manifests)
 
 	// Smart merge: get+list+watch should produce 1 rule with 3 verbs.
 	if len(role.Rules) != 1 {
@@ -136,11 +139,14 @@ func testVerbMergeExact(t *testing.T) {
 	postAuditEvents(t, httpClient, webhookURL, events)
 
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
-		return r.Status.SuggestedPolicy != nil && len(r.Status.SuggestedPolicy.Manifests) > 0
+	waitForPolicyReport(ctx, t, reportName, ns, defaultTimeout)
+
+	policyName := expectedPolicyName(saName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
 	}, defaultTimeout)
 
-	role := parseRoleFromManifests(t, report.Status.SuggestedPolicy.Manifests)
+	role := parseRoleFromManifests(t, policy.Spec.Manifests)
 
 	// Exact: each verb should produce a separate rule.
 	if len(role.Rules) != 2 {
@@ -203,11 +209,14 @@ func testWildcardsSafe(t *testing.T) {
 	postAuditEvents(t, httpClient, webhookURL, events)
 
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
-		return r.Status.SuggestedPolicy != nil && len(r.Status.SuggestedPolicy.Manifests) > 0
+	waitForPolicyReport(ctx, t, reportName, ns, defaultTimeout)
+
+	policyName := expectedPolicyName(saName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
 	}, defaultTimeout)
 
-	role := parseRoleFromManifests(t, report.Status.SuggestedPolicy.Manifests)
+	role := parseRoleFromManifests(t, policy.Spec.Manifests)
 
 	// Wildcards=Safe with all 8 verbs should collapse to ["*"].
 	if len(role.Rules) != 1 {
@@ -273,11 +282,14 @@ func testWildcardsForbidden(t *testing.T) {
 	postAuditEvents(t, httpClient, webhookURL, events)
 
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
-		return r.Status.SuggestedPolicy != nil && len(r.Status.SuggestedPolicy.Manifests) > 0
+	waitForPolicyReport(ctx, t, reportName, ns, defaultTimeout)
+
+	policyName := expectedPolicyName(saName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
 	}, defaultTimeout)
 
-	role := parseRoleFromManifests(t, report.Status.SuggestedPolicy.Manifests)
+	role := parseRoleFromManifests(t, policy.Spec.Manifests)
 
 	// Wildcards=Forbidden: should have individual verbs, no "*".
 	if len(role.Rules) < 1 {

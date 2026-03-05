@@ -42,14 +42,14 @@ export default function ComplianceScore() {
         <p className="score-explanation">
           Audicia resolves every RoleBinding and ClusterRoleBinding for each
           subject, compares effective RBAC grants against observed audit log
-          usage, and scores 0–100. Sensitive excess — unused access to secrets,
-          nodes, webhookconfigurations, CRDs, and tokenreviews — is flagged
+          usage, and scores 0–100. Sensitive excess – unused access to secrets,
+          nodes, webhookconfigurations, CRDs, and tokenreviews – is flagged
           separately.
         </p>
 
         <div className="score-output">
           <pre>
-            <span className="prompt">$</span> kubectl get apreport --all-namespaces -o wide{"\n"}
+            <span className="prompt">$</span> kubectl get areport --all-namespaces -o wide{"\n"}
             NAMESPACE   NAME             SUBJECT    KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS{"\n"}
             my-team     report-backend   backend    ServiceAccount   <span className="severity-red">Red</span>          25      5m    2        6        0           true        1500{"\n"}
             my-team     report-frontend  frontend   ServiceAccount   <span className="severity-yellow">Yellow</span>       55      5m    5        4        0           false       3200{"\n"}

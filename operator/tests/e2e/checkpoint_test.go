@@ -90,7 +90,7 @@ func TestCheckpointResume(t *testing.T) {
 	// 3. The new EventsProcessed is small (not a full replay from offset 0)
 
 	// Wait for the new pipeline to process events and update the report.
-	report = waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
+	report = waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaReport) bool {
 		return r.Status.EventsProcessed > 0 && r.Status.LastProcessedTime != nil
 	}, defaultTimeout)
 	t.Logf("phase 2: %d events processed by new pipeline", report.Status.EventsProcessed)

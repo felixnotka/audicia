@@ -32,10 +32,10 @@ spec:
 
 ## Notes
 
-- **CIDR** — Use `/32` for a single control plane node. For HA clusters with
+- **CIDR** – Use `/32` for a single control plane node. For HA clusters with
   multiple control plane nodes, either list each IP or use a broader CIDR that
   covers all of them.
-- **CNI behavior** — On clusters with overlay networks (Calico, Cilium,
+- **CNI behavior** – On clusters with overlay networks (Calico, Cilium,
   Flannel), the source IP the pod sees may be the node's internal IP, a pod CIDR
   gateway, or a masqueraded address. If events don't flow after applying this
   policy, check `kubectl logs` to see what source IP Audicia receives.

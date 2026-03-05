@@ -14,9 +14,9 @@ that have no value for RBAC analysis.
 
 Audicia provides two filtering layers:
 
-1. **Kubernetes audit policy** — controls what the apiserver records (at the
+1. **Kubernetes audit policy** – controls what the apiserver records (at the
    source)
-2. **Audicia filter chain** — controls which recorded events Audicia processes
+2. **Audicia filter chain** – controls which recorded events Audicia processes
    into policy reports
 
 The audit policy reduces log volume on disk. Audicia's filter chain reduces what
@@ -34,9 +34,9 @@ matches, the event is **allowed** by default.
 
 Each rule has:
 
-- **`action`** — `Allow` or `Deny`
-- **`userPattern`** — regex matched against the event's `user.username`
-- **`namespacePattern`** — regex matched against the event's
+- **`action`** – `Allow` or `Deny`
+- **`userPattern`** – regex matched against the event's `user.username`
+- **`namespacePattern`** – regex matched against the event's
   `objectRef.namespace`
 
 Additionally, `ignoreSystemUsers: true` (the default) automatically drops all
@@ -90,7 +90,7 @@ spec:
 
 **Best for:** Multi-tenant clusters where you want reports for specific teams.
 
-The key is the final `Deny` rule with `userPattern: ".*"` — this catches
+The key is the final `Deny` rule with `userPattern: ".*"` – this catches
 everything that didn't match the `Allow` rule and drops it.
 
 ## Recipe 3: Single-Namespace Focus
@@ -242,9 +242,9 @@ filters for fine-grained control without losing the underlying audit trail.
 
 ## Further Reading
 
-- **[Kubernetes Audit Policy Design](/blog/kubernetes-audit-policy-design)** —
+- **[Kubernetes Audit Policy Design](/blog/kubernetes-audit-policy-design)** –
   designing the apiserver audit policy
-- **[How to Enable Audit Logging](/blog/kubernetes-audit-logging-guide)** —
+- **[How to Enable Audit Logging](/blog/kubernetes-audit-logging-guide)** –
   platform-specific setup instructions
-- **[Filter Recipes Guide](/docs/guides/filter-recipes)** — the full filter
+- **[Filter Recipes Guide](/docs/guides/filter-recipes)** – the full filter
   recipes documentation

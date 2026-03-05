@@ -120,7 +120,7 @@ Wait 30-60 seconds for the flush cycle to process the events.
 ## Step 4: View the Policy Report
 
 ```bash
-kubectl get audiciapolicyreports --all-namespaces
+kubectl get audiciareports --all-namespaces
 ```
 
 You should see reports for each subject that generated audit events:
@@ -133,10 +133,10 @@ demo        report-demo-app   demo-app   ServiceAccount                         
 Inspect a report:
 
 ```bash
-kubectl get audiciapolicyreport report-demo-app -n demo -o yaml
+kubectl get audiciareport report-demo-app -n demo -o yaml
 ```
 
-The `status.suggestedPolicy.manifests` field contains the generated RBAC:
+The report's `status` contains the observed rules and compliance data:
 
 ```yaml
 status:
@@ -147,45 +147,33 @@ status:
       firstSeen: "2026-02-20T10:00:00Z"
       lastSeen: "2026-02-20T10:00:00Z"
       count: 1
-  suggestedPolicy:
-    manifests:
-      - |
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: Role
-          metadata:
-            name: suggested-demo-app-role
-            namespace: demo
-          rules:
-            - apiGroups: [""]
-              resources: ["pods"]
-              verbs: ["list"]
-      - |
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: RoleBinding
-          ...
 ```
+
+> **Note:** Suggested RBAC manifests are no longer part of the report. They live
+> on the companion `AudiciaPolicy` resource. See the next step to retrieve them.
 
 ## Step 5: Apply the Suggested Policy
 
-Review and apply the generated manifests:
+Suggested RBAC manifests live on the `AudiciaPolicy` resource. Review and apply
+them:
 
 ```bash
 # Dry-run first
-kubectl get audiciapolicyreport report-demo-app -n demo \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy policy-demo-app -n demo \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   | kubectl apply --dry-run=client -f -
 
 # Apply for real
-kubectl get audiciapolicyreport report-demo-app -n demo \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy policy-demo-app -n demo \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   | kubectl apply -f -
 ```
 
 > **Tip:** For GitOps workflows, pipe the output to a file in your policy repo:
 >
 > ```bash
-> kubectl get audiciapolicyreport report-demo-app -n demo \
->   -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+> kubectl get apolicy policy-demo-app -n demo \
+>   -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
 >   > policies/demo/demo-app-rbac.yaml
 > ```
 
@@ -194,15 +182,15 @@ kubectl get audiciapolicyreport report-demo-app -n demo \
 After applying the policy and the next flush cycle:
 
 ```bash
-kubectl get audiciapolicyreports -n demo
+kubectl get audiciareports -n demo
 ```
 
 If the applied RBAC matches usage, you'll see a Green compliance score.
 
 ## What's Next
 
-- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations
+- [Filter Recipes](../guides/filter-recipes.md) – Common filter configurations
   for production
-- [Compliance Scoring](../concepts/compliance-scoring.md) — How RBAC drift
+- [Compliance Scoring](../concepts/compliance-scoring.md) – How RBAC drift
   detection works
-- [Feature Reference](../reference/features.md) — Full configuration options
+- [Feature Reference](../reference/features.md) – Full configuration options

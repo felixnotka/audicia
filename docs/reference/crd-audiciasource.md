@@ -133,10 +133,10 @@ Ordered allow/deny chain. First match wins. Default: allow.
 
 ## spec.limits
 
-| Field                      | Type    | Default | Description                                                              |
-| -------------------------- | ------- | ------- | ------------------------------------------------------------------------ |
-| `limits.maxRulesPerReport` | integer | `200`   | Maximum rules per AudiciaPolicyReport (oldest by lastSeen dropped first) |
-| `limits.retentionDays`     | integer | `30`    | Rules not seen within this window are dropped during flush               |
+| Field                      | Type    | Default | Description                                                        |
+| -------------------------- | ------- | ------- | ------------------------------------------------------------------ |
+| `limits.maxRulesPerReport` | integer | `200`   | Maximum rules per AudiciaReport (oldest by lastSeen dropped first) |
+| `limits.retentionDays`     | integer | `30`    | Rules not seen within this window are dropped during flush         |
 
 ## status
 

@@ -60,12 +60,17 @@ func testScopeModeClusterAllowed(t *testing.T) {
 	})
 	postAuditEvents(t, httpClient, webhookURL, events)
 
+	// Wait for the report to be created.
 	reportName := expectedReportName(userName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
-		return r.Status.SuggestedPolicy != nil && len(r.Status.SuggestedPolicy.Manifests) > 0
+	waitForPolicyReport(ctx, t, reportName, ns, defaultTimeout)
+
+	// Wait for the corresponding AudiciaPolicy with manifests.
+	policyName := expectedPolicyName(userName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
 	}, defaultTimeout)
 
-	manifests := strings.Join(report.Status.SuggestedPolicy.Manifests, "\n---\n")
+	manifests := strings.Join(policy.Spec.Manifests, "\n---\n")
 
 	// ClusterScopeAllowed + User: should produce ClusterRole + ClusterRoleBinding.
 	if !strings.Contains(manifests, "kind: ClusterRole\n") {
@@ -112,12 +117,17 @@ func testScopeModeNamespaceStrict(t *testing.T) {
 	})
 	postAuditEvents(t, httpClient, webhookURL, events)
 
+	// Wait for the report to be created.
 	reportName := expectedReportName(userName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
-		return r.Status.SuggestedPolicy != nil && len(r.Status.SuggestedPolicy.Manifests) > 0
+	waitForPolicyReport(ctx, t, reportName, ns, defaultTimeout)
+
+	// Wait for the corresponding AudiciaPolicy with manifests.
+	policyName := expectedPolicyName(userName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
 	}, defaultTimeout)
 
-	manifests := strings.Join(report.Status.SuggestedPolicy.Manifests, "\n---\n")
+	manifests := strings.Join(policy.Spec.Manifests, "\n---\n")
 
 	// NamespaceStrict + User with namespaced resources: should produce Role + RoleBinding.
 	if !strings.Contains(manifests, "kind: Role\n") {

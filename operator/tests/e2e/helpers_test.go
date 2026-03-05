@@ -235,19 +235,19 @@ func createAudiciaSource(ctx context.Context, t *testing.T, name, ns string, spe
 	})
 }
 
-// waitForPolicyReport polls until an AudiciaPolicyReport exists with at least one ObservedRule.
-func waitForPolicyReport(ctx context.Context, t *testing.T, name, ns string, timeout time.Duration) *audiciav1alpha1.AudiciaPolicyReport {
+// waitForPolicyReport polls until an AudiciaReport exists with at least one ObservedRule.
+func waitForPolicyReport(ctx context.Context, t *testing.T, name, ns string, timeout time.Duration) *audiciav1alpha1.AudiciaReport {
 	t.Helper()
-	return waitForPolicyReportCondition(ctx, t, name, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
+	return waitForPolicyReportCondition(ctx, t, name, ns, func(r *audiciav1alpha1.AudiciaReport) bool {
 		return len(r.Status.ObservedRules) > 0
 	}, timeout)
 }
 
 // waitForPolicyReportCondition polls until the report satisfies the condition function.
-func waitForPolicyReportCondition(ctx context.Context, t *testing.T, name, ns string, condFn func(*audiciav1alpha1.AudiciaPolicyReport) bool, timeout time.Duration) *audiciav1alpha1.AudiciaPolicyReport {
+func waitForPolicyReportCondition(ctx context.Context, t *testing.T, name, ns string, condFn func(*audiciav1alpha1.AudiciaReport) bool, timeout time.Duration) *audiciav1alpha1.AudiciaReport {
 	t.Helper()
 
-	var report audiciav1alpha1.AudiciaPolicyReport
+	var report audiciav1alpha1.AudiciaReport
 	err := wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		if err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, &report); err != nil {
 			return false, nil // not found yet
@@ -255,7 +255,7 @@ func waitForPolicyReportCondition(ctx context.Context, t *testing.T, name, ns st
 		return condFn(&report), nil
 	})
 	if err != nil {
-		t.Fatalf("timed out waiting for AudiciaPolicyReport %s/%s: %v", ns, name, err)
+		t.Fatalf("timed out waiting for AudiciaReport %s/%s: %v", ns, name, err)
 	}
 	return &report
 }
@@ -371,24 +371,56 @@ func waitForSource(ctx context.Context, t *testing.T, name, ns string, condFn fu
 	return &src
 }
 
-// getPolicyReport fetches the current state of an AudiciaPolicyReport.
-func getPolicyReport(ctx context.Context, t *testing.T, name, ns string) *audiciav1alpha1.AudiciaPolicyReport {
+// getPolicyReport fetches the current state of an AudiciaReport.
+func getPolicyReport(ctx context.Context, t *testing.T, name, ns string) *audiciav1alpha1.AudiciaReport {
 	t.Helper()
-	var report audiciav1alpha1.AudiciaPolicyReport
+	var report audiciav1alpha1.AudiciaReport
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, &report); err != nil {
-		t.Fatalf("get AudiciaPolicyReport %s/%s: %v", ns, name, err)
+		t.Fatalf("get AudiciaReport %s/%s: %v", ns, name, err)
 	}
 	return &report
 }
 
-// listPolicyReports lists all AudiciaPolicyReports in a namespace.
-func listPolicyReports(ctx context.Context, t *testing.T, ns string) []audiciav1alpha1.AudiciaPolicyReport {
+// listPolicyReports lists all AudiciaReports in a namespace.
+func listPolicyReports(ctx context.Context, t *testing.T, ns string) []audiciav1alpha1.AudiciaReport {
 	t.Helper()
-	var list audiciav1alpha1.AudiciaPolicyReportList
+	var list audiciav1alpha1.AudiciaReportList
 	if err := k8sClient.List(ctx, &list, client.InNamespace(ns)); err != nil {
-		t.Fatalf("list AudiciaPolicyReports in %s: %v", ns, err)
+		t.Fatalf("list AudiciaReports in %s: %v", ns, err)
 	}
 	return list.Items
+}
+
+// expectedPolicyName returns the policy name the controller generates for a given SA name.
+func expectedPolicyName(saName string) string {
+	return "policy-" + sanitizeName(saName)
+}
+
+// getAudiciaPolicy fetches the current state of an AudiciaPolicy.
+func getAudiciaPolicy(ctx context.Context, t *testing.T, name, ns string) *audiciav1alpha1.AudiciaPolicy {
+	t.Helper()
+	var policy audiciav1alpha1.AudiciaPolicy
+	if err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, &policy); err != nil {
+		t.Fatalf("get AudiciaPolicy %s/%s: %v", ns, name, err)
+	}
+	return &policy
+}
+
+// waitForAudiciaPolicy polls until an AudiciaPolicy exists and satisfies the condition function.
+func waitForAudiciaPolicy(ctx context.Context, t *testing.T, name, ns string, condFn func(*audiciav1alpha1.AudiciaPolicy) bool, timeout time.Duration) *audiciav1alpha1.AudiciaPolicy {
+	t.Helper()
+
+	var policy audiciav1alpha1.AudiciaPolicy
+	err := wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+		if err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, &policy); err != nil {
+			return false, nil // not found yet
+		}
+		return condFn(&policy), nil
+	})
+	if err != nil {
+		t.Fatalf("timed out waiting for AudiciaPolicy %s/%s: %v", ns, name, err)
+	}
+	return &policy
 }
 
 // parseRoleFromManifests decodes YAML manifests and returns the first Role found.

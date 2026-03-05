@@ -7,24 +7,50 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.5.0
+
+### Breaking
+
+- **CRD split: `AudiciaPolicyReport` → `AudiciaReport` + `AudiciaPolicy`** – the
+  monolithic report CRD has been split into two purpose-built resources:
+  - `AudiciaReport` (`ar`, `areport`) – compliance scoring, observed rules,
+    drift analysis. This is the primary assessment resource.
+  - `AudiciaPolicy` (`ap`, `apolicy`) – suggested RBAC manifests with an
+    approval workflow. New policies start as `Pending`; when the operator
+    detects manifest changes on an approved policy, it transitions to
+    `Outdated`.
+  - **Migration:** delete the old CRD
+    (`kubectl delete crd
+    audiciapolicyreports.audicia.io`), upgrade the Helm
+    chart, and the operator will regenerate reports and policies from the next
+    audit log flush.
+
+### Added
+
+- **`AudiciaPolicy` CRD** with approval workflow states: `Pending` → `Approved`
+  → `Applied` → `Outdated`.
+- **`audicia_policies_updated_total`** Prometheus metric tracking policy writes.
+
+---
+
 ## 0.4.2
 
 ### Added
 
-- **Kubernetes Events** — the operator now emits events for operational
+- **Kubernetes Events** – the operator now emits events for operational
   visibility. Events appear in `kubectl describe` and `kubectl get events`:
   - `PipelineStarted` (Normal) on AudiciaSource when ingestion begins.
   - `CompactionTriggered` (Warning) on AudiciaSource when rules exceed
     `maxRulesPerReport` and oldest rules are dropped.
   - `FlushFailed` (Warning) on AudiciaSource when a report write fails.
-  - `ReportCreated` (Normal) on AudiciaPolicyReport when a subject's report is
-    first generated.
-  - `DriftDetected` (Warning) on AudiciaPolicyReport when compliance severity
-    degrades (e.g., Green to Yellow).
+  - `ReportCreated` (Normal) on AudiciaReport when a subject's report is first
+    generated.
+  - `DriftDetected` (Warning) on AudiciaReport when compliance severity degrades
+    (e.g., Green to Yellow).
 
 ### Fixed
 
-- **Report flush race condition** — the two-phase report write (create spec,
+- **Report flush race condition** – the two-phase report write (create spec,
   then update status) could fail with "not found" if the report was deleted
   between phases. Both phases now run inside a single retry loop so the report
   is re-created automatically.
@@ -35,22 +61,22 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ### Removed
 
-- **Kube-proxy-free workarounds** — removed `hostNetwork`, `dnsPolicy`,
+- **Kube-proxy-free workarounds** – removed `hostNetwork`, `dnsPolicy`,
   `webhook.hostPort`, and `webhook.service.nodePort` Helm values and all
   associated template logic. These were workarounds for a misconfigured host
   firewall, not an inherent kube-proxy-free issue. The operator is a normal
   Kubernetes operator that expects cluster networking to work.
-- **Startup retry with exponential backoff** — removed `startWithRetry` and the
+- **Startup retry with exponential backoff** – removed `startWithRetry` and the
   `STARTUP_MAX_RETRIES` environment variable from the operator binary. The
   operator now starts directly; Kubernetes' own restart policy handles transient
   failures.
-- **Kube-Proxy-Free Guide** — deleted `docs/guides/kube-proxy-free.md` and
+- **Kube-Proxy-Free Guide** – deleted `docs/guides/kube-proxy-free.md` and
   removed it from the site navigation. Added a one-line troubleshooting entry
   instead: ensure your host firewall allows traffic from the pod CIDR.
 
 ### Changed
 
-- **Leader election re-enabled by default** — `operator.leaderElection.enabled`
+- **Leader election re-enabled by default** – `operator.leaderElection.enabled`
   now defaults to `true`, matching standard operator behaviour. Disable
   explicitly with `operator.leaderElection.enabled=false` for single-replica
   deployments.
@@ -65,15 +91,15 @@ Official public launch.
 
 ### Changed
 
-- **Version bump to 0.4.0** — first publicly announced release
-- **OG social preview image** — centered layout with larger logo and text for
+- **Version bump to 0.4.0** – first publicly announced release
+- **OG social preview image** – centered layout with larger logo and text for
   better rendering in Teams, WhatsApp, and LinkedIn link previews
-- **Helm chart appVersion** — updated from `0.1.0` to `0.4.0` to match the
+- **Helm chart appVersion** – updated from `0.1.0` to `0.4.0` to match the
   release version
 
 ### Fixed
 
-- **Double `.md` extension in doc/blog routes** — requests ending in `.md` (e.g.
+- **Double `.md` extension in doc/blog routes** – requests ending in `.md` (e.g.
   `/docs/getting-started/introduction.md`) no longer 404 with a
   `readfile 'introduction.md.md'` error; the slug is now stripped before
   building the file path
@@ -86,7 +112,7 @@ Official public launch.
 
 ### Fixed
 
-- **Operator build triggering on docs-only pushes** — `dorny/paths-filter` in
+- **Operator build triggering on docs-only pushes** – `dorny/paths-filter` in
   the pipeline workflow now compares against `HEAD~1` instead of the push
   event's `before` SHA, preventing multi-commit pushes from falsely detecting
   operator changes
@@ -99,23 +125,23 @@ Official public launch.
 
 ### Changed
 
-- **Changelog backfill** — added release dates (from git tags) to all 16
+- **Changelog backfill** – added release dates (from git tags) to all 16
   versions and added missing entries for 0.1.3, 0.1.4, 0.3.5, and 0.3.6
-- **Brand assets** — added logo variants (mark and text in dark-on-white,
+- **Brand assets** – added logo variants (mark and text in dark-on-white,
   green-on-navy, white-on-navy) and SVG source, replaced favicon, added OG image
 
 ### Removed
 
-- **Kubestronaut image** — removed unused `kubestronaut.png` from site static
+- **Kubestronaut image** – removed unused `kubestronaut.png` from site static
   assets
-- **Cloud vendor quick start guides** — deleted `quick-start-eks.md`,
+- **Cloud vendor quick start guides** – deleted `quick-start-eks.md`,
   `quick-start-aks.md`, and `quick-start-gke.md` which were full infrastructure
   setup procedures mislabeled as quick starts; the dedicated setup guides
   (`eks-setup.md`, `aks-setup.md`, `gke-setup.md`) already cover this content
 
 ### Fixed
 
-- **Broken AKS link in blog post** — the Kubernetes audit logging guide now
+- **Broken AKS link in blog post** – the Kubernetes audit logging guide now
   links to the AKS setup guide (`guides/aks-setup`) instead of the deleted quick
   start
 
@@ -127,15 +153,15 @@ Official public launch.
 
 ### Fixed
 
-- **Malformed ServiceAccount empty name** — `NormalizeSubject` now rejects
+- **Malformed ServiceAccount empty name** – `NormalizeSubject` now rejects
   usernames like `system:serviceaccount:ns:` where the SA name after the final
   colon is empty, which previously produced a `Subject` with `Name: ""` and
   invalid report names (`report-`)
-- **NonResourceURL rules fail CRD validation** — the aggregator now initialises
+- **NonResourceURL rules fail CRD validation** – the aggregator now initialises
   `APIGroups` and `Resources` to empty slices (`[]`) for NonResourceURL rules
   instead of leaving them nil, which serialised as `null` and failed the
   required-field validation (`status.observedRules[].apiGroups: Required value`)
-- **Nil slices in ComplianceRule output** — `scopedToComplianceRule` and
+- **Nil slices in ComplianceRule output** – `scopedToComplianceRule` and
   `observedToComplianceRule` now use `emptyIfNil` to guarantee `[]` instead of
   `null` for `apiGroups`, `resources`, and `verbs` in excess/uncovered rule
   lists
@@ -148,21 +174,21 @@ Official public launch.
 
 ### Fixed
 
-- **Empty-subject report names** — `NormalizeSubject` now rejects empty
+- **Empty-subject report names** – `NormalizeSubject` now rejects empty
   usernames, preventing invalid report names like `report-` that fail Kubernetes
   naming validation
-- **Unresolvable audit events** — `processEvent` now skips events with no
+- **Unresolvable audit events** – `processEvent` now skips events with no
   `objectRef` and no `requestURI`, which previously produced rules with empty
   `apiGroups`/`resources` that fail CRD validation
   (`status.observedRules[].apiGroups: Required value`)
-- **Underscore in report names** — `sanitizeName` now replaces underscores with
+- **Underscore in report names** – `sanitizeName` now replaces underscores with
   hyphens, and trims leading hyphens in addition to trailing ones, producing RFC
   1123-compliant resource names (e.g., `felix_notka_admin` →
   `felix-notka-admin`)
-- **EKS IAM policy missing log-stream resource** — CloudWatch Logs
+- **EKS IAM policy missing log-stream resource** – CloudWatch Logs
   `FilterLogEvents` requires a separate `log-stream:*` resource ARN; both EKS
   guides now include both resource patterns in the IAM policy
-- **Redundant `--version` in Helm install** — all cloud guides (EKS, AKS, GKE)
+- **Redundant `--version` in Helm install** – all cloud guides (EKS, AKS, GKE)
   no longer pass `--version` to `helm install`, since the chart version is
   independent of the image tag set in the values file
 
@@ -174,35 +200,35 @@ Official public launch.
 
 ### Added
 
-- **IRSA verification steps** — EKS guides now include ServiceAccount annotation
+- **IRSA verification steps** – EKS guides now include ServiceAccount annotation
   and pod environment variable checks before verifying event flow
-- **STS AccessDenied callout** — quick-start EKS includes a diagnostic note
+- **STS AccessDenied callout** – quick-start EKS includes a diagnostic note
   distinguishing IRSA trust errors from CloudWatch Logs permission errors
-- **Expanded EKS troubleshooting** — three new rows covering STS
+- **Expanded EKS troubleshooting** – three new rows covering STS
   AssumeRoleWithWebIdentity failures, eksctl/Helm role ARN mismatches, and IRSA
   webhook injection issues
 
 ### Changed
 
-- **File-based patterns for editable manifests** — guides that require
+- **File-based patterns for editable manifests** – guides that require
   user-specific values (IAM policies, trust policies, AudiciaSource YAMLs) now
   instruct users to create and edit files before applying, while static
   manifests use inline heredocs
-- **EKS IRSA setup split into two options** — the EKS Setup Guide now presents
+- **EKS IRSA setup split into two options** – the EKS Setup Guide now presents
   eksctl (recommended) and manual IAM role as mutually exclusive options with
   separate Helm values, preventing the double-ownership bug where both eksctl
   and Helm manage the ServiceAccount annotation
-- **Standardized log commands** — all guides consistently use
+- **Standardized log commands** – all guides consistently use
   `kubectl logs -f -n audicia-system deploy/audicia-operator`
 
 ### Fixed
 
-- **EKS IRSA double ownership** — quick-start EKS now uses
+- **EKS IRSA double ownership** – quick-start EKS now uses
   `serviceAccount.create: false` when eksctl manages the ServiceAccount, with a
   warning against mixing approaches
-- **Premature verification step** — removed ServiceAccount check from EKS setup
+- **Premature verification step** – removed ServiceAccount check from EKS setup
   that ran before the namespace existed
-- **Typo** — fixed `deploy/audciia-operator` → `deploy/audicia-operator` in EKS
+- **Typo** – fixed `deploy/audciia-operator` → `deploy/audicia-operator` in EKS
   Setup Guide
 
 ---
@@ -213,13 +239,13 @@ Official public launch.
 
 ### Changed
 
-- **Streamlined webhook and kube-proxy-free guides** — trimmed
+- **Streamlined webhook and kube-proxy-free guides** – trimmed
   `webhook-setup.md` from ~530 to ~440 lines and `kube-proxy-free.md` from ~300
   to ~210 lines by removing repeated warnings, edge-case notes, and tangential
   explanations
-- **Deleted redundant `mtls-setup.md` stub** — the redirect page from 0.3.3 is
+- **Deleted redundant `mtls-setup.md` stub** – the redirect page from 0.3.3 is
   no longer needed now that all cross-references point to `webhook-setup.md`
-- **Docs navigation restructured** — split into "Setup Guides" and "Guides"
+- **Docs navigation restructured** – split into "Setup Guides" and "Guides"
   sections
 - Fixed `audicia-audicia-operator` naming across docs and broken anchors from
   the restructure
@@ -232,13 +258,13 @@ Official public launch.
 
 ### Fixed
 
-- **Helm resource naming** — set `fullnameOverride: "audicia-operator"` so that
+- **Helm resource naming** – set `fullnameOverride: "audicia-operator"` so that
   all resources (Deployment, ServiceAccount, ClusterRole, etc.) are named
   `audicia-operator` regardless of the Helm release name. Previously, using
   `helm install audicia` produced `audicia-audicia-operator`, breaking the
   ServiceAccount name documented in the cloud setup guides for IRSA and Workload
   Identity
-- **CI operator build detection on merge to main** — the `detect-changes` job
+- **CI operator build detection on merge to main** – the `detect-changes` job
   now uses `fetch-depth: 0` so that `dorny/paths-filter` can reliably compare
   against the previous main HEAD on fast-forward merges. With the default
   shallow checkout, operator path changes were not detected and the operator
@@ -252,47 +278,47 @@ Official public launch.
 
 ### Added
 
-- **`excessRules` and `uncoveredRules` in ComplianceReport** — the CRD status
+- **`excessRules` and `uncoveredRules` in ComplianceReport** – the CRD status
   now includes the full rule lists for excess and uncovered permissions, making
   reports self-contained. Previously only counts were reported, requiring manual
   diffs to identify specific unused or ungranted rules
-- **"How mTLS Works" section** in the Webhook Setup Guide — clear conceptual
+- **"How mTLS Works" section** in the Webhook Setup Guide – clear conceptual
   explanation of the three-step mTLS handshake, moved from the standalone guide
-- **"Verify mTLS Is Working" section** in the Webhook Setup Guide — includes
+- **"Verify mTLS Is Working" section** in the Webhook Setup Guide – includes
   curl test for unauthorized client rejection
 
 ### Changed
 
-- **GCP Pub/Sub v1 → v2** — migrated `cloud.google.com/go/pubsub` to
+- **GCP Pub/Sub v1 → v2** – migrated `cloud.google.com/go/pubsub` to
   `cloud.google.com/go/pubsub/v2`. The v1 library is deprecated and will stop
   receiving patches in mid-2026. `Subscription` renamed to `Subscriber`, import
   path updated; all other APIs unchanged
-- **GitHub Actions major upgrades** — `actions/upload-artifact` v6 → v7,
+- **GitHub Actions major upgrades** – `actions/upload-artifact` v6 → v7,
   `actions/download-artifact` v7 → v8 in CI and nightly workflows
-- **Go module updates** — Kubernetes client libs `0.35.0` → `0.35.2`, AWS SDK
+- **Go module updates** – Kubernetes client libs `0.35.0` → `0.35.2`, AWS SDK
   `v1.36` → `v1.41`, Google Cloud/gRPC libraries, `golang.org/x/*` packages
-- **Site dependency updates** — Deno runtime `2.6.10` → `2.7.1`, KaTeX `0.16.32`
+- **Site dependency updates** – Deno runtime `2.6.10` → `2.7.1`, KaTeX `0.16.32`
   → `0.16.33`
-- **Getting-started guides use values files** — all installation guides now show
+- **Getting-started guides use values files** – all installation guides now show
   named `values-*.yaml` files (`values-file.yaml`, `values-webhook.yaml`,
   `values-webhook-mtls.yaml`, `values-dual.yaml`) instead of long `--set` chains
-- **File-based `kubectl apply`** — quick-start guides use
+- **File-based `kubectl apply`** – quick-start guides use
   `kubectl apply -f <file>.yaml` instead of heredoc (`<<EOF`) patterns
-- **Self-contained quick starts** — file and webhook quick-start guides now
+- **Self-contained quick starts** – file and webhook quick-start guides now
   include their own Helm install steps instead of deferring to the installation
   page
-- **mTLS documentation consolidated** — `webhook-setup.md` is now the single
+- **mTLS documentation consolidated** – `webhook-setup.md` is now the single
   source of truth for all webhook TLS and mTLS configuration; `mtls-setup.md`
   replaced with a redirect page preserving existing bookmarks
-- **Cross-references updated** — 7 links across 5 files now point to the correct
+- **Cross-references updated** – 7 links across 5 files now point to the correct
   `webhook-setup.md` anchors instead of `mtls-setup.md`
-- **Renovate config** — excluded own operator image
+- **Renovate config** – excluded own operator image
   (`felixnotka/audicia-operator`) from digest pinning since the tag is set by CI
   at build time
 
 ### Fixed
 
-- SonarQube quality gate failure on `zz_generated.deepcopy.go` — excluded
+- SonarQube quality gate failure on `zz_generated.deepcopy.go` – excluded
   generated deepcopy files (`**/zz_generated.*.go`) from duplication analysis
 
 ---
@@ -319,14 +345,14 @@ Official public launch.
 
 ### Added
 
-- **`hostNetwork` Helm value** — enables host network namespace for the operator
+- **`hostNetwork` Helm value** – enables host network namespace for the operator
   pod, bypassing CNI service routing issues on control plane nodes. Required for
   file-mode deployments on Cilium and other kube-proxy-free clusters where pods
   cannot reach the Kubernetes API server ClusterIP (`10.96.0.1:443`). See the
   updated [Kube-Proxy-Free Guide](guides/kube-proxy-free.md)
-- **`dnsPolicy` Helm value** — configurable DNS policy; automatically set to
+- **`dnsPolicy` Helm value** – configurable DNS policy; automatically set to
   `ClusterFirstWithHostNet` when `hostNetwork` is enabled
-- **Startup retry with exponential backoff** — the operator now retries startup
+- **Startup retry with exponential backoff** – the operator now retries startup
   up to 5 times (2s, 4s, 8s, 16s, 32s, capped at 60s) instead of crashing
   immediately on transient API server connectivity failures. Configurable via
   `STARTUP_MAX_RETRIES` environment variable
@@ -336,11 +362,11 @@ Official public launch.
 
 ### Changed
 
-- **Default audit log path** — standardized to
+- **Default audit log path** – standardized to
   `/var/log/kubernetes/audit/audit.log` across Helm defaults, docs, examples,
   and kind configs, matching the CNCF recommended path (previously
   `/var/log/kube-audit.log`)
-- **Leader election disabled by default** — single-replica deployments (the
+- **Leader election disabled by default** – single-replica deployments (the
   default) no longer require leader election, removing an unnecessary API
   dependency at startup. Enable it explicitly with
   `operator.leaderElection.enabled=true` when running multiple replicas
@@ -354,7 +380,7 @@ Official public launch.
   on control plane nodes could not reach the Kubernetes service ClusterIP
   through the CNI datapath, causing `dial tcp 10.96.0.1:443: i/o timeout` during
   RBAC cache informer initialization
-- `staticcheck SA1019` — replaced deprecated `result.Requeue` with
+- `staticcheck SA1019` – replaced deprecated `result.Requeue` with
   `result.RequeueAfter` in controller reconcile tests
 
 ---
@@ -365,20 +391,20 @@ Official public launch.
 
 ### Added
 
-- **SonarQube quality gate enforcement** — PRs that fail the SonarQube quality
+- **SonarQube quality gate enforcement** – PRs that fail the SonarQube quality
   gate can no longer be merged; the `sonarqube-quality-gate-action` step blocks
   the pipeline
-- **Nightly CI workflow** — Scheduled build (02:00 UTC daily) runs tests,
+- **Nightly CI workflow** – Scheduled build (02:00 UTC daily) runs tests,
   coverage, and SonarQube analysis independently of the main pipeline; also
   supports manual dispatch
-- **E2E tests in main pipeline** — End-to-end tests now run as part of the
+- **E2E tests in main pipeline** – End-to-end tests now run as part of the
   standard lint-and-test workflow on every PR, not just nightly
-- **Per-cloud-provider Docker images** — CI builds separate images with `azure`,
+- **Per-cloud-provider Docker images** – CI builds separate images with `azure`,
   `aws`, and `gcp` build tags alongside the default cloud-free image
-- **README badges** — Pipeline status, nightly status, and license badges
-- **Controller test coverage** — Unit tests for `flushCloudCheckpoint`,
+- **README badges** – Pipeline status, nightly status, and license badges
+- **Controller test coverage** – Unit tests for `flushCloudCheckpoint`,
   `eventLoop`, and additional uncovered controller paths
-- **EKS and GKE documentation** — Quick start guides, setup guides, and example
+- **EKS and GKE documentation** – Quick start guides, setup guides, and example
   manifests for AWS CloudWatch Logs and GCP Pub/Sub ingestion
 
 ### Fixed
@@ -390,7 +416,7 @@ Official public launch.
   stable React keys, and PascalCase component naming
 - 3 additional SonarQube issues from post-scan feedback: removed unnecessary
   non-null assertions, fixed interactive role on non-interactive element
-- Controller `staticcheck QF1008` — removed redundant embedded field selector
+- Controller `staticcheck QF1008` – removed redundant embedded field selector
 - E2E race condition and lint errors in controller tests
 - Duplicate `.footer` CSS selector merged into one block
 
@@ -408,18 +434,18 @@ Official public launch.
 
 ### Added
 
-- **AWS CloudWatch adapter** — Adapter for EKS audit logs via CloudWatch Logs
+- **AWS CloudWatch adapter** – Adapter for EKS audit logs via CloudWatch Logs
   with workload identity support
-- **GCP Pub/Sub adapter** — Adapter for GKE audit logs via Cloud Pub/Sub with
+- **GCP Pub/Sub adapter** – Adapter for GKE audit logs via Cloud Pub/Sub with
   Cloud Logging LogEntry parsing and raw K8s event auto-detection
-- **SEO foundation** — Meta tags, sitemap, RSS feed, 404 page, and internal link
+- **SEO foundation** – Meta tags, sitemap, RSS feed, 404 page, and internal link
   structure for the documentation site
-- **Blog content** — 20 SEO blog posts covering Kubernetes RBAC, audit logging,
+- **Blog content** – 20 SEO blog posts covering Kubernetes RBAC, audit logging,
   and security automation topics
 
 ### Fixed
 
-- GCP parse lint error — removed always-nil error return
+- GCP parse lint error – removed always-nil error return
 - GCP parse type error and missing cloud adapter dependencies
 
 ---
@@ -432,7 +458,7 @@ Minor version bump consolidating cloud ingestion features from 0.1.3–0.1.4.
 
 ### Changed
 
-- **Native cross-compilation for multi-arch Docker build** — replaced
+- **Native cross-compilation for multi-arch Docker build** – replaced
   `GOARCH=amd64` with `TARGETARCH` from Buildx for cleaner multi-platform builds
 
 ---
@@ -443,9 +469,9 @@ Minor version bump consolidating cloud ingestion features from 0.1.3–0.1.4.
 
 ### Added
 
-- **AKS Quick Start** — Streamlined getting-started guide for AKS cloud
+- **AKS Quick Start** – Streamlined getting-started guide for AKS cloud
   ingestion via Workload Identity
-- **Multi-arch Docker images** — CI now builds `linux/amd64` and `linux/arm64`
+- **Multi-arch Docker images** – CI now builds `linux/amd64` and `linux/arm64`
   images for ARM-based AKS node pools
 
 ---
@@ -456,37 +482,37 @@ Minor version bump consolidating cloud ingestion features from 0.1.3–0.1.4.
 
 ### Added
 
-- **Cloud audit log ingestion** — New `CloudAuditLog` source type for managed
+- **Cloud audit log ingestion** – New `CloudAuditLog` source type for managed
   Kubernetes platforms that export audit logs through cloud-native pipelines
-- **Azure Event Hub adapter** — Full adapter for AKS audit logs via Azure Event
+- **Azure Event Hub adapter** – Full adapter for AKS audit logs via Azure Event
   Hub with Diagnostic Settings envelope parsing, partition-based checkpointing,
   and workload identity support
-- **`spec.cloud` CRD fields** — `CloudConfig`, `AzureEventHubConfig`,
+- **`spec.cloud` CRD fields** – `CloudConfig`, `AzureEventHubConfig`,
   `AWSCloudWatchConfig` (placeholder), `GCPPubSubConfig` (placeholder) types
   added to AudiciaSource
-- **`status.cloudCheckpoint`** — Per-partition sequence number tracking for
+- **`status.cloudCheckpoint`** – Per-partition sequence number tracking for
   cloud source recovery
-- **Cluster identity validation** — Defense-in-depth filter for shared Event Hub
+- **Cluster identity validation** – Defense-in-depth filter for shared Event Hub
   scenarios, matching events against `clusterIdentity`
-- **`cloudAuditLog` Helm values** — Full configuration section for cloud
+- **`cloudAuditLog` Helm values** – Full configuration section for cloud
   provider and Azure-specific settings
-- **Azure Workload Identity pod label** — Helm chart auto-adds
+- **Azure Workload Identity pod label** – Helm chart auto-adds
   `azure.workload.identity/use: "true"` pod label for AzureEventHub provider
-- **5 cloud Prometheus metrics** — `cloud_messages_received_total`,
+- **5 cloud Prometheus metrics** – `cloud_messages_received_total`,
   `cloud_messages_acked_total`, `cloud_receive_errors_total`,
   `cloud_lag_seconds`, `cloud_envelope_parse_errors_total`
-- **Go build tags** — `azure` build tag for conditional Azure SDK compilation;
+- **Go build tags** – `azure` build tag for conditional Azure SDK compilation;
   default binary remains cloud-free
-- **`build-azure` Make target** — Build and Docker targets for the Azure-enabled
+- **`build-azure` Make target** – Build and Docker targets for the Azure-enabled
   binary
-- **Cloud Ingestion concept page** — Architecture overview of
+- **Cloud Ingestion concept page** – Architecture overview of
   MessageSource/EnvelopeParser abstractions and provider registry
-- **AKS Setup guide** — End-to-end walkthrough for Azure Event Hub configuration
+- **AKS Setup guide** – End-to-end walkthrough for Azure Event Hub configuration
   with Workload Identity
-- **Cloud AKS example** — AudiciaSource YAML example for AKS Event Hub ingestion
-- **Azure build tag in CI** — Lint, test, and Docker build pipelines include
+- **Cloud AKS example** – AudiciaSource YAML example for AKS Event Hub ingestion
+- **Azure build tag in CI** – Lint, test, and Docker build pipelines include
   `-tags azure` so the Azure adapter is compiled, tested, and shipped
-- **[RBAC Policy Generation](concepts/rbac-generation.md) concept page** —
+- **[RBAC Policy Generation](concepts/rbac-generation.md) concept page** –
   explains what gets generated, the observation-to-RBAC pipeline, safety
   guardrails, and how to use the output
 
@@ -506,7 +532,7 @@ Minor version bump consolidating cloud ingestion features from 0.1.3–0.1.4.
   role assignment, federated credential)
 - Helm install commands in AKS docs include `helm repo add` and Workload
   Identity ServiceAccount annotation
-- Removed connection string authentication — Azure Event Hub now uses Workload
+- Removed connection string authentication – Azure Event Hub now uses Workload
   Identity exclusively
 - Removed `credentialSecretName` from CRD, Helm values, and deployment template
 
@@ -523,9 +549,9 @@ Minor version bump consolidating cloud ingestion features from 0.1.3–0.1.4.
 
 ### Added
 
-- `webhook.hostPort` Helm value — exposes the webhook directly on the host,
+- `webhook.hostPort` Helm value – exposes the webhook directly on the host,
   bypassing ClusterIP routing issues with Cilium and other kube-proxy-free CNIs
-- `webhook.service.nodePort` Helm value — optional NodePort service type for the
+- `webhook.service.nodePort` Helm value – optional NodePort service type for the
   webhook
 
 ### Fixed

@@ -2,7 +2,7 @@ import { define } from "../utils.ts";
 
 export const handler = define.handlers({
   GET(ctx) {
-    ctx.state.title = "Privacy Policy — Audicia";
+    ctx.state.title = "Privacy Policy – Audicia";
     ctx.state.description = "Privacy policy for Audicia.";
     return { data: {} };
   },

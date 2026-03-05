@@ -24,7 +24,7 @@ export default function QuickStart() {
             <span className="prompt">$</span> kubectl apply -f audicia-source.yaml{"\n"}
             {"\n"}
             <span className="comment"># Check</span>{"\n"}
-            <span className="prompt">$</span> kubectl get apreport --all-namespaces
+            <span className="prompt">$</span> kubectl get areport --all-namespaces
           </pre>
         </div>
 

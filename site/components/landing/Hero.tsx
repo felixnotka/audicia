@@ -8,7 +8,7 @@ export default function Hero() {
           </h1>
           <p className="hero-subheadline">
             Audicia is a <strong>Kubernetes RBAC generator</strong>{" "}
-            — an Operator that watches your audit logs and generates
+            – an Operator that watches your audit logs and generates
             least-privilege RBAC policies automatically. Open source.
             Operator-native. Never auto-applies.
           </p>
@@ -43,7 +43,7 @@ export default function Hero() {
             </span>
             {"\n\n"}
             <span className="prompt">$</span>{" "}
-            kubectl get apreport -n my-team -o wide{"\n"}
+            kubectl get areport -n my-team -o wide{"\n"}
             <span className="output">
               NAME             SUBJECT   KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS{"\n"}
               report-backend   backend   ServiceAccount   <span className="severity-red">Red</span>          25      5m    2        6        0           true        1500
@@ -51,9 +51,9 @@ export default function Hero() {
             <span className="hero-terminal-collapsible">
             {"\n\n"}
             <span className="prompt">$</span>{" "}
-            kubectl get apreport report-backend -n my-team \{"\n"}
+            kubectl get apolicy report-backend -n my-team \{"\n"}
             {"  "}-o jsonpath='{"{"}
-            .status.suggestedPolicy.manifests[0]{"}"}'
+            .spec.manifests[0]{"}"}'
             {"\n"}
             <span className="keyword">apiVersion</span>: rbac.authorization.k8s.io/v1{"\n"}
             <span className="keyword">kind</span>: Role{"\n"}

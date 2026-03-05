@@ -42,8 +42,8 @@ spec:
 
 ## Customization
 
-- **`tlsSecretName`** — Must reference a `kubernetes.io/tls` Secret in the same
+- **`tlsSecretName`** – Must reference a `kubernetes.io/tls` Secret in the same
   namespace.
-- **mTLS** — Add `clientCASecretName` for production hardening. See
+- **mTLS** – Add `clientCASecretName` for production hardening. See
   [Hardened Example](audicia-source-hardened.md).
-- **Rate limiting** — Increase `rateLimitPerSecond` for high-traffic clusters.
+- **Rate limiting** – Increase `rateLimitPerSecond` for high-traffic clusters.

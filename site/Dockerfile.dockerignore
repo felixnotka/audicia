@@ -1,7 +1,7 @@
 # Operator source (not needed for site build)
 operator/
 
-# Deploy (Helm chart not needed in site image — charts are copied separately by CI)
+# Deploy (Helm chart not needed in site image – charts are copied separately by CI)
 deploy/
 
 # Build artifacts

@@ -17,14 +17,25 @@ func TestSchemeRegistration_AudiciaSource(t *testing.T) {
 	}
 }
 
-func TestSchemeRegistration_AudiciaPolicyReport(t *testing.T) {
-	gvk := audiciav1alpha1.SchemeGroupVersion.WithKind("AudiciaPolicyReport")
+func TestSchemeRegistration_AudiciaReport(t *testing.T) {
+	gvk := audiciav1alpha1.SchemeGroupVersion.WithKind("AudiciaReport")
 	obj, err := scheme.New(gvk)
 	if err != nil {
-		t.Fatalf("AudiciaPolicyReport not registered in scheme: %v", err)
+		t.Fatalf("AudiciaReport not registered in scheme: %v", err)
 	}
-	if _, ok := obj.(*audiciav1alpha1.AudiciaPolicyReport); !ok {
-		t.Errorf("scheme returned %T, expected *AudiciaPolicyReport", obj)
+	if _, ok := obj.(*audiciav1alpha1.AudiciaReport); !ok {
+		t.Errorf("scheme returned %T, expected *AudiciaReport", obj)
+	}
+}
+
+func TestSchemeRegistration_AudiciaPolicy(t *testing.T) {
+	gvk := audiciav1alpha1.SchemeGroupVersion.WithKind("AudiciaPolicy")
+	obj, err := scheme.New(gvk)
+	if err != nil {
+		t.Fatalf("AudiciaPolicy not registered in scheme: %v", err)
+	}
+	if _, ok := obj.(*audiciav1alpha1.AudiciaPolicy); !ok {
+		t.Errorf("scheme returned %T, expected *AudiciaPolicy", obj)
 	}
 }
 

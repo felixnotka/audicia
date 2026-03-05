@@ -3,8 +3,8 @@
 ## What is Audicia?
 
 Audicia is a Kubernetes Operator that generates least-privilege RBAC policies
-from audit logs. It watches what your workloads actually do — which API calls
-they make, which resources they access — and produces the minimal Roles and
+from audit logs. It watches what your workloads actually do – which API calls
+they make, which resources they access – and produces the minimal Roles and
 RoleBindings to satisfy exactly that access.
 
 ```
@@ -40,17 +40,25 @@ events. It supports three ingestion modes:
   Event Hub, AWS CloudWatch, GCP Pub/Sub) and parses audit events from
   provider-specific envelopes.
 
-### AudiciaPolicyReport
+### AudiciaReport
 
-An `AudiciaPolicyReport` is the output — one per subject (ServiceAccount, User,
-or Group). It contains:
+An `AudiciaReport` is a per-subject output (ServiceAccount, User, or Group) that
+captures what actually happened:
 
-- **Observed rules**: What API calls the subject actually made, with timestamps
-  and counts.
-- **Suggested policy**: Ready-to-apply YAML manifests (Role, ClusterRole,
-  RoleBinding, ClusterRoleBinding).
+- **Observed rules**: What API calls the subject made, with timestamps and
+  counts.
 - **Compliance score**: How well the subject's current RBAC matches its actual
   usage (Green/Yellow/Red).
+
+### AudiciaPolicy
+
+An `AudiciaPolicy` is the companion to an `AudiciaReport`. It contains the
+suggested RBAC manifests derived from observed usage:
+
+- **Manifests**: Ready-to-apply YAML (Role, ClusterRole, RoleBinding,
+  ClusterRoleBinding) in `spec.manifests`.
+- **Approval workflow**: Policies can be reviewed, approved, and applied
+  independently of the report lifecycle.
 
 ### Compliance Scoring
 
@@ -63,7 +71,7 @@ roles) and compares them against observed usage:
 | >= 50% | Yellow   | Moderate overprivilege           |
 | < 50%  | Red      | Significant overprivilege        |
 
-It also flags sensitive excess — unused grants on high-risk resources like
+It also flags sensitive excess – unused grants on high-risk resources like
 secrets, nodes, and webhookconfigurations.
 
 ## Supported Platforms
@@ -84,8 +92,8 @@ for [AKS](../guides/aks-setup.md), [EKS](../guides/eks-setup.md), and
 
 ## What's Next
 
-- [Installation](installation.md) — Prerequisites and Helm install
-- [Quick Start: File Ingestion](quick-start-file.md) — Tail an audit log and
+- [Installation](installation.md) – Prerequisites and Helm install
+- [Quick Start: File Ingestion](quick-start-file.md) – Tail an audit log and
   generate your first report
-- [Quick Start: Webhook Ingestion](quick-start-webhook.md) — Real-time audit
+- [Quick Start: Webhook Ingestion](quick-start-webhook.md) – Real-time audit
   events via HTTPS webhook

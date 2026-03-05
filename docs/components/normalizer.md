@@ -35,7 +35,7 @@ name, creating a properly scoped identity that drives per-namespace Role
 generation downstream.
 
 **Groups:** Group metadata is captured from the audit event but not used for
-binding generation by default. Group-to-binding attribution is ambiguous — a
+binding generation by default. Group-to-binding attribution is ambiguous – a
 single request may carry multiple groups, and it's unclear which group should
 receive the binding.
 
@@ -62,14 +62,14 @@ their stable equivalents:
 - `extensions` → `apps` (covers Deployments, ReplicaSets, DaemonSets using the
   legacy `extensions/v1beta1` group)
 
-All other API groups — including `networking.k8s.io`, `policy`,
-`rbac.authorization.k8s.io`, etc. — pass through verbatim. If your cluster still
+All other API groups – including `networking.k8s.io`, `policy`,
+`rbac.authorization.k8s.io`, etc. – pass through verbatim. If your cluster still
 emits events with other deprecated API groups, the generated policies will
 reference those groups as-is.
 
 ### Edge Cases
 
-- **CRDs with unusual group names** are passed through verbatim — no migration
+- **CRDs with unusual group names** are passed through verbatim – no migration
   is applied.
 - **Aggregated API servers** are also passed through verbatim.
 - **Non-standard verbs** are preserved by the normalizer (filtering happens
@@ -88,7 +88,7 @@ reference those groups as-is.
 
 ## Related
 
-- [Architecture](../concepts/architecture.md) — System overview and data flow
-- [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
-- [Strategy Engine](strategy-engine.md) — How normalized rules become RBAC
+- [Architecture](../concepts/architecture.md) – System overview and data flow
+- [Pipeline](../concepts/pipeline.md) – Stage-by-stage processing overview
+- [Strategy Engine](strategy-engine.md) – How normalized rules become RBAC
   manifests

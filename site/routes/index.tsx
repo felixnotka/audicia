@@ -21,7 +21,7 @@ const faqStructuredData = {
       acceptedAnswer: {
         "@type": "Answer",
         text:
-          "Yes. Audicia supports all three major managed Kubernetes platforms: AKS (via Azure Event Hub), EKS (via CloudWatch Logs), and GKE (via Cloud Pub/Sub). Each adapter uses workload identity for authentication — no static credentials needed. See the setup guides for AKS, EKS, and GKE.",
+          "Yes. Audicia supports all three major managed Kubernetes platforms: AKS (via Azure Event Hub), EKS (via CloudWatch Logs), and GKE (via Cloud Pub/Sub). Each adapter uses workload identity for authentication – no static credentials needed. See the setup guides for AKS, EKS, and GKE.",
       },
     },
     {
@@ -65,7 +65,7 @@ const faqStructuredData = {
 
 export default define.page(function Home({ state }) {
   state.title =
-    "Audicia — Kubernetes RBAC Generator | Least-Privilege Policies from Audit Logs";
+    "Audicia – Kubernetes RBAC Generator | Least-Privilege Policies from Audit Logs";
   state.description =
     "Open-source Kubernetes Operator that generates least-privilege RBAC policies from audit logs. Compliance scoring, CRD-native output, never auto-applies. Apache 2.0.";
 
@@ -74,7 +74,7 @@ export default define.page(function Home({ state }) {
       <Head>
         <meta
           property="og:title"
-          content="Audicia — Kubernetes RBAC Generator"
+          content="Audicia – Kubernetes RBAC Generator"
         />
         <meta
           property="og:description"

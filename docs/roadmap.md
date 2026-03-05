@@ -15,7 +15,7 @@ Everything below is implemented, tested, and running in production.
 
 | Feature                        | Description                                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| **CRD Definitions**            | `AudiciaSource` and `AudiciaPolicyReport` v1alpha1 with full spec/status separation                  |
+| **CRD Definitions**            | `AudiciaSource`, `AudiciaReport`, and `AudiciaPolicy` v1alpha1 with full spec/status separation      |
 | **File Ingestion**             | Tail K8s audit log files with checkpoint/resume, inode-based rotation detection                      |
 | **Webhook Ingestion**          | HTTPS receiver with TLS, mTLS, rate limiting, deduplication, backpressure                            |
 | **Subject Normalizer**         | Parse ServiceAccount, User, and Group identities from audit events                                   |
@@ -23,7 +23,7 @@ Everything below is implemented, tested, and running in production.
 | **Noise Filtering**            | Configurable allow/deny chains for users and namespaces (first-match-wins)                           |
 | **Rule Aggregation**           | Deduplication with firstSeen/lastSeen/count tracking, deterministic output                           |
 | **Policy Strategy Engine**     | scopeMode, verbMerge, wildcards, resourceNames knobs                                                 |
-| **Rendered Output**            | Generate Role/ClusterRole/RoleBinding/ClusterRoleBinding YAML in AudiciaPolicyReport                 |
+| **Rendered Output**            | Generate Role/ClusterRole/RoleBinding/ClusterRoleBinding YAML in AudiciaPolicy                       |
 | **RBAC Compliance Scoring**    | Resolve effective permissions, diff against observed usage, Green/Yellow/Red scoring                 |
 | **Sensitive Excess Detection** | Flag unused grants on secrets, nodes, webhooks, CRDs, tokenreviews                                   |
 | **Helm Chart**                 | Single-command install with file/webhook modes, ServiceMonitor, full RBAC                            |
@@ -49,13 +49,13 @@ Everything below is implemented, tested, and running in production.
 
 ## Next
 
-| Feature                 | Description                                                                                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Dashboard UI**        | Web interface for browsing reports, compliance posture, and policy suggestions                                                                    |
-| **GitOps Integration**  | AudiciaPolicyReport triggers a PR to your policy repo with suggested changes                                                                      |
-| **Historical Diffing**  | Structured diffs on observedRules between report versions                                                                                         |
-| **Kubernetes Events**   | Emit Kubernetes Events on AudiciaSource and AudiciaPolicyReport for key state transitions (IngestionStarted, ReportUpdated, IngestionError, etc.) |
-| **Extended Conditions** | Add Degraded, Error, Processing, and Stale conditions to AudiciaSource and AudiciaPolicyReport CRDs                                               |
+| Feature                 | Description                                                                                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Dashboard UI**        | Web interface for browsing reports, compliance posture, and policy suggestions                                                                              |
+| **GitOps Integration**  | AudiciaPolicy triggers a PR to your policy repo with suggested changes                                                                                      |
+| **Historical Diffing**  | Structured diffs on observedRules between report versions                                                                                                   |
+| **Kubernetes Events**   | Emit Kubernetes Events on AudiciaSource, AudiciaReport, and AudiciaPolicy for key state transitions (IngestionStarted, ReportUpdated, IngestionError, etc.) |
+| **Extended Conditions** | Add Degraded, Error, Processing, and Stale conditions to AudiciaSource, AudiciaReport, and AudiciaPolicy CRDs                                               |
 
 ---
 
@@ -63,9 +63,9 @@ Everything below is implemented, tested, and running in production.
 
 Things that might make sense eventually, but only after the core is rock-solid:
 
-- **Multi-cluster aggregation** — Unified view across multiple clusters
-- **Compliance report exports** — PDF/CSV for SOC 2, ISO 27001, PCI DSS audits
-- **Anomaly alerting** — Detect permission spikes via Prometheus/Alertmanager
+- **Multi-cluster aggregation** – Unified view across multiple clusters
+- **Compliance report exports** – PDF/CSV for SOC 2, ISO 27001, PCI DSS audits
+- **Anomaly alerting** – Detect permission spikes via Prometheus/Alertmanager
 
 ---
 

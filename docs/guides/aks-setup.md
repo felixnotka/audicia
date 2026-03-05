@@ -41,7 +41,7 @@ az identity create \
   --location <LOCATION>
 ```
 
-Note the `clientId` from the output — this is the `<MANAGED_IDENTITY_CLIENT_ID>`
+Note the `clientId` from the output – this is the `<MANAGED_IDENTITY_CLIENT_ID>`
 used below.
 
 **2. Grant it the Event Hubs Data Receiver role:**
@@ -144,7 +144,7 @@ curl localhost:8080/metrics | grep audicia_cloud
 ```
 
 You should see `audicia_cloud_messages_received_total` incrementing and
-`AudiciaPolicyReport` resources being created.
+`AudiciaReport` resources being created.
 
 ## Optional: Blob Storage Checkpoints
 
@@ -173,9 +173,9 @@ multiple replicas and persist offsets independently of AudiciaSource status.
 
 ## Related
 
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) – Architecture and
   design
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full `spec.cloud`
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – Full `spec.cloud`
   field reference
-- [Helm Values](../configuration/helm-values.md) — `cloudAuditLog` configuration
-- [Metrics Reference](../reference/metrics.md) — Cloud metrics
+- [Helm Values](../configuration/helm-values.md) – `cloudAuditLog` configuration
+- [Metrics Reference](../reference/metrics.md) – Cloud metrics

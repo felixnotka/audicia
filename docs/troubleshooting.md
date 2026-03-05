@@ -4,7 +4,7 @@ Common issues and their solutions, organized by symptom.
 
 ---
 
-## No AudiciaPolicyReports appear
+## No AudiciaReports appear
 
 **Possible causes:**
 
@@ -47,24 +47,24 @@ The webhook receiver is running but the kube-apiserver is not sending events.
    ```bash
    cat /var/log/pods/kube-system_kube-apiserver-*/kube-apiserver/*.log | grep -i webhook | tail -10
    ```
-   - `no such host` — DNS resolution failure. See
+   - `no such host` – DNS resolution failure. See
      [DNS resolution failure](#dns-resolution-failure) below.
-   - `tls: bad certificate` — TLS cert SAN doesn't match the server address.
+   - `tls: bad certificate` – TLS cert SAN doesn't match the server address.
      Regenerate the cert with the correct ClusterIP as SAN.
-   - `connection refused` — Audicia isn't running or the Service has no
+   - `connection refused` – Audicia isn't running or the Service has no
      endpoints.
-   - Connection timeout / no errors — ensure your host firewall allows
-     traffic from the pod CIDR. See
+   - Connection timeout / no errors – ensure your host firewall allows traffic
+     from the pod CIDR. See
      [Operator cannot reach API server](#operator-cannot-reach-api-server-io-timeout).
-   - No webhook errors at all — The apiserver may not have the
+   - No webhook errors at all – The apiserver may not have the
      `--audit-webhook-config-file` flag.
 
 2. **Verify the webhook kubeconfig uses an IP address, not a DNS name:**
    ```bash
    cat /etc/kubernetes/audit-webhook-kubeconfig.yaml
    ```
-   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443`),
-   NOT a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and
+   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443`), NOT
+   a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and
    cannot resolve cluster DNS.
 
 3. **Check that the audit policy allows the events you expect:**
@@ -134,7 +134,7 @@ because the apiserver runs with `hostNetwork: true`.
 # Get the ClusterIP
 kubectl get svc -n audicia-system
 
-# Update the kubeconfig — replace the DNS name with the ClusterIP
+# Update the kubeconfig – replace the DNS name with the ClusterIP
 vi /etc/kubernetes/audit-webhook-kubeconfig.yaml
 ```
 
@@ -167,7 +167,7 @@ events when the connection times out in batch mode).
 kubectl get networkpolicy -n audicia-system -o yaml
 ```
 
-Check the `ingress.from.ipBlock.cidr` — it must include the IP your
+Check the `ingress.from.ipBlock.cidr` – it must include the IP your
 kube-apiserver uses to reach the pod network:
 
 ```bash
@@ -267,7 +267,7 @@ This should show your cluster's CA (same issuer as
 ## mTLS: `mTLS enabled` not in operator logs
 
 The `AudiciaSource` CR doesn't have `clientCASecretName` set. The Helm value
-only mounts the volume — the CR tells the controller to enable mTLS.
+only mounts the volume – the CR tells the controller to enable mTLS.
 
 **Fix:**
 
@@ -284,11 +284,11 @@ The operator can't read the audit log file.
 
 **Common causes:**
 
-- **Wrong path** — Verify `spec.location.path` matches `--audit-log-path` on the
+- **Wrong path** – Verify `spec.location.path` matches `--audit-log-path` on the
   apiserver.
-- **Permission denied** — The operator pod needs read access. File mode
+- **Permission denied** – The operator pod needs read access. File mode
   typically requires `runAsUser: 0`.
-- **Pod not on control plane** — File mode needs `nodeSelector` and
+- **Pod not on control plane** – File mode needs `nodeSelector` and
   `tolerations` for control plane scheduling.
 
 Check pod logs:

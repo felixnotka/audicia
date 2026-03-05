@@ -2,7 +2,7 @@
 title: "Audicia Strategy Knobs: Choosing the Right RBAC Policy Shape"
 seo_title: "Audicia Strategy Knobs: Choosing the Right RBAC Policy Shape"
 published_at: 2026-04-28T08:00:00.000Z
-snippet: "How to configure Audicia's strategy knobs — scopeMode, verbMerge, wildcards — to control the shape and scope of generated RBAC policies."
+snippet: "How to configure Audicia's strategy knobs – scopeMode, verbMerge, wildcards – to control the shape and scope of generated RBAC policies."
 description: "Configure Audicia's strategy knobs to control generated RBAC policy shape: scopeMode for namespace vs cluster, verbMerge for rule consolidation, and wildcards."
 ---
 
@@ -94,7 +94,7 @@ rules:
 ```
 
 **Trade-off:** Simpler output, but the ClusterRoleBinding grants access to every
-namespace — including ones the workload has never touched.
+namespace – including ones the workload has never touched.
 
 ## Verb Merge
 
@@ -149,7 +149,7 @@ Keeps one rule per observed verb. No merging.
 and the corresponding RBAC rule. Useful for detailed auditing or when you want
 to see exactly which verb was observed independently.
 
-**Trade-off:** More verbose output — a service account that reads pods generates
+**Trade-off:** More verbose output – a service account that reads pods generates
 three rules instead of one.
 
 ## Wildcards
@@ -192,20 +192,20 @@ and you want compact output for workloads with full access to specific
 resources.
 
 **Safety guardrail:** Even in `Safe` mode, Audicia never generates `*` for
-resources or API groups — only for verbs on a specific resource where all verbs
+resources or API groups – only for verbs on a specific resource where all verbs
 were observed.
 
 ## Safety Guardrails
 
 Regardless of configuration, Audicia enforces hardcoded safety limits:
 
-- **Never generates `cluster-admin` equivalent bindings** — no `*` on resources
+- **Never generates `cluster-admin` equivalent bindings** – no `*` on resources
   or API groups
-- **Standard verb allowlist only** — custom or unexpected verbs from audit
+- **Standard verb allowlist only** – custom or unexpected verbs from audit
   events are silently dropped
-- **`wildcards: Safe` requires evidence** — all 8 standard verbs must be
+- **`wildcards: Safe` requires evidence** – all 8 standard verbs must be
   observed before emitting `*`
-- **Name sanitization** — generated resource names are capped at 50 characters,
+- **Name sanitization** – generated resource names are capped at 50 characters,
   lowercased, and special characters are replaced
 
 ## Choosing the Right Configuration
@@ -224,8 +224,8 @@ the right choice.
 ## Further Reading
 
 - **[Kubernetes RBAC for Multi-Tenant Clusters](/blog/kubernetes-rbac-multi-tenant)**
-  — per-namespace policy generation with NamespaceStrict
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+  – per-namespace policy generation with NamespaceStrict
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full walkthrough using the default knobs
-- **[Strategy Engine Reference](/docs/components/strategy-engine)** — technical
+- **[Strategy Engine Reference](/docs/components/strategy-engine)** – technical
   documentation for the strategy engine

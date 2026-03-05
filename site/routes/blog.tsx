@@ -7,7 +7,7 @@ export const handler = define.handlers({
     const allPosts = await getPosts();
     const currentDate = new Date();
     const posts = allPosts.filter((post) => post.published_at <= currentDate);
-    ctx.state.title = "Blog — Audicia";
+    ctx.state.title = "Blog – Audicia";
     ctx.state.description =
       "Technical articles about Kubernetes RBAC, audit logs, and security automation.";
     return { data: { posts } };

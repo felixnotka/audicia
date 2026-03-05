@@ -32,9 +32,9 @@ current-context: audicia
 
 ## Notes
 
-- **Client certificate** — On kubeadm clusters, the apiserver's client cert is
+- **Client certificate** – On kubeadm clusters, the apiserver's client cert is
   at `/etc/kubernetes/pki/apiserver-kubelet-client.crt`. This cert is signed by
-  the cluster CA — the same CA referenced in the `kube-apiserver-client-ca`
+  the cluster CA – the same CA referenced in the `kube-apiserver-client-ca`
   Secret.
 - Both cert files are already inside the apiserver's `/etc/kubernetes/pki`
   volume mount, so no extra volumes are needed.

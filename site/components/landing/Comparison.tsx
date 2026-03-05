@@ -49,12 +49,12 @@ export default function Comparison() {
             Only Kubernetes Operator for continuous RBAC generation
           </li>
           <li>
-            Stateful processing with checkpoint/resume — not re-read-everything
+            Stateful processing with checkpoint/resume – not re-read-everything
           </li>
           <li>
-            CRD output for GitOps integration — not raw YAML dumps
+            CRD output for GitOps integration – not raw YAML dumps
           </li>
-          <li>Compliance scoring built-in — not a separate tool</li>
+          <li>Compliance scoring built-in – not a separate tool</li>
         </ul>
       </div>
     </section>

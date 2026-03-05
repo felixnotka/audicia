@@ -9,8 +9,8 @@ describes the trust boundaries, threat model, and security design principles.
 Audicia operates within three trust zones:
 
 **Trusted zone:** The kube-apiserver writes audit events to a log file or PVC.
-Audicia reads these events and produces AudiciaPolicyReport CRDs. The audit log,
-the operator, and the output reports are all within the cluster's control plane
+Audicia reads these events and produces AudiciaReport CRDs. The audit log, the
+operator, and the output reports are all within the cluster's control plane
 trust boundary.
 
 **Semi-trusted zone:** In webhook mode, the kube-apiserver sends audit events
@@ -19,7 +19,7 @@ restricted (NetworkPolicy) to prevent spoofing.
 
 **Cloud zone:** In cloud mode, audit events flow through a cloud-managed
 pipeline (e.g., Azure Event Hub). The trust boundary extends to the cloud IAM
-layer — access to the message bus is controlled by cloud credentials or workload
+layer – access to the message bus is controlled by cloud credentials or workload
 identity. Audicia validates cluster identity to prevent cross-cluster event
 leakage.
 
@@ -32,7 +32,7 @@ trick Audicia into generating overly permissive policies.
 
 **Trust assumption:** The audit log is written exclusively by the
 kube-apiserver. If an attacker has write access, they already have node-level
-compromise — at which point RBAC is moot.
+compromise – at which point RBAC is moot.
 
 **Mitigations:** Read-only mount from Audicia's perspective. Host-level file
 integrity monitoring. Schema validation drops malformed entries.
@@ -72,7 +72,7 @@ policies that grant more access than intended.
 
 ### Report Data Leakage
 
-**Attack:** An unauthorized user reads `AudiciaPolicyReport` resources, gaining
+**Attack:** An unauthorized user reads `AudiciaReport` resources, gaining
 visibility into access patterns.
 
 **Mitigations:** RBAC should restrict report reads to cluster administrators. In
@@ -108,14 +108,14 @@ cloud-level compromise.
 
 ### Minimal Operator Permissions
 
-| Permission                     | Scope      | Reason                                       |
-| ------------------------------ | ---------- | -------------------------------------------- |
-| get/list/watch `AudiciaSource` | Namespaced | Read input configuration                     |
-| CRUD `AudiciaPolicyReport`     | Namespaced | Write output reports                         |
-| update `AudiciaSource/status`  | Namespaced | Persist checkpoint state                     |
-| get/list/watch RBAC objects    | Cluster    | Resolve effective permissions for compliance |
-| create/patch `events`          | Namespaced | Emit Kubernetes events                       |
-| CRUD `leases`                  | Namespaced | Leader election                              |
+| Permission                            | Scope      | Reason                                       |
+| ------------------------------------- | ---------- | -------------------------------------------- |
+| get/list/watch `AudiciaSource`        | Namespaced | Read input configuration                     |
+| CRUD `AudiciaReport`, `AudiciaPolicy` | Namespaced | Write output reports                         |
+| update `AudiciaSource/status`         | Namespaced | Persist checkpoint state                     |
+| get/list/watch RBAC objects           | Cluster    | Resolve effective permissions for compliance |
+| create/patch `events`                 | Namespaced | Emit Kubernetes events                       |
+| CRUD `leases`                         | Namespaced | Leader election                              |
 
 The operator does **not** request: secrets access, impersonate permissions,
 write access to Roles/RoleBindings, or cluster-admin.
@@ -123,12 +123,12 @@ write access to Roles/RoleBindings, or cluster-admin.
 ### No Auto-Apply
 
 Audicia never applies generated policies automatically. This is a deliberate
-design choice — automated privilege escalation is a security anti-pattern.
+design choice – automated privilege escalation is a security anti-pattern.
 
 ### Report Sensitivity
 
-`AudiciaPolicyReport` resources contain sensitive access pattern data. Restrict
-reads to cluster administrators:
+`AudiciaReport` and `AudiciaPolicy` resources contain sensitive access pattern
+data. Restrict reads to cluster administrators:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -137,7 +137,7 @@ metadata:
   name: audicia-report-reader
 rules:
   - apiGroups: ["audicia.io"]
-    resources: ["audiciapolicyreports"]
+    resources: ["audiciareports", "audiciapolicies"]
     verbs: ["get", "list", "watch"]
 ```
 

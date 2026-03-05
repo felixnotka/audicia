@@ -35,12 +35,21 @@ var (
 		},
 	)
 
-	// ReportsUpdatedTotal is the total number of AudiciaPolicyReport updates.
+	// ReportsUpdatedTotal is the total number of AudiciaReport updates.
 	ReportsUpdatedTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: "audicia",
 			Name:      "reports_updated_total",
-			Help:      "Number of AudiciaPolicyReport status updates.",
+			Help:      "Number of AudiciaReport status updates.",
+		},
+	)
+
+	// PoliciesUpdatedTotal is the total number of AudiciaPolicy updates.
+	PoliciesUpdatedTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "audicia",
+			Name:      "policies_updated_total",
+			Help:      "Number of AudiciaPolicy status updates.",
 		},
 	)
 
@@ -141,6 +150,7 @@ func init() {
 		EventsFilteredTotal,
 		RulesGeneratedTotal,
 		ReportsUpdatedTotal,
+		PoliciesUpdatedTotal,
 		PipelineLatencySeconds,
 		CheckpointLagSeconds,
 		ReportRulesCount,

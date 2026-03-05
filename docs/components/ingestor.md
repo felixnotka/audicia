@@ -84,7 +84,7 @@ spec:
 ```
 
 **Helm requirement:** `webhook.enabled=true`, `webhook.tlsSecretName=<secret>`.
-Does NOT need control plane scheduling — runs on any node.
+Does NOT need control plane scheduling – runs on any node.
 
 ### Cloud-Based Ingestion (`CloudAuditLog`)
 
@@ -174,25 +174,25 @@ scheduling.
 | `Start`           | Connects to the cloud source, launches the receive loop goroutine, returns the event channel.                 |
 | `receiveLoop`     | Main processing loop: receive batch → parse envelopes → validate identity → emit events → acknowledge.        |
 | `updatePosition`  | Updates per-partition sequence numbers and last timestamp after each batch.                                   |
-| `Checkpoint`      | Returns `ingestor.Position` with `LastTimestamp` (file fields zero — not applicable for cloud sources).       |
+| `Checkpoint`      | Returns `ingestor.Position` with `LastTimestamp` (file fields zero – not applicable for cloud sources).       |
 | `CloudCheckpoint` | Returns full `CloudPosition` including per-partition offsets (used by the controller for status persistence). |
 
 ---
 
 ## Related
 
-- [Architecture](../concepts/architecture.md) — System overview and data flow
-- [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
-- [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration
+- [Architecture](../concepts/architecture.md) – System overview and data flow
+- [Pipeline](../concepts/pipeline.md) – Stage-by-stage processing overview
+- [Webhook Setup Guide](../guides/webhook-setup.md) – Full webhook configuration
   walkthrough
-- [mTLS Setup](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls) —
+- [mTLS Setup](../guides/webhook-setup.md#upgrading-from-basic-tls-to-mtls) –
   Client certificate verification
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full field reference
-- [Cloud Ingestion](../concepts/cloud-ingestion.md) — Cloud ingestion
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – Full field reference
+- [Cloud Ingestion](../concepts/cloud-ingestion.md) – Cloud ingestion
   architecture and design
-- [AKS Setup Guide](../guides/aks-setup.md) — Azure Event Hub configuration
+- [AKS Setup Guide](../guides/aks-setup.md) – Azure Event Hub configuration
   walkthrough
-- [EKS Setup Guide](../guides/eks-setup.md) — AWS CloudWatch configuration
+- [EKS Setup Guide](../guides/eks-setup.md) – AWS CloudWatch configuration
   walkthrough
-- [GKE Setup Guide](../guides/gke-setup.md) — GCP Pub/Sub configuration
+- [GKE Setup Guide](../guides/gke-setup.md) – GCP Pub/Sub configuration
   walkthrough

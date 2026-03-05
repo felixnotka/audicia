@@ -50,10 +50,10 @@ spec:
 
 ## Key Differences from Basic Webhook
 
-- **`clientCASecretName`** — Enables mTLS. Only the kube-apiserver (presenting a
+- **`clientCASecretName`** – Enables mTLS. Only the kube-apiserver (presenting a
   valid client certificate) can send events.
-- **`checkpoint`** — Persists processing state every 30 seconds for resume after
+- **`checkpoint`** – Persists processing state every 30 seconds for resume after
   restart.
-- **`limits`** — Caps report size at 200 rules and drops rules not seen in 30
+- **`limits`** – Caps report size at 200 rules and drops rules not seen in 30
   days.
-- **`NamespaceStrict`** — Generates per-namespace Roles instead of ClusterRoles.
+- **`NamespaceStrict`** – Generates per-namespace Roles instead of ClusterRoles.

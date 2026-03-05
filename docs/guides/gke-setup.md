@@ -204,7 +204,7 @@ curl localhost:8080/metrics | grep audicia_cloud
 ```
 
 You should see `audicia_cloud_messages_received_total` incrementing and
-`AudiciaPolicyReport` resources being created.
+`AudiciaReport` resources being created.
 
 ## Production Hardening
 
@@ -278,9 +278,9 @@ manifest that limits egress to the Kubernetes API server and Pub/Sub endpoints.
 
 ## Related
 
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) – Architecture and
   design
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full `spec.cloud`
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – Full `spec.cloud`
   field reference
-- [Helm Values](../configuration/helm-values.md) — `cloudAuditLog` configuration
-- [Metrics Reference](../reference/metrics.md) — Cloud metrics
+- [Helm Values](../configuration/helm-values.md) – `cloudAuditLog` configuration
+- [Metrics Reference](../reference/metrics.md) – Cloud metrics

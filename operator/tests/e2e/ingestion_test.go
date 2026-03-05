@@ -12,11 +12,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	audiciav1alpha1 "github.com/felixnotka/audicia/operator/pkg/apis/audicia.io/v1alpha1"
 )
 
 // TestFileIngestion verifies the full happy path: create an SA with known RBAC,
 // perform API calls as that SA, and assert the operator produces a correct
-// AudiciaPolicyReport with observed rules and suggested policy.
+// AudiciaReport with observed rules and a corresponding AudiciaPolicy.
 func TestFileIngestion(t *testing.T) {
 	ctx := context.Background()
 	suffix := uniqueSuffix()
@@ -84,34 +86,32 @@ func TestFileIngestion(t *testing.T) {
 	assertRuleExists(t, report.Status.ObservedRules, "", "pods", "get")
 	assertRuleExists(t, report.Status.ObservedRules, "", "configmaps", "create")
 
-	// Assert suggested policy has manifests.
-	if report.Status.SuggestedPolicy == nil || len(report.Status.SuggestedPolicy.Manifests) == 0 {
-		t.Error("expected suggestedPolicy with manifests, got nil or empty")
-	}
-
 	// Assert events were processed.
 	if report.Status.EventsProcessed < 3 {
 		t.Errorf("expected EventsProcessed >= 3, got %d", report.Status.EventsProcessed)
 	}
 
-	// Check AudiciaPolicyReport has Ready=True/PolicyGenerated condition.
+	// Check AudiciaReport has Ready=True/ReportGenerated condition.
 	readyCond := meta.FindStatusCondition(report.Status.Conditions, "Ready")
 	if readyCond == nil || readyCond.Status != metav1.ConditionTrue {
 		t.Error("expected Ready=True condition on report")
 	}
-	if readyCond != nil && readyCond.Reason != "PolicyGenerated" {
-		t.Errorf("expected Ready reason=PolicyGenerated, got %q", readyCond.Reason)
+	if readyCond != nil && readyCond.Reason != "ReportGenerated" {
+		t.Errorf("expected Ready reason=ReportGenerated, got %q", readyCond.Reason)
 	}
 
-	// SuggestedPolicy manifests should contain Role + RoleBinding YAML.
-	if report.Status.SuggestedPolicy != nil {
-		manifests := strings.Join(report.Status.SuggestedPolicy.Manifests, "\n")
-		if !strings.Contains(manifests, "kind: Role") {
-			t.Error("expected 'kind: Role' in suggested manifests")
-		}
-		if !strings.Contains(manifests, "kind: RoleBinding") {
-			t.Error("expected 'kind: RoleBinding' in suggested manifests")
-		}
+	// Assert the corresponding AudiciaPolicy has manifests with Role + RoleBinding YAML.
+	policyName := expectedPolicyName(saName)
+	policy := waitForAudiciaPolicy(ctx, t, policyName, ns, func(p *audiciav1alpha1.AudiciaPolicy) bool {
+		return len(p.Spec.Manifests) > 0
+	}, defaultTimeout)
+
+	manifests := strings.Join(policy.Spec.Manifests, "\n")
+	if !strings.Contains(manifests, "kind: Role") {
+		t.Error("expected 'kind: Role' in policy manifests")
+	}
+	if !strings.Contains(manifests, "kind: RoleBinding") {
+		t.Error("expected 'kind: RoleBinding' in policy manifests")
 	}
 
 	t.Logf("ingestion test passed: %d rules observed, %d events processed",

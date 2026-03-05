@@ -9,14 +9,14 @@ description: "Audit Kubernetes RBAC step by step with kubectl. Find cluster-admi
 ## Why Audit RBAC?
 
 Kubernetes RBAC controls who can do what in your cluster. But RBAC
-configurations drift over time — bindings accumulate, permissions expand, and
+configurations drift over time – bindings accumulate, permissions expand, and
 nobody removes access that is no longer needed.
 
 A periodic RBAC audit answers three questions:
 
-1. **Who has cluster-admin?** — identify the most dangerous bindings first
-2. **What can each service account actually do?** — map effective permissions
-3. **Which permissions are actually used?** — find excess privilege
+1. **Who has cluster-admin?** – identify the most dangerous bindings first
+2. **What can each service account actually do?** – map effective permissions
+3. **Which permissions are actually used?** – find excess privilege
 
 The first two can be answered with `kubectl`. The third requires audit log data.
 
@@ -118,19 +118,19 @@ kubectl get clusterrole node-reader -o yaml
 
 Look for:
 
-- **Wildcard verbs** (`["*"]`) — grants every operation
-- **Wildcard resources** (`["*"]`) — grants access to every resource type
-- **Secrets access** — often unnecessary and high-risk
-- **RBAC access** (`roles`, `rolebindings`, `clusterroles`) — allows privilege
+- **Wildcard verbs** (`["*"]`) – grants every operation
+- **Wildcard resources** (`["*"]`) – grants access to every resource type
+- **Secrets access** – often unnecessary and high-risk
+- **RBAC access** (`roles`, `rolebindings`, `clusterroles`) – allows privilege
   escalation
-- **Node access** — rarely needed by workloads
+- **Node access** – rarely needed by workloads
 
 ## Step 5: Finding Unused Permissions
 
 Steps 1–4 tell you what is _granted_. They do not tell you what is _used_.
 
 A service account may have `get`, `list`, `watch`, `create`, `update`, `patch`,
-and `delete` on pods — but if it only ever calls `get` and `list`, the other
+and `delete` on pods – but if it only ever calls `get` and `list`, the other
 five verbs are excess privilege.
 
 Finding unused permissions requires comparing granted RBAC against actual API
@@ -164,7 +164,7 @@ events, resolves each subject's effective RBAC permissions, and produces a
 compliance report comparing granted vs. observed:
 
 ```bash
-kubectl get apreport --all-namespaces -o wide
+kubectl get areport --all-namespaces -o wide
 ```
 
 ```
@@ -177,12 +177,12 @@ A score of 25 means the service account uses only 25% of its granted
 permissions. The `SENSITIVE` column flags when unused permissions include
 high-risk resources like secrets or webhook configurations.
 
-Each report contains the complete suggested policy — the minimal Roles and
+Each report contains the complete suggested policy – the minimal Roles and
 RoleBindings the subject actually needs:
 
 ```bash
-kubectl get apreport report-backend -n my-team \
-  -o jsonpath='{.status.suggestedPolicy.manifests[0]}'
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{.spec.manifests[0]}'
 ```
 
 ## Building a Regular Audit Process
@@ -199,17 +199,17 @@ At minimum, run Steps 1–4 quarterly and document the results. Focus on:
 ### Continuous Automated Audit
 
 For continuous visibility, deploy Audicia as an operator. It runs the entire
-audit loop automatically — ingesting audit events, resolving effective RBAC,
+audit loop automatically – ingesting audit events, resolving effective RBAC,
 computing compliance scores, and producing structured reports that can be
 exported to compliance dashboards or GitOps repositories.
 
 ## Further Reading
 
-- **[Kubernetes RBAC Drift Detection](/blog/kubernetes-rbac-drift-detection)** —
+- **[Kubernetes RBAC Drift Detection](/blog/kubernetes-rbac-drift-detection)** –
   how to detect and act on permission drift over time
 - **[Kubernetes RBAC Compliance Evidence](/blog/kubernetes-rbac-compliance-evidence)**
-  — mapping audit results to SOC 2, ISO 27001, and PCI DSS
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+  – mapping audit results to SOC 2, ISO 27001, and PCI DSS
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full before/after walkthrough
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and automate RBAC auditing

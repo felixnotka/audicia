@@ -11,7 +11,7 @@ description: "Generate least-privilege Kubernetes RBAC policies from audit logs 
 Every Kubernetes cluster has at least one service account bound to
 `cluster-admin`. Someone needed to unblock a 403, the binding was created in a
 hurry, and nobody ever tightened it. That service account now has full access to
-every resource in every namespace — secrets, nodes, CRDs, everything.
+every resource in every namespace – secrets, nodes, CRDs, everything.
 
 The correct policy exists somewhere in the audit logs. Every API call your
 workload makes is recorded: the verb, the resource, the namespace, the
@@ -93,12 +93,12 @@ spec:
 
 Key settings:
 
-- **`scopeMode: NamespaceStrict`** — generates per-namespace Roles, not
+- **`scopeMode: NamespaceStrict`** – generates per-namespace Roles, not
   ClusterRoles
-- **`verbMerge: Smart`** — collapses rules with the same resource into a single
+- **`verbMerge: Smart`** – collapses rules with the same resource into a single
   rule with merged verbs
-- **`wildcards: Forbidden`** — never generates wildcard `*` verbs
-- **`ignoreSystemUsers: true`** — filters out `system:masters` and other
+- **`wildcards: Forbidden`** – never generates wildcard `*` verbs
+- **`ignoreSystemUsers: true`** – filters out `system:masters` and other
   built-in subjects
 
 ```bash
@@ -120,17 +120,17 @@ Each stage has a specific job:
    structured identity and migrates deprecated API groups like
    `extensions/v1beta1` to `apps/v1`
 4. **Aggregate** deduplicates thousands of events into a compact rule set per
-   subject — 10,000 `GET pods` calls become one aggregated rule
+   subject – 10,000 `GET pods` calls become one aggregated rule
 5. **Strategy** converts aggregated rules into RBAC manifests using the policy
    knobs from your AudiciaSource
-6. **Report** writes everything to an `AudiciaPolicyReport` CRD
+6. **Report** writes everything to an `AudiciaReport` and `AudiciaPolicy` CRD
 
 ## Step 4: Read the Policy Report
 
 After a flush cycle, Audicia produces a report for every observed subject:
 
 ```bash
-kubectl get audiciapolicyreports -n my-team
+kubectl get audiciareports -n my-team
 ```
 
 ```
@@ -139,7 +139,7 @@ my-team     report-backend   backend   ServiceAccount   Red          25      5m
 ```
 
 A score of 25 means the service account uses only 25% of its granted
-permissions. The other 75% is excess privilege — flagged Red.
+permissions. The other 75% is excess privilege – flagged Red.
 
 ## Step 5: Extract the Suggested Policy
 
@@ -147,8 +147,8 @@ The report contains the minimal RBAC manifests your service account actually
 needs:
 
 ```bash
-kubectl get audiciapolicyreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}'
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}'
 ```
 
 ```yaml
@@ -179,13 +179,13 @@ Apply the suggested policy (dry-run first):
 
 ```bash
 # Dry-run to review what will be created
-kubectl get audiciapolicyreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   | kubectl apply --dry-run=client -f -
 
 # Apply for real
-kubectl get audiciapolicyreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   | kubectl apply -f -
 ```
 
@@ -198,7 +198,7 @@ kubectl delete clusterrolebinding backend-cluster-admin
 After the next flush cycle, the compliance score updates:
 
 ```bash
-kubectl get audiciapolicyreports -n my-team
+kubectl get audiciareports -n my-team
 ```
 
 ```
@@ -220,7 +220,7 @@ the only data source that records real API access patterns:
 - Which namespaces were accessed
 - Which subresources were invoked (like `pods/exec` or `pods/log`)
 
-Audicia normalizes this data automatically — handling subresource concatenation,
+Audicia normalizes this data automatically – handling subresource concatenation,
 deprecated API group migration (`extensions/v1beta1` → `apps/v1`), and identity
 parsing for service accounts, users, and groups.
 
@@ -229,8 +229,8 @@ parsing for service accounts, users, and groups.
 For teams using ArgoCD or Flux, the suggested manifests integrate directly:
 
 ```bash
-kubectl get audiciapolicyreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   > policies/my-team/backend-rbac.yaml
 
 git add policies/my-team/backend-rbac.yaml
@@ -243,7 +243,7 @@ required.
 
 ## Continuous Refinement
 
-Because Audicia runs continuously as an operator — not a one-shot script — the
+Because Audicia runs continuously as an operator – not a one-shot script – the
 reports update as workload behavior changes. If the backend service starts
 accessing a new resource, the next report includes that permission. If it stops
 using a resource, the compliance score reflects the new excess.
@@ -255,8 +255,8 @@ For a deep dive into how Audicia detects permission drift over time, see
 ## What's Next
 
 - **[How to Enable Kubernetes Audit Logging](/blog/kubernetes-audit-logging-guide)**
-  — step-by-step instructions for kubeadm, kind, EKS, GKE, and AKS
-- **[audit2rbac vs Audicia](/blog/audit2rbac-vs-audicia)** — how Audicia
+  – step-by-step instructions for kubeadm, kind, EKS, GKE, and AKS
+- **[audit2rbac vs Audicia](/blog/audit2rbac-vs-audicia)** – how Audicia
   compares to the original audit-log-based RBAC generator
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and generate your first policy reports in under five minutes

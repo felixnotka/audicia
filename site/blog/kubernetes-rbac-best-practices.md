@@ -63,7 +63,7 @@ ClusterRoleBinding can access resources in every namespace.
 - Watching namespaces (for controllers that react to new namespaces)
 
 For these, use a ClusterRole with only the specific cluster-scoped resources
-needed. Never grant namespace-scoped resources via ClusterRoleBindings — use
+needed. Never grant namespace-scoped resources via ClusterRoleBindings – use
 RoleBindings instead.
 
 ```yaml
@@ -122,8 +122,8 @@ Audit Log → Generator → Role + RoleBinding
 
 This eliminates two common failure modes:
 
-- **Too permissive** — granting access that is never used
-- **Too restrictive** — missing access that causes 403 errors in production
+- **Too permissive** – granting access that is never used
+- **Too restrictive** – missing access that causes 403 errors in production
 
 For a comparison of available generators, see
 [Kubernetes RBAC Tools Compared](/blog/kubernetes-rbac-tools-compared).
@@ -137,7 +137,7 @@ score = usedPermissions / grantedPermissions × 100
 ```
 
 A score of 100 means the subject uses every permission it has. A score of 25
-means it uses only a quarter — the rest is excess privilege.
+means it uses only a quarter – the rest is excess privilege.
 
 Severity bands provide actionable thresholds:
 
@@ -153,17 +153,17 @@ permissions").
 
 ## 6. Automate with Operators
 
-RBAC is not a one-time configuration. Workloads change — new API calls are
+RBAC is not a one-time configuration. Workloads change – new API calls are
 added, old code paths are removed, new controllers are deployed. RBAC must
 change with them.
 
 An operator-based approach provides:
 
-- **Continuous processing** — audit events are ingested as they arrive, not in
+- **Continuous processing** – audit events are ingested as they arrive, not in
   batch
-- **Checkpoint/resume** — no re-processing after restarts or log rotation
-- **Structured output** — CRD-based reports that integrate with GitOps pipelines
-- **Living compliance scores** — updated as workload behavior changes
+- **Checkpoint/resume** – no re-processing after restarts or log rotation
+- **Structured output** – CRD-based reports that integrate with GitOps pipelines
+- **Living compliance scores** – updated as workload behavior changes
 
 This is the difference between treating RBAC as a quarterly audit exercise and
 treating it as a continuous operational concern.
@@ -184,11 +184,11 @@ Generation enables measurement. Measurement enables continuous improvement.
 
 ## Further Reading
 
-- **[The 403 Cycle](/blog/kubernetes-rbac-broken-in-practice)** — why RBAC
+- **[The 403 Cycle](/blog/kubernetes-rbac-broken-in-practice)** – why RBAC
   breaks and how to stop the cycle
-- **[Kubernetes RBAC Explained](/blog/kubernetes-rbac-explained)** — refresher
+- **[Kubernetes RBAC Explained](/blog/kubernetes-rbac-explained)** – refresher
   on Roles, ClusterRoles, Bindings, and subjects
-- **[How to Enable Audit Logging](/blog/kubernetes-audit-logging-guide)** —
+- **[How to Enable Audit Logging](/blog/kubernetes-audit-logging-guide)** –
   step-by-step for kubeadm, kind, EKS, GKE, AKS
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and implement all six practices

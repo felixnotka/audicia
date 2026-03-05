@@ -16,7 +16,7 @@ Error from server (Forbidden): pods is forbidden: User
 in API group "" in the namespace "my-team"
 ```
 
-The error message is informative — it tells you exactly which subject, verb,
+The error message is informative – it tells you exactly which subject, verb,
 resource, API group, and namespace failed. But knowing _what_ failed is
 different from knowing _why_ it failed and how to fix it correctly.
 
@@ -50,7 +50,7 @@ kubectl get clusterrolebindings -o json | \
 permissions.
 
 **Common mistake:** Creating a Role but forgetting the RoleBinding. A Role alone
-does nothing — it must be bound to a subject.
+does nothing – it must be bound to a subject.
 
 ## Cause 2: Wrong API Group
 
@@ -184,7 +184,7 @@ namespace.
 subjects:
   - kind: ServiceAccount
     name: backend
-    namespace: default # Wrong — should be my-team
+    namespace: default # Wrong – should be my-team
 ```
 
 **How to check:** Inspect the binding's subjects:
@@ -204,7 +204,7 @@ represents a specific way that hand-written RBAC can be wrong.
 
 RBAC generators eliminate these errors by producing policies from observed audit
 log data. The generated policy includes the exact API groups, subresources,
-verbs, and namespace scoping the workload requires — because it was observed
+verbs, and namespace scoping the workload requires – because it was observed
 doing it.
 
 For a walkthrough of this approach, see
@@ -212,9 +212,9 @@ For a walkthrough of this approach, see
 
 ## Further Reading
 
-- **[Kubernetes RBAC Explained](/blog/kubernetes-rbac-explained)** — a practical
+- **[Kubernetes RBAC Explained](/blog/kubernetes-rbac-explained)** – a practical
   guide to Roles, Bindings, and how they work
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   generating correct policies that prevent 403 errors
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and automate RBAC generation

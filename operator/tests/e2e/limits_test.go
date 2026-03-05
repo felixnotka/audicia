@@ -77,7 +77,7 @@ func TestLimits_MaxRulesPerReport(t *testing.T) {
 
 	// Wait for report.
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
+	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaReport) bool {
 		return len(r.Status.ObservedRules) > 0
 	}, defaultTimeout)
 
@@ -193,7 +193,7 @@ func TestLimits_RetentionDays(t *testing.T) {
 
 	// Wait for report.
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
+	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaReport) bool {
 		return r.Status.EventsProcessed > 0
 	}, defaultTimeout)
 

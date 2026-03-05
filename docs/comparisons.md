@@ -38,7 +38,7 @@ an audit log file and outputs RBAC objects.
   10GB audit log means 10GB of I/O per run.
 - **No CRDs.** Output is raw YAML files dumped to disk. No Kubernetes-native way
   to track, version, or reconcile the output.
-- **No diffing.** Cannot answer "what changed since last Tuesday?" — it
+- **No diffing.** Cannot answer "what changed since last Tuesday?" – it
   regenerates everything from scratch.
 - **No normalization.** Does not migrate deprecated API groups or handle edge
   cases in subject identity.
@@ -57,7 +57,7 @@ Kubernetes manifests).
 `cluster-admin` bindings or missing security contexts in your manifests. But it
 cannot observe what a workload _actually does_ at runtime. A workload that only
 calls `GET /api/v1/configmaps` will look identical to one that calls every API
-endpoint — until you look at the audit log.
+endpoint – until you look at the audit log.
 
 **Audicia's position:** Trivy tells you what's wrong with your current policies.
 Audicia tells you what the correct policies should be. Use both.

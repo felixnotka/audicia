@@ -9,7 +9,7 @@ description: "How Audicia processes 10,000 raw Kubernetes audit events into 50 c
 ## From Noise to Signal
 
 A busy Kubernetes cluster can produce thousands of audit events per minute. Most
-of them are noise — system components polling endpoints, health checks, watch
+of them are noise – system components polling endpoints, health checks, watch
 streams. Audicia's job is to extract the signal: which subjects actually need
 which permissions.
 
@@ -28,13 +28,13 @@ nothing loops back.
 
 Audicia supports three ingestion modes:
 
-- **File mode** — tails the kube-apiserver audit log file directly from a
+- **File mode** – tails the kube-apiserver audit log file directly from a
   hostPath mount. Includes checkpoint/resume via inode tracking so restarts
   don't lose progress.
-- **Webhook mode** — runs a TLS (or mTLS) server that receives audit events
+- **Webhook mode** – runs a TLS (or mTLS) server that receives audit events
   pushed by the kube-apiserver's webhook backend. Includes rate limiting and
   deduplication.
-- **Cloud mode** — connects to a cloud message bus (Azure Event Hub, AWS
+- **Cloud mode** – connects to a cloud message bus (Azure Event Hub, AWS
   CloudWatch, GCP Pub/Sub) for managed Kubernetes platforms where apiserver
   flags are not accessible.
 
@@ -45,11 +45,11 @@ agnostic to the source.
 
 The filter chain drops events that would produce misleading policies:
 
-- **System subjects** — `system:masters`, kube-system service accounts, and the
+- **System subjects** – `system:masters`, kube-system service accounts, and the
   apiserver itself
-- **Read-only discovery** — every authenticated user can `GET /api` and `/apis`;
+- **Read-only discovery** – every authenticated user can `GET /api` and `/apis`;
   including these would inflate every policy
-- **Configurable rules** — users define additional allow/deny patterns in the
+- **Configurable rules** – users define additional allow/deny patterns in the
   `AudiciaSource` spec
 
 Filtering happens early to keep memory and CPU low. A well-tuned filter drops
@@ -59,11 +59,11 @@ Filtering happens early to keep memory and CPU low. A well-tuned filter drops
 
 Raw audit events are messy. The normalizer cleans them up:
 
-- **Subject extraction** — parses `user.username` to extract ServiceAccount
+- **Subject extraction** – parses `user.username` to extract ServiceAccount
   namespace and name from the `system:serviceaccount:ns:name` format
-- **API group migration** — rewrites deprecated groups (`extensions/v1beta1` →
+- **API group migration** – rewrites deprecated groups (`extensions/v1beta1` →
   `apps/v1`) so policies use current API versions
-- **Subresource handling** — splits `pods/exec` into the correct resource +
+- **Subresource handling** – splits `pods/exec` into the correct resource +
   subresource pair
 
 ### 4. Aggregate
@@ -83,20 +83,23 @@ produces one aggregated rule, not ten thousand.
 The strategy engine converts aggregated rules into actual RBAC manifests.
 Configuration knobs include:
 
-- **scopeMode** — `Namespace` for Roles, `Cluster` for ClusterRoles, or `Auto`
+- **scopeMode** – `Namespace` for Roles, `Cluster` for ClusterRoles, or `Auto`
   to decide per-rule
-- **verbMerge** — whether to collapse verbs like `get`, `list`, `watch` into `*`
-- **wildcards** — whether to use `*` for resources when a subject touches all
+- **verbMerge** – whether to collapse verbs like `get`, `list`, `watch` into `*`
+- **wildcards** – whether to use `*` for resources when a subject touches all
   resources in a group
 
 ### 6. Report
 
-The final output is an `AudiciaPolicyReport` — a CRD containing:
+The final output is split into two CRDs – an `AudiciaReport` and an
+`AudiciaPolicy`:
 
-- The suggested Role/ClusterRole/Binding YAML, ready to `kubectl apply`
-- A [compliance score](/blog/understanding-compliance-scores) comparing observed
-  permissions vs. granted permissions
-- Metadata like firstSeen/lastSeen timestamps and event counts
+- The **AudiciaReport** contains a
+  [compliance score](/blog/understanding-compliance-scores) comparing observed
+  permissions vs. granted permissions, plus metadata like firstSeen/lastSeen
+  timestamps and event counts
+- The **AudiciaPolicy** contains the suggested Role/ClusterRole/Binding YAML,
+  ready to `kubectl apply`, with an approval workflow
 
 ## Why a Pipeline?
 

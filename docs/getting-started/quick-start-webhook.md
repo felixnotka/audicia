@@ -2,7 +2,7 @@
 
 This tutorial walks you through setting up Audicia to receive real-time audit
 events via the kube-apiserver's webhook backend. This is the recommended mode
-for production — it provides sub-second event delivery and doesn't require
+for production – it provides sub-second event delivery and doesn't require
 control plane node scheduling.
 
 ## Prerequisites
@@ -172,10 +172,12 @@ You should see:
 After a few seconds of API activity:
 
 ```bash
-kubectl get audiciapolicyreports --all-namespaces
+kubectl get audiciareports --all-namespaces
 ```
 
-Reports should start appearing for active subjects.
+Reports and policies should start appearing for active subjects. Use
+`kubectl get audiciapolicies --all-namespaces` to see the suggested RBAC
+manifests.
 
 ## Optional: Enable mTLS
 
@@ -186,7 +188,7 @@ in the Webhook Setup Guide.
 
 ## What's Next
 
-- [Webhook Setup Guide](../guides/webhook-setup.md) — Complete reference for
+- [Webhook Setup Guide](../guides/webhook-setup.md) – Complete reference for
   webhook configuration including mTLS
-- [Filter Recipes](../guides/filter-recipes.md) — Production filter
+- [Filter Recipes](../guides/filter-recipes.md) – Production filter
   configurations

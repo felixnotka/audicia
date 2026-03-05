@@ -31,9 +31,9 @@ spec:
 
 ## Customization
 
-- **`location.path`** — Must match the `--audit-log-path` flag on the
+- **`location.path`** – Must match the `--audit-log-path` flag on the
   kube-apiserver.
-- **Filters** — Adjust to match your environment. See
+- **Filters** – Adjust to match your environment. See
   [Filter Recipes](../guides/filter-recipes.md).
 - **Helm requirement:** `auditLog.enabled=true` and control plane scheduling
   (nodeSelector + tolerations).

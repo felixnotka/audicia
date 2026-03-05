@@ -17,12 +17,12 @@ Audicia produces ready-to-apply Kubernetes RBAC manifests:
 | `ClusterRole`        | Subject accessed cluster-scoped resources or non-resource URLs |
 | `ClusterRoleBinding` | Paired with the ClusterRole                                    |
 
-These manifests live in `status.suggestedPolicy.manifests` on the
-`AudiciaPolicyReport` CR and can be extracted with:
+These manifests live in `spec.manifests` on the `AudiciaPolicy` CR and can be
+extracted with:
 
 ```bash
-kubectl get apreport <NAME> -n <NAMESPACE> \
-  -o jsonpath='{.status.suggestedPolicy.manifests}' | jq -r '.[]'
+kubectl get apolicy <NAME> -n <NAMESPACE> \
+  -o jsonpath='{.spec.manifests}' | jq -r '.[]'
 ```
 
 The output is complete, `kubectl apply`-ready YAML.
@@ -39,12 +39,12 @@ Observed Rules → Strategy Engine → RBAC Manifests
 
 The aggregator collects deduplicated rules per subject. Each rule captures:
 
-- **apiGroup** — e.g. `""` (core), `apps`, `rbac.authorization.k8s.io`
-- **resource** — e.g. `pods`, `deployments`, `pods/exec`
-- **verb** — e.g. `get`, `list`, `create`
-- **namespace** — where the access occurred
-- **count** — how many times this access pattern was observed
-- **firstSeen / lastSeen** — time range of activity
+- **apiGroup** – e.g. `""` (core), `apps`, `rbac.authorization.k8s.io`
+- **resource** – e.g. `pods`, `deployments`, `pods/exec`
+- **verb** – e.g. `get`, `list`, `create`
+- **namespace** – where the access occurred
+- **count** – how many times this access pattern was observed
+- **firstSeen / lastSeen** – time range of activity
 
 ### 2. Strategy
 
@@ -61,13 +61,13 @@ knobs to shape the RBAC output:
 
 The engine produces complete manifests with:
 
-- **Proper namespace scoping** — A ServiceAccount accessing resources in
+- **Proper namespace scoping** – A ServiceAccount accessing resources in
   namespaces X and Y gets separate Role + RoleBinding pairs in each namespace
-- **Cluster-scoped separation** — Non-resource URLs (`/metrics`, `/healthz`) and
+- **Cluster-scoped separation** – Non-resource URLs (`/metrics`, `/healthz`) and
   cluster-scoped resources get their own ClusterRole + ClusterRoleBinding
-- **Name sanitization** — Generated names are Kubernetes-safe (lowercase, max 50
+- **Name sanitization** – Generated names are Kubernetes-safe (lowercase, max 50
   chars)
-- **Standard verbs only** — Only the 8 standard API verbs are emitted;
+- **Standard verbs only** – Only the 8 standard API verbs are emitted;
   non-standard verbs from audit events are silently dropped
 
 ## Safety Guardrails
@@ -75,9 +75,9 @@ The engine produces complete manifests with:
 Regardless of configuration, the strategy engine enforces hard limits:
 
 - **Never generates `cluster-admin`** equivalent bindings
-- **Standard verb allowlist only** — `get`, `list`, `watch`, `create`, `update`,
+- **Standard verb allowlist only** – `get`, `list`, `watch`, `create`, `update`,
   `patch`, `delete`, `deletecollection`
-- **`wildcards: Safe` requires evidence** — All 8 standard verbs must be
+- **`wildcards: Safe` requires evidence** – All 8 standard verbs must be
   observed for a resource before emitting `*`
 
 ## Example
@@ -129,15 +129,15 @@ against the SA's current permissions via
 The suggested policy is a starting point, not a blind apply. Recommended
 workflow:
 
-1. **Collect** — Let Audicia observe for a representative period (at least one
-   full business cycle — a day, a week, or a deployment cycle)
-2. **Review** — Inspect the generated manifests for completeness. Are all
+1. **Collect** – Let Audicia observe for a representative period (at least one
+   full business cycle – a day, a week, or a deployment cycle)
+2. **Review** – Inspect the generated manifests for completeness. Are all
    expected access patterns captured? Check the `observedRules` for gaps.
-3. **Compare** — Use the compliance score to identify overprivilege in the
+3. **Compare** – Use the compliance score to identify overprivilege in the
    current RBAC
-4. **Apply** — Replace the existing broad Role/ClusterRole with the generated
+4. **Apply** – Replace the existing broad Role/ClusterRole with the generated
    least-privilege version
-5. **Monitor** — Watch for `403 Forbidden` errors after tightening permissions.
+5. **Monitor** – Watch for `403 Forbidden` errors after tightening permissions.
    If something was missed, Audicia will capture it in the next report cycle.
 
 ### Observation Period
@@ -158,7 +158,7 @@ before being evicted.
 ### Cross-Namespace Access
 
 ServiceAccounts that access resources in multiple namespaces get separate Roles
-in each namespace. This follows the principle of least privilege — the binding
+in each namespace. This follows the principle of least privilege – the binding
 in namespace X doesn't grant access to namespace Y.
 
 ### What About Groups?
@@ -185,11 +185,11 @@ policy).
 
 ## Related
 
-- [Strategy Engine](../components/strategy-engine.md) — Deep-dive on scopeMode,
+- [Strategy Engine](../components/strategy-engine.md) – Deep-dive on scopeMode,
   verbMerge, wildcards
-- [Compliance Scoring](compliance-scoring.md) — How compliance scores are
+- [Compliance Scoring](compliance-scoring.md) – How compliance scores are
   calculated
-- [AudiciaPolicyReport CRD](../reference/crd-audiciapolicyreport.md) — Full
-  field reference
-- [Policy Report Example](../examples/policy-report.md) — Example generated
+- [AudiciaReport CRD](../reference/crd-audiciareport.md) – Full field reference
+- [AudiciaPolicy CRD](../reference/crd-audiciapolicy.md) – Full field reference
+- [Policy Report Example](../examples/policy-report.md) – Example generated
   report
