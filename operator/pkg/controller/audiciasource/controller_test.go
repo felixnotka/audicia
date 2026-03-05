@@ -3,22 +3,25 @@ package audiciasource
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-logr/logr"
 	authnv1 "k8s.io/api/authentication/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/felixnotka/audicia/operator/pkg/aggregator"
 	audiciav1alpha1 "github.com/felixnotka/audicia/operator/pkg/apis/audicia.io/v1alpha1"
@@ -46,7 +49,10 @@ func makeObservedRule(resource, verb, ns string, lastSeen time.Time) audiciav1al
 
 func TestCompactRules_NoRules(t *testing.T) {
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 200, RetentionDays: 30}
-	result := compactRules(nil, limits, "test", logr.Discard())
+	result, dropped := compactRules(nil, limits, "test", logr.Discard())
+	if dropped != 0 {
+		t.Errorf("got dropped=%d, want 0", dropped)
+	}
 	if len(result) != 0 {
 		t.Errorf("got %d rules, want 0", len(result))
 	}
@@ -63,7 +69,7 @@ func TestCompactRules_RetentionFiltering(t *testing.T) {
 	}
 
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 200, RetentionDays: 30}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, _ := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 1 {
 		t.Errorf("got %d rules, want 1 (old rule should be dropped)", len(result))
 	}
@@ -80,9 +86,12 @@ func TestCompactRules_Truncation(t *testing.T) {
 	}
 
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 5, RetentionDays: 30}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, dropped := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 5 {
 		t.Errorf("got %d rules, want 5 (truncated)", len(result))
+	}
+	if dropped != 5 {
+		t.Errorf("got dropped=%d, want 5", dropped)
 	}
 }
 
@@ -94,7 +103,7 @@ func TestCompactRules_TruncationKeepsMostRecent(t *testing.T) {
 	}
 
 	limits := audiciav1alpha1.LimitsConfig{MaxRulesPerReport: 1, RetentionDays: 30}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, _ := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 1 {
 		t.Fatalf("got %d rules, want 1", len(result))
 	}
@@ -112,7 +121,7 @@ func TestCompactRules_DefaultLimits(t *testing.T) {
 
 	// Zero values should use defaults (200 max, 30 days retention).
 	limits := audiciav1alpha1.LimitsConfig{}
-	result := compactRules(rules, limits, "test", logr.Discard())
+	result, _ := compactRules(rules, limits, "test", logr.Discard())
 	if len(result) != 1 {
 		t.Errorf("got %d rules, want 1", len(result))
 	}
@@ -386,6 +395,7 @@ func newTestReconciler(objs ...client.Object) *Reconciler {
 	return &Reconciler{
 		Client:    fakeClient,
 		Scheme:    s,
+		Recorder:  record.NewFakeRecorder(100),
 		pipelines: make(map[types.NamespacedName]*pipelineState),
 	}
 }
@@ -1432,5 +1442,297 @@ func TestEventLoop_ChannelClosed(t *testing.T) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("eventLoop did not exit after channel close")
+	}
+}
+
+// --- severityWorsened ---
+
+func TestSeverityWorsened(t *testing.T) {
+	tests := []struct {
+		name     string
+		old, new audiciav1alpha1.ComplianceSeverity
+		want     bool
+	}{
+		{"green to yellow", audiciav1alpha1.ComplianceSeverityGreen, audiciav1alpha1.ComplianceSeverityYellow, true},
+		{"green to red", audiciav1alpha1.ComplianceSeverityGreen, audiciav1alpha1.ComplianceSeverityRed, true},
+		{"yellow to red", audiciav1alpha1.ComplianceSeverityYellow, audiciav1alpha1.ComplianceSeverityRed, true},
+		{"red to green", audiciav1alpha1.ComplianceSeverityRed, audiciav1alpha1.ComplianceSeverityGreen, false},
+		{"yellow to green", audiciav1alpha1.ComplianceSeverityYellow, audiciav1alpha1.ComplianceSeverityGreen, false},
+		{"same green", audiciav1alpha1.ComplianceSeverityGreen, audiciav1alpha1.ComplianceSeverityGreen, false},
+		{"same red", audiciav1alpha1.ComplianceSeverityRed, audiciav1alpha1.ComplianceSeverityRed, false},
+		{"empty to green", "", audiciav1alpha1.ComplianceSeverityGreen, false},
+		{"empty to red", "", audiciav1alpha1.ComplianceSeverityRed, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := severityWorsened(tt.old, tt.new); got != tt.want {
+				t.Errorf("severityWorsened(%q, %q) = %v, want %v", tt.old, tt.new, got, tt.want)
+			}
+		})
+	}
+}
+
+// --- reportNamespaceFor ---
+
+func TestReportNamespaceFor(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "audicia-system"},
+	}
+
+	// ServiceAccount with its own namespace → use subject namespace.
+	sa := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "test-sa",
+		Namespace: "other-ns",
+	}
+	if ns := reportNamespaceFor(source, sa); ns != "other-ns" {
+		t.Errorf("expected other-ns, got %q", ns)
+	}
+
+	// User subject → use source namespace.
+	user := audiciav1alpha1.Subject{
+		Kind: audiciav1alpha1.SubjectKindUser,
+		Name: "admin",
+	}
+	if ns := reportNamespaceFor(source, user); ns != "audicia-system" {
+		t.Errorf("expected audicia-system, got %q", ns)
+	}
+}
+
+// --- emitReportEvents ---
+
+func drainEvents(rec *record.FakeRecorder) []string {
+	var events []string
+	for {
+		select {
+		case e := <-rec.Events:
+			events = append(events, e)
+		default:
+			return events
+		}
+	}
+}
+
+func TestEmitReportEvents_ReportCreated(t *testing.T) {
+	rec := record.NewFakeRecorder(10)
+	r := &Reconciler{Recorder: rec}
+
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report.Name = "report-test"
+	report.Namespace = "default"
+
+	subject := audiciav1alpha1.Subject{
+		Kind: audiciav1alpha1.SubjectKindServiceAccount,
+		Name: "test-sa",
+	}
+
+	r.emitReportEvents(report, subject, true, "")
+
+	events := drainEvents(rec)
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d: %v", len(events), events)
+	}
+	if !strings.Contains(events[0], "ReportCreated") {
+		t.Errorf("expected ReportCreated event, got %q", events[0])
+	}
+}
+
+func TestEmitReportEvents_DriftDetected(t *testing.T) {
+	rec := record.NewFakeRecorder(10)
+	r := &Reconciler{Recorder: rec}
+
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report.Name = "report-test"
+	report.Namespace = "default"
+	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
+		Score:          45,
+		Severity:       audiciav1alpha1.ComplianceSeverityRed,
+		ExcessCount:    3,
+		UncoveredCount: 1,
+	}
+
+	subject := audiciav1alpha1.Subject{
+		Kind: audiciav1alpha1.SubjectKindServiceAccount,
+		Name: "drifting-sa",
+	}
+
+	r.emitReportEvents(report, subject, false, audiciav1alpha1.ComplianceSeverityGreen)
+
+	events := drainEvents(rec)
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d: %v", len(events), events)
+	}
+	if !strings.Contains(events[0], "DriftDetected") {
+		t.Errorf("expected DriftDetected event, got %q", events[0])
+	}
+	if !strings.Contains(events[0], "Green") || !strings.Contains(events[0], "Red") {
+		t.Errorf("expected event to mention severity transition, got %q", events[0])
+	}
+}
+
+func TestEmitReportEvents_NoDriftWhenImproved(t *testing.T) {
+	rec := record.NewFakeRecorder(10)
+	r := &Reconciler{Recorder: rec}
+
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report.Name = "report-test"
+	report.Namespace = "default"
+	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
+		Score:    95,
+		Severity: audiciav1alpha1.ComplianceSeverityGreen,
+	}
+
+	subject := audiciav1alpha1.Subject{
+		Kind: audiciav1alpha1.SubjectKindServiceAccount,
+		Name: "improving-sa",
+	}
+
+	// Improved from Red to Green — no warning event.
+	r.emitReportEvents(report, subject, false, audiciav1alpha1.ComplianceSeverityRed)
+
+	events := drainEvents(rec)
+	if len(events) != 0 {
+		t.Errorf("expected 0 events for improvement, got %d: %v", len(events), events)
+	}
+}
+
+func TestEmitReportEvents_NoDriftOnCreate(t *testing.T) {
+	rec := record.NewFakeRecorder(10)
+	r := &Reconciler{Recorder: rec}
+
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report.Name = "report-test"
+	report.Namespace = "default"
+	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
+		Score:    40,
+		Severity: audiciav1alpha1.ComplianceSeverityRed,
+	}
+
+	subject := audiciav1alpha1.Subject{
+		Kind: audiciav1alpha1.SubjectKindServiceAccount,
+		Name: "new-sa",
+	}
+
+	// Created — should get ReportCreated, not DriftDetected.
+	r.emitReportEvents(report, subject, true, "")
+
+	events := drainEvents(rec)
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d: %v", len(events), events)
+	}
+	if !strings.Contains(events[0], "ReportCreated") {
+		t.Errorf("expected ReportCreated, got %q", events[0])
+	}
+}
+
+func TestEmitReportEvents_NoComplianceNoEvent(t *testing.T) {
+	rec := record.NewFakeRecorder(10)
+	r := &Reconciler{Recorder: rec}
+
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report.Name = "report-test"
+	report.Namespace = "default"
+	// No compliance set.
+
+	subject := audiciav1alpha1.Subject{
+		Kind: audiciav1alpha1.SubjectKindServiceAccount,
+		Name: "no-compliance-sa",
+	}
+
+	r.emitReportEvents(report, subject, false, "")
+
+	events := drainEvents(rec)
+	if len(events) != 0 {
+		t.Errorf("expected 0 events when compliance is nil, got %d: %v", len(events), events)
+	}
+}
+
+// --- flushReports events ---
+
+func TestFlushReports_CompactionEvent(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "compact-source",
+			Namespace: "default",
+		},
+		Spec: audiciav1alpha1.AudiciaSourceSpec{
+			Limits: audiciav1alpha1.LimitsConfig{
+				MaxRulesPerReport: 2,
+				RetentionDays:     30,
+			},
+		},
+	}
+
+	rec := record.NewFakeRecorder(10)
+	r := newTestReconciler(&source)
+	r.Recorder = rec
+
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	aggregators := make(map[string]*aggregator.Aggregator)
+	subjects := make(map[string]audiciav1alpha1.Subject)
+
+	key := "ServiceAccount/default/compact-sa"
+	aggregators[key] = aggregator.New()
+	subjects[key] = audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "compact-sa",
+		Namespace: "default",
+	}
+	// Add 5 rules, limit is 2 — should trigger compaction.
+	now := time.Now()
+	for i := 0; i < 5; i++ {
+		aggregators[key].Add(normalizer.CanonicalRule{
+			APIGroup: "", Resource: fmt.Sprintf("resource-%d", i),
+			Verb: "get", Namespace: "default",
+		}, now.Add(-time.Duration(i)*time.Minute))
+	}
+
+	r.flushReports(context.Background(), types.NamespacedName{Name: "compact-source", Namespace: "default"}, source, engine, aggregators, subjects)
+
+	events := drainEvents(rec)
+	found := false
+	for _, e := range events {
+		if strings.Contains(e, "CompactionTriggered") {
+			found = true
+			if !strings.Contains(e, "dropped 3") {
+				t.Errorf("expected 'dropped 3' in compaction event, got %q", e)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("expected CompactionTriggered event, got %v", events)
+	}
+}
+
+// --- currentSeverity ---
+
+func TestCurrentSeverity(t *testing.T) {
+	report := &audiciav1alpha1.AudiciaPolicyReport{}
+
+	// Nil compliance → empty string.
+	if s := currentSeverity(report); s != "" {
+		t.Errorf("expected empty severity, got %q", s)
+	}
+
+	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
+		Severity: audiciav1alpha1.ComplianceSeverityYellow,
+	}
+	if s := currentSeverity(report); s != audiciav1alpha1.ComplianceSeverityYellow {
+		t.Errorf("expected Yellow, got %q", s)
+	}
+}
+
+// --- retryOnConflictOrNotFound ---
+
+func TestRetryOnConflictOrNotFound(t *testing.T) {
+	gr := schema.GroupResource{Group: "audicia.io", Resource: "audiciapolicyreports"}
+	if !retryOnConflictOrNotFound(errors.NewConflict(gr, "test", fmt.Errorf("conflict"))) {
+		t.Error("expected true for conflict error")
+	}
+	if !retryOnConflictOrNotFound(errors.NewNotFound(gr, "test")) {
+		t.Error("expected true for not-found error")
+	}
+	if retryOnConflictOrNotFound(fmt.Errorf("some other error")) {
+		t.Error("expected false for non-retriable error")
 	}
 }

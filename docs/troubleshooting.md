@@ -50,13 +50,12 @@ The webhook receiver is running but the kube-apiserver is not sending events.
    - `no such host` — DNS resolution failure. See
      [DNS resolution failure](#dns-resolution-failure) below.
    - `tls: bad certificate` — TLS cert SAN doesn't match the server address.
-     Regenerate the cert with the correct IP (ClusterIP or `127.0.0.1` for
-     hostPort).
+     Regenerate the cert with the correct ClusterIP as SAN.
    - `connection refused` — Audicia isn't running or the Service has no
      endpoints.
-   - Connection timeout / no errors — ClusterIP may be unreachable from the
-     host. See
-     [ClusterIP unreachable](#clusterip-unreachable-from-host-namespace).
+   - Connection timeout / no errors — ensure your host firewall allows
+     traffic from the pod CIDR. See
+     [Operator cannot reach API server](#operator-cannot-reach-api-server-io-timeout).
    - No webhook errors at all — The apiserver may not have the
      `--audit-webhook-config-file` flag.
 
@@ -64,9 +63,9 @@ The webhook receiver is running but the kube-apiserver is not sending events.
    ```bash
    cat /etc/kubernetes/audit-webhook-kubeconfig.yaml
    ```
-   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443` or
-   `https://127.0.0.1:8443` for hostPort mode), NOT a `.svc.cluster.local` name.
-   The apiserver uses `hostNetwork: true` and cannot resolve cluster DNS.
+   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443`),
+   NOT a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and
+   cannot resolve cluster DNS.
 
 3. **Check that the audit policy allows the events you expect:**
    ```bash
@@ -102,62 +101,18 @@ The operator pod starts but crashes with:
 dial tcp 10.96.0.1:443: i/o timeout
 ```
 
-This happens on **kube-proxy-free clusters** (e.g. Cilium with
-`kubeProxyReplacement: true`) when the operator pod runs on a control plane
-node. The CNI's eBPF datapath cannot route pod traffic to the Kubernetes service
-ClusterIP from the pod network namespace.
-
-**Symptoms:**
-
-- Operator logs show `dial tcp 10.96.0.1:443: i/o timeout` during startup
-- May also show `failed to prime RBAC cache informer`
-- The pod never becomes Ready
-- This affects **file mode** deployments on control plane nodes
-
-**Fix:** Enable `hostNetwork` so the pod uses the node's network namespace:
+**Fix:** Ensure your host firewall allows traffic from the pod CIDR to the
+Kubernetes API server. For example, if your pod CIDR is `10.244.0.0/16`:
 
 ```bash
-helm upgrade audicia audicia/audicia-operator -n audicia-system \
-  --reuse-values \
-  --set hostNetwork=true
+ufw allow from 10.244.0.0/16
 ```
 
-Or patch an existing deployment:
+Find your pod CIDR with:
 
 ```bash
-kubectl patch deployment -n audicia-system audicia-operator \
-  --type=json -p='[
-    {"op":"add","path":"/spec/template/spec/hostNetwork","value":true},
-    {"op":"add","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirstWithHostNet"}
-  ]'
+kubectl cluster-info dump | grep -m 1 cluster-cidr
 ```
-
-See the [Kube-Proxy-Free Guide](guides/kube-proxy-free.md#file-mode-hostnetwork)
-for details.
-
-> **Note:** As of v0.3.1, the operator retries startup with exponential backoff
-> (up to 5 times). If your cluster has transient API server connectivity during
-> startup, the retries may resolve the issue automatically. If all retries fail,
-> the `hostNetwork` fix above is required.
-
----
-
-## ClusterIP unreachable from host namespace
-
-The kube-apiserver runs with `hostNetwork: true`. On some CNIs — particularly
-Cilium in kube-proxy-free mode — ClusterIP traffic from the host namespace is
-not routed to pods. The apiserver silently drops audit events (in batch mode) or
-logs connection timeouts.
-
-**Symptoms:** Audicia pod is running, webhook HTTPS server is listening, but
-`curl -k
-https://<CLUSTER-IP>:8443` hangs from the control plane node. Curling
-the pod IP directly works fine.
-
-**Fix:** Use hostPort mode. See the
-[Kube-Proxy-Free Guide](guides/kube-proxy-free.md) for the complete setup
-including diagnosis steps, hostPort configuration, and TLS certificate
-generation.
 
 ---
 

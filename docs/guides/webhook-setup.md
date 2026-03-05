@@ -371,8 +371,6 @@ webhook:
   tlsSecretName: audicia-webhook-tls
   clientCASecretName: kube-apiserver-client-ca
 
-hostNetwork: true
-
 nodeSelector:
   kubernetes.io/hostname: "<CONTROL-PLANE-NODE>"
 

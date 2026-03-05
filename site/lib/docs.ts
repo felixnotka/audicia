@@ -48,7 +48,6 @@ export const DOCS_NAV: NavSection[] = [
     pages: [
       { slug: "audit-policy", title: "Audit Policy" },
       { slug: "webhook-setup", title: "Webhook Setup" },
-      { slug: "kube-proxy-free", title: "Kube-Proxy-Free Clusters" },
       { slug: "aks-setup", title: "AKS Setup (Event Hub)" },
       { slug: "eks-setup", title: "EKS Setup (CloudWatch Logs)" },
       { slug: "gke-setup", title: "GKE Setup (Pub/Sub)" },
@@ -182,6 +181,11 @@ export async function getDoc(
   ...slugParts: string[]
 ): Promise<DocPage | null> {
   try {
+    // Strip .md suffix from the last slug part so requests like
+    // /docs/getting-started/introduction.md don't produce double
+    // extensions (introduction.md.md).
+    slugParts = slugParts.map((s) => s.replace(/\.md$/, ""));
+
     let filePath: string;
     let category: string | null;
 

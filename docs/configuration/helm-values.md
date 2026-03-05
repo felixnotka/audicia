@@ -50,19 +50,6 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 | `resources.limits.cpu`      | string | `500m`  | CPU limit.      |
 | `resources.limits.memory`   | string | `256Mi` | Memory limit.   |
 
-## Networking
-
-| Value         | Type    | Default | Description                                                                                                                                                    |
-| ------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hostNetwork` | boolean | `false` | Use the host network namespace. Required for file-mode on Cilium / kube-proxy-free clusters where pods cannot reach the Kubernetes service ClusterIP.          |
-| `dnsPolicy`   | string  | `""`    | DNS policy override. Automatically set to `ClusterFirstWithHostNet` when `hostNetwork` is true. Only set manually if you need a custom policy without hostNet. |
-
-When `hostNetwork` is enabled, the pod shares the node's network stack and can
-reach the API server directly. This is recommended for all file-mode deployments
-on control plane nodes. See the
-[Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork) for
-details.
-
 ## Scheduling
 
 | Value          | Type   | Default | Description                                                                   |
@@ -80,7 +67,7 @@ set as environment variables on the operator container.
 | --------------------------------- | ------- | ------- | --------------------------- | -------------------------------------------------------------------------- |
 | `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.                                  |
 | `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address.                            |
-| `operator.leaderElection.enabled` | boolean | `false` | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA. Only needed when running multiple replicas. |
+| `operator.leaderElection.enabled` | boolean | `true`  | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA. Disable for single-replica deployments.     |
 | `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).                                  |
 
 ### Additional Runtime Environment Variables
@@ -94,7 +81,6 @@ set via `extraEnv` or by customizing the Deployment template:
 | `LEADER_ELECTION_NAMESPACE` | `audicia-system`        | Namespace for the Lease (auto-set from pod namespace).                               |
 | `CONCURRENT_RECONCILES`     | `1`                     | Number of parallel reconcile loops.                                                  |
 | `SYNC_PERIOD`               | `10m`                   | Minimum interval between full cache resynchronizations.                              |
-| `STARTUP_MAX_RETRIES`       | `5`                     | Number of startup retry attempts with exponential backoff before the operator exits. |
 
 ### Logging Levels
 
@@ -129,27 +115,22 @@ hostPath read access.
 
 | Value                                    | Type    | Default | Description                                                                                                                                                                                         |
 | ---------------------------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `webhook.enabled`                        | boolean | `false` | Enable the webhook audit event receiver.                                                                                                                                                            |
-| `webhook.port`                           | integer | `8443`  | HTTPS port for the webhook receiver.                                                                                                                                                                |
-| `webhook.tlsSecretName`                  | string  | `""`    | Name of a TLS Secret (must contain `tls.crt` and `tls.key`). Required when webhook is enabled.                                                                                                      |
-| `webhook.clientCASecretName`             | string  | `""`    | Name of a Secret containing `ca.crt` for mTLS. Optional but recommended for production.                                                                                                             |
-| `webhook.hostPort`                       | boolean | `false` | Expose the webhook port on the host via hostPort. Recommended for Cilium / kube-proxy-free clusters where ClusterIP is unreachable from the host namespace. Requires control plane node scheduling. |
-| `webhook.service.clusterIP`              | string  | `""`    | Fixed ClusterIP for the webhook Service. Survives uninstall/reinstall cycles.                                                                                                                       |
-| `webhook.service.nodePort`               | string  | `""`    | Fixed NodePort (30000-32767). When set, the Service type is changed to NodePort.                                                                                                                    |
-| `webhook.networkPolicy.enabled`          | boolean | `false` | Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.                                                                                                                           |
-| `webhook.networkPolicy.controlPlaneCIDR` | string  | `""`    | CIDR of your control plane node(s). Required when networkPolicy is enabled.                                                                                                                         |
+| `webhook.enabled`                        | boolean | `false` | Enable the webhook audit event receiver.                                                     |
+| `webhook.port`                           | integer | `8443`  | HTTPS port for the webhook receiver.                                                         |
+| `webhook.tlsSecretName`                  | string  | `""`    | Name of a TLS Secret (must contain `tls.crt` and `tls.key`). Required when webhook is enabled. |
+| `webhook.clientCASecretName`             | string  | `""`    | Name of a Secret containing `ca.crt` for mTLS. Optional but recommended for production.     |
+| `webhook.service.clusterIP`              | string  | `""`    | Fixed ClusterIP for the webhook Service. Survives uninstall/reinstall cycles.                |
+| `webhook.networkPolicy.enabled`          | boolean | `false` | Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.                    |
+| `webhook.networkPolicy.controlPlaneCIDR` | string  | `""`    | CIDR of your control plane node(s). Required when networkPolicy is enabled.                  |
 
 When enabled, adds:
 
-- Webhook containerPort (with `hostPort` if `webhook.hostPort` is true)
+- Webhook containerPort
 - TLS Secret volume + volumeMount at `/etc/audicia/webhook-tls`
 - Client CA Secret volume + volumeMount at `/etc/audicia/webhook-client-ca`
   (only when `clientCASecretName` is set)
-- A ClusterIP or NodePort Service for the webhook endpoint
+- A ClusterIP Service for the webhook endpoint
 - A NetworkPolicy (only when `webhook.networkPolicy.enabled` is true)
-
-For `hostPort` and `nodePort` usage on kube-proxy-free clusters, see the
-[Kube-Proxy-Free Guide](../guides/kube-proxy-free.md).
 
 ## Cloud Audit Log (Cloud Mode)
 
@@ -202,20 +183,12 @@ See the [AKS Setup Guide](../guides/aks-setup.md) for a complete walkthrough.
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
   --set auditLog.hostPath=/var/log/kubernetes/audit/audit.log \
-  --set hostNetwork=true \
   --set nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
   --set tolerations[0].key=node-role.kubernetes.io/control-plane \
   --set tolerations[0].effect=NoSchedule \
   --set podSecurityContext.runAsUser=0 \
   --set podSecurityContext.runAsNonRoot=false
 ```
-
-> **Why `hostNetwork=true`?** On Cilium and other kube-proxy-free CNIs, pods on
-> control plane nodes cannot reach the Kubernetes service ClusterIP
-> (`10.96.0.1:443`). `hostNetwork` lets the pod use the node's network stack,
-> bypassing the CNI datapath. This is safe because the pod already runs on the
-> control plane with `hostPath` access. See the
-> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork).
 
 ## Example: Webhook Mode (ClusterIP)
 

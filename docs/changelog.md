@@ -7,6 +7,79 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.4.2
+
+### Added
+
+- **Kubernetes Events** — the operator now emits events for operational
+  visibility. Events appear in `kubectl describe` and `kubectl get events`:
+  - `PipelineStarted` (Normal) on AudiciaSource when ingestion begins.
+  - `CompactionTriggered` (Warning) on AudiciaSource when rules exceed
+    `maxRulesPerReport` and oldest rules are dropped.
+  - `FlushFailed` (Warning) on AudiciaSource when a report write fails.
+  - `ReportCreated` (Normal) on AudiciaPolicyReport when a subject's report is
+    first generated.
+  - `DriftDetected` (Warning) on AudiciaPolicyReport when compliance severity
+    degrades (e.g., Green to Yellow).
+
+### Fixed
+
+- **Report flush race condition** — the two-phase report write (create spec,
+  then update status) could fail with "not found" if the report was deleted
+  between phases. Both phases now run inside a single retry loop so the report
+  is re-created automatically.
+
+---
+
+## 0.4.1
+
+### Removed
+
+- **Kube-proxy-free workarounds** — removed `hostNetwork`, `dnsPolicy`,
+  `webhook.hostPort`, and `webhook.service.nodePort` Helm values and all
+  associated template logic. These were workarounds for a misconfigured host
+  firewall, not an inherent kube-proxy-free issue. The operator is a normal
+  Kubernetes operator that expects cluster networking to work.
+- **Startup retry with exponential backoff** — removed `startWithRetry` and the
+  `STARTUP_MAX_RETRIES` environment variable from the operator binary. The
+  operator now starts directly; Kubernetes' own restart policy handles transient
+  failures.
+- **Kube-Proxy-Free Guide** — deleted `docs/guides/kube-proxy-free.md` and
+  removed it from the site navigation. Added a one-line troubleshooting entry
+  instead: ensure your host firewall allows traffic from the pod CIDR.
+
+### Changed
+
+- **Leader election re-enabled by default** — `operator.leaderElection.enabled`
+  now defaults to `true`, matching standard operator behaviour. Disable
+  explicitly with `operator.leaderElection.enabled=false` for single-replica
+  deployments.
+
+---
+
+## 0.4.0
+
+**Released:** 2026-03-04
+
+Official public launch.
+
+### Changed
+
+- **Version bump to 0.4.0** — first publicly announced release
+- **OG social preview image** — centered layout with larger logo and text for
+  better rendering in Teams, WhatsApp, and LinkedIn link previews
+- **Helm chart appVersion** — updated from `0.1.0` to `0.4.0` to match the
+  release version
+
+### Fixed
+
+- **Double `.md` extension in doc/blog routes** — requests ending in `.md` (e.g.
+  `/docs/getting-started/introduction.md`) no longer 404 with a
+  `readfile 'introduction.md.md'` error; the slug is now stripped before
+  building the file path
+
+---
+
 ## 0.3.10
 
 **Released:** 2026-03-04
@@ -29,8 +102,7 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 - **Changelog backfill** — added release dates (from git tags) to all 16
   versions and added missing entries for 0.1.3, 0.1.4, 0.3.5, and 0.3.6
 - **Brand assets** — added logo variants (mark and text in dark-on-white,
-  green-on-navy, white-on-navy) and SVG source, replaced favicon, added OG
-  image
+  green-on-navy, white-on-navy) and SVG source, replaced favicon, added OG image
 
 ### Removed
 

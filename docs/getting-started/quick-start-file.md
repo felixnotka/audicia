@@ -21,8 +21,6 @@ auditLog:
   enabled: true
   hostPath: /var/log/kubernetes/audit/audit.log
 
-hostNetwork: true
-
 nodeSelector:
   node-role.kubernetes.io/control-plane: ""
 
@@ -40,12 +38,6 @@ helm install audicia audicia/audicia-operator \
   -n audicia-system --create-namespace \
   -f values-file.yaml
 ```
-
-> **Kube-proxy-free cluster (Cilium, eBPF)?** The `hostNetwork: true` setting in
-> the values file ensures the operator can reach the Kubernetes API from the
-> control plane node. See the
-> [Kube-Proxy-Free Guide](../guides/kube-proxy-free.md#file-mode-hostnetwork)
-> for details. If your cluster uses kube-proxy, you can remove this setting.
 
 > **Permission denied?** Audit logs are typically owned by root. If the operator
 > cannot read the log, add the following to your `values-file.yaml` to run as

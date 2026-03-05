@@ -50,10 +50,9 @@ operator:
   metricsBindAddress: ":8080"
   # -- Health probe bind address.
   healthProbeBindAddress: ":8081"
-  # -- Enable leader election. Disable for single-replica deployments to
-  # avoid an unnecessary API dependency at startup.
+  # -- Enable leader election for HA. Set to false for single-replica deployments.
   leaderElection:
-    enabled: false
+    enabled: true
   # -- Log level (0=info, 1=debug).
   logLevel: 0
 
@@ -74,17 +73,6 @@ tolerations: []
 
 # -- Affinity rules.
 affinity: {}
-
-# -- Use the host network namespace. Required for file-mode deployments on
-# control plane nodes when the CNI (e.g. Cilium without kube-proxy) cannot
-# route pod traffic to the Kubernetes service ClusterIP. When true, the
-# operator uses the node's network stack and can reach the API server directly.
-# Recommended when auditLog.enabled is true.
-hostNetwork: false
-
-# -- DNS policy. Set to ClusterFirstWithHostNet when hostNetwork is true so
-# cluster DNS still works (e.g. for leader election lease lookups).
-dnsPolicy: ""
 
 # Audit log volume configuration.
 auditLog:
@@ -109,12 +97,6 @@ webhook:
   # signed by this CA are accepted (typically the kube-apiserver).
   # Optional but recommended for production.
   clientCASecretName: ""
-  # -- Expose the webhook port on the host via hostPort. When the operator
-  # runs on the control plane node, this lets the kube-apiserver reach it
-  # via localhost:<port> — bypassing ClusterIP routing issues with some CNIs
-  # (e.g. Cilium without kube-proxy). Recommended for single-node or
-  # dedicated control plane setups.
-  hostPort: false
   service:
     # -- Fixed ClusterIP for the webhook Service. Set this so the IP stays
     # the same across helm uninstall/install cycles — the kube-apiserver
@@ -122,11 +104,6 @@ webhook:
     # and cannot resolve cluster DNS). Pick any free IP from your cluster's
     # service CIDR (kubeadm default: 10.96.0.0/12). Leave empty for auto-assignment.
     clusterIP: ""
-    # -- Fixed NodePort for the webhook Service. When set, the service type
-    # is changed to NodePort and the webhook is reachable at <nodeIP>:<nodePort>.
-    # Useful when ClusterIP is not reachable from the host namespace.
-    # Must be in the range 30000-32767. Leave empty to use ClusterIP.
-    nodePort: ""
   networkPolicy:
     # -- Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.
     enabled: false
