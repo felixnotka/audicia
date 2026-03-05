@@ -758,8 +758,6 @@ func TestGenerateManifests_YAMLIsParseable(t *testing.T) {
 	}
 }
 
-// --- SA with cluster-scoped rules (empty namespace) defaults to home namespace ---
-
 // --- mergeKeyForRule ---
 
 func TestMergeKeyForRule_ResourceRule(t *testing.T) {
