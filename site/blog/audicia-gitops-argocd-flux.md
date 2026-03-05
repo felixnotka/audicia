@@ -2,7 +2,7 @@
 title: "Using Audicia with GitOps: ArgoCD and Flux Integration"
 seo_title: "Using Audicia with GitOps: ArgoCD and Flux Integration"
 published_at: 2026-04-14T08:00:00.000Z
-snippet: "How to integrate Audicia's generated RBAC policies into ArgoCD and Flux GitOps workflows — from CRD output to committed YAML to auto-synced Roles."
+snippet: "How to integrate Audicia's generated RBAC policies into ArgoCD and Flux GitOps workflows – from CRD output to committed YAML to auto-synced Roles."
 description: "Integrate Audicia-generated RBAC policies into ArgoCD and Flux GitOps workflows. Export CRD output to committed YAML and auto-sync least-privilege Roles."
 ---
 
@@ -12,11 +12,11 @@ GitOps treats a Git repository as the source of truth for cluster state. Every
 change is committed, reviewed, and auditable. This is exactly how RBAC changes
 should be managed:
 
-- **Peer review** — RBAC changes go through pull requests before being applied
-- **Audit trail** — every permission change is a Git commit with a timestamp and
+- **Peer review** – RBAC changes go through pull requests before being applied
+- **Audit trail** – every permission change is a Git commit with a timestamp and
   author
-- **Rollback** — reverting an RBAC change is a Git revert
-- **Consistency** — the same RBAC policies deploy to every environment
+- **Rollback** – reverting an RBAC change is a Git revert
+- **Consistency** – the same RBAC policies deploy to every environment
 
 Audicia produces RBAC policies as CRD output. GitOps turns that output into
 reviewed, versioned, deployable manifests.
@@ -24,7 +24,7 @@ reviewed, versioned, deployable manifests.
 ## The Workflow
 
 ```
-Audit Logs → Audicia → AudiciaPolicyReport CRD → Export → Git Commit → PR Review → ArgoCD/Flux Sync
+Audit Logs → Audicia → AudiciaPolicy CRD → Export → Git Commit → PR Review → ArgoCD/Flux Sync
 ```
 
 1. Audicia continuously processes audit events and produces policy reports
@@ -36,25 +36,25 @@ Audit Logs → Audicia → AudiciaPolicyReport CRD → Export → Git Commit →
 
 ## Exporting Suggested Policies
 
-Each `AudiciaPolicyReport` contains ready-to-apply RBAC manifests in
-`status.suggestedPolicy.manifests`. Export them with kubectl:
+Each `AudiciaPolicy` contains ready-to-apply RBAC manifests in `spec.manifests`.
+Export them with kubectl:
 
 ```bash
 # Export a single subject's policy
-kubectl get apreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   > policies/my-team/backend-rbac.yaml
 
 # Export all policies in a namespace
-for report in $(kubectl get apreport -n my-team -o name); do
+for report in $(kubectl get apolicy -n my-team -o name); do
   name=$(echo $report | cut -d/ -f2)
-  kubectl get apreport $name -n my-team \
-    -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+  kubectl get apolicy $name -n my-team \
+    -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
     > policies/my-team/${name}.yaml
 done
 ```
 
-The exported YAML is complete and apply-ready — it includes Role, RoleBinding,
+The exported YAML is complete and apply-ready – it includes Role, RoleBinding,
 and optionally ClusterRole and ClusterRoleBinding resources.
 
 ## ArgoCD Integration
@@ -101,15 +101,15 @@ spec:
 ```
 
 Setting `prune: false` prevents ArgoCD from deleting Roles that are removed from
-Git. This is a safety measure — you should explicitly manage RBAC deletions
+Git. This is a safety measure – you should explicitly manage RBAC deletions
 rather than letting sync handle them automatically.
 
 ### The PR Workflow
 
 ```bash
 # Export updated policies
-kubectl get apreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
   > rbac/my-team/backend-rbac.yaml
 
 # Create a branch and PR
@@ -172,16 +172,16 @@ exports policies:
 
 ```bash
 #!/bin/bash
-# export-rbac.sh — run periodically or on AudiciaPolicyReport changes
+# export-rbac.sh – run periodically or on AudiciaPolicy changes
 
 NAMESPACES="my-team staging production"
 
 for ns in $NAMESPACES; do
   mkdir -p rbac/$ns
-  for report in $(kubectl get apreport -n $ns -o name); do
+  for report in $(kubectl get apolicy -n $ns -o name); do
     name=$(echo $report | cut -d/ -f2)
-    kubectl get apreport $name -n $ns \
-      -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}' \
+    kubectl get apolicy $name -n $ns \
+      -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}' \
       > rbac/$ns/${name}.yaml
   done
 done
@@ -206,7 +206,7 @@ directly to main, ensuring that all RBAC changes go through review.
 ### Never Auto-Apply Without Review
 
 Audicia generates suggestions. The GitOps workflow adds a review step before
-those suggestions become live RBAC. This is intentional — automated privilege
+those suggestions become live RBAC. This is intentional – automated privilege
 changes without review are a security risk.
 
 ### Incremental Rollout
@@ -227,8 +227,8 @@ in a separate PR.
 ## Further Reading
 
 - **[Kubernetes RBAC for Multi-Tenant Clusters](/blog/kubernetes-rbac-multi-tenant)**
-  — per-namespace policy generation for teams
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+  – per-namespace policy generation for teams
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   the full before/after walkthrough
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and start generating exportable policies

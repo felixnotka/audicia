@@ -19,26 +19,26 @@ Every Kubernetes team runs into this loop:
    ends
 
 This cycle repeats for every service account in every namespace. Over time, the
-cluster accumulates dozens of overprivileged bindings — each one a potential
+cluster accumulates dozens of overprivileged bindings – each one a potential
 blast radius in a compromise.
 
 ## Why Correct RBAC Is Hard
 
 The difficulty is combinatorial. A single RBAC rule is a tuple of:
 
-- **API group** — `""`, `apps`, `batch`, `rbac.authorization.k8s.io`, etc.
-- **Resource** — `pods`, `deployments`, `configmaps`, `secrets`, etc.
-- **Subresource** — `pods/exec`, `pods/log`, `deployments/scale`, etc.
-- **Verb** — `get`, `list`, `watch`, `create`, `update`, `patch`, `delete`,
+- **API group** – `""`, `apps`, `batch`, `rbac.authorization.k8s.io`, etc.
+- **Resource** – `pods`, `deployments`, `configmaps`, `secrets`, etc.
+- **Subresource** – `pods/exec`, `pods/log`, `deployments/scale`, etc.
+- **Verb** – `get`, `list`, `watch`, `create`, `update`, `patch`, `delete`,
   `deletecollection`
-- **Namespace** — each combination may apply to one or many namespaces
+- **Namespace** – each combination may apply to one or many namespaces
 
 A service account that reads pods, creates deployments, and watches configmaps
 across two namespaces already needs multiple rules. A controller that manages
 CRDs, reads secrets, and patches status subresources needs even more.
 
 The combinatorial surface is large enough that getting it right by hand is
-impractical — and getting it wrong is invisible until something breaks or an
+impractical – and getting it wrong is invisible until something breaks or an
 auditor asks questions.
 
 ## The Real-World Consequences
@@ -47,7 +47,7 @@ auditor asks questions.
 
 An attacker who compromises a single overprivileged service account can move
 laterally across namespaces. If the service account has `get secrets` cluster-
-wide, every secret in every namespace is accessible — not just the ones in the
+wide, every secret in every namespace is accessible – not just the ones in the
 workload's own namespace.
 
 ### Privilege Escalation
@@ -60,8 +60,8 @@ workload into a platform-wide breach.
 
 SOC 2 CC6.1 and ISO 27001 A.8.3 both require least-privilege access controls. An
 auditor who sees `cluster-admin` bindings on non-system service accounts will
-flag it immediately. The manual remediation process — identifying each service
-account, determining what it actually needs, writing the correct policy — takes
+flag it immediately. The manual remediation process – identifying each service
+account, determining what it actually needs, writing the correct policy – takes
 weeks.
 
 ### Cryptojacking
@@ -87,9 +87,9 @@ The 403 cycle persists because the feedback loop is broken:
 
 The fix requires two things:
 
-1. **Observe actual API access patterns** — turn on Kubernetes audit logging so
+1. **Observe actual API access patterns** – turn on Kubernetes audit logging so
    every API call is recorded
-2. **Generate correct RBAC from those observations** — produce the minimal set
+2. **Generate correct RBAC from those observations** – produce the minimal set
    of permissions that satisfies observed behavior
 
 This is what [Kubernetes RBAC generators](/blog/kubernetes-rbac-tools-compared)
@@ -134,7 +134,7 @@ rules:
 ```
 
 Three verbs on two resources in one namespace. That is the actual permission
-surface — everything else was excess.
+surface – everything else was excess.
 
 For a full walkthrough of this process, see
 [Generating Least-Privilege RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs).
@@ -142,7 +142,7 @@ For a full walkthrough of this process, see
 ## Continuous, Not One-Time
 
 The 403 cycle repeats because RBAC is treated as a one-time setup task.
-Workloads change — new API calls are added, old ones are removed — but
+Workloads change – new API calls are added, old ones are removed – but
 permissions stay frozen.
 
 Continuous RBAC generation solves this. An operator that runs inside the cluster
@@ -151,15 +151,15 @@ quarterly exercise into a living process.
 
 This is the approach Audicia takes. It runs as a Kubernetes Operator, processes
 audit events continuously with checkpoint and resume, and produces
-`AudiciaPolicyReport` CRDs that update as behavior changes.
+`AudiciaReport` CRDs that update as behavior changes.
 
 ## What's Next
 
-- **[Kubernetes RBAC Explained](/blog/kubernetes-rbac-explained)** — if you want
+- **[Kubernetes RBAC Explained](/blog/kubernetes-rbac-explained)** – if you want
   a refresher on Roles, ClusterRoles, Bindings, and how they connect
-- **[Kubernetes RBAC Best Practices](/blog/kubernetes-rbac-best-practices)** —
+- **[Kubernetes RBAC Best Practices](/blog/kubernetes-rbac-best-practices)** –
   opinionated guide to production-grade RBAC
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full before/after walkthrough with Audicia
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and generate your first policy reports

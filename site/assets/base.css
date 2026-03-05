@@ -1,4 +1,4 @@
-/* Inter — latin-ext */
+/* Inter – latin-ext */
 @font-face {
   font-family: "Inter";
   font-style: normal;
@@ -25,7 +25,7 @@
     U+A720-A7FF;
 }
 
-/* Inter — latin */
+/* Inter – latin */
 @font-face {
   font-family: "Inter";
   font-style: normal;
@@ -54,7 +54,7 @@
     U+FFFD;
 }
 
-/* JetBrains Mono — latin-ext */
+/* JetBrains Mono – latin-ext */
 @font-face {
   font-family: "JetBrains Mono";
   font-style: normal;
@@ -82,7 +82,7 @@
     U+A720-A7FF;
 }
 
-/* JetBrains Mono — latin */
+/* JetBrains Mono – latin */
 @font-face {
   font-family: "JetBrains Mono";
   font-style: normal;

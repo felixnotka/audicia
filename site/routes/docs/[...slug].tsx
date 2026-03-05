@@ -20,7 +20,7 @@ export const handler = define.handlers({
       throw new HttpError(404, "Page not found");
     }
 
-    ctx.state.title = `${doc.title} — Audicia Docs`;
+    ctx.state.title = `${doc.title} – Audicia Docs`;
     ctx.state.description = `Audicia documentation: ${doc.title}`;
 
     const searchIndex = await buildSearchIndex();
@@ -36,7 +36,7 @@ export default define.page<typeof handler>(function DocsPage(props) {
     <div>
       <Head>
         <meta property="og:type" content="article" />
-        <meta property="og:title" content={`${doc.title} — Audicia Docs`} />
+        <meta property="og:title" content={`${doc.title} – Audicia Docs`} />
       </Head>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <script

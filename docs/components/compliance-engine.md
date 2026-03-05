@@ -28,13 +28,13 @@ The resolver queries the Kubernetes API to determine what a subject is
 
 Given a subject (ServiceAccount, User, or Group), the resolver:
 
-1. **Lists all ClusterRoleBindings** — filters by subject match — resolves each
+1. **Lists all ClusterRoleBindings** – filters by subject match – resolves each
    referenced ClusterRole into PolicyRules with cluster-wide scope
    (Namespace="").
-2. **Lists all RoleBindings** — filters by subject match — resolves each
+2. **Lists all RoleBindings** – filters by subject match – resolves each
    referenced Role or ClusterRole into PolicyRules scoped to the RoleBinding's
    namespace.
-3. **Returns `[]ScopedRule`** — a flat list of `rbacv1.PolicyRule` entries, each
+3. **Returns `[]ScopedRule`** – a flat list of `rbacv1.PolicyRule` entries, each
    annotated with the namespace they apply in.
 
 ### Design Decisions
@@ -42,7 +42,7 @@ Given a subject (ServiceAccount, User, or Group), the resolver:
 | Decision                                             | Rationale                                                                          |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Uses the caching client (not direct API reader)      | RBAC types change infrequently; informer cache avoids API server load              |
-| Skips deleted/missing roles silently                 | Graceful degradation — a missing role doesn't block the entire evaluation          |
+| Skips deleted/missing roles silently                 | Graceful degradation – a missing role doesn't block the entire evaluation          |
 | Does not resolve aggregated ClusterRoles             | Label-selector aggregation is complex and uncommon; documented as known limitation |
 | Subject matching: SA by name+namespace, User by name | Follows Kubernetes RBAC binding semantics                                          |
 
@@ -60,7 +60,7 @@ cache rather than API server calls.
 The diff engine is a pure function:
 `Evaluate(observed []ObservedRule, effective []ScopedRule) *ComplianceReport`.
 
-**Score:** `usedEffective / totalEffective × 100` — classifies each effective
+**Score:** `usedEffective / totalEffective × 100` – classifies each effective
 rule as **used** (exercised by an observed action), **excess** (never observed),
 or flags observed actions with no effective rule as **uncovered**. The full list
 of excess and uncovered rules is available in `compliance.excessRules` and
@@ -76,14 +76,14 @@ resource list.
 ## Edge Cases
 
 - **No RBAC + no observations:** Score 100, Green (nothing to do).
-- **No RBAC + observations exist:** Compliance is `nil` — the score cannot be
+- **No RBAC + observations exist:** Compliance is `nil` – the score cannot be
   evaluated. Report still gets observed rules and suggested policy.
-- **RBAC exists + no observations:** Score 0, Red — all grants are excess.
+- **RBAC exists + no observations:** Score 0, Red – all grants are excess.
 
 ## Graceful Degradation
 
 If the RBAC resolver fails (e.g., the operator doesn't have RBAC read
-permissions, or the API server is unreachable), compliance is `nil` — the report
+permissions, or the API server is unreachable), compliance is `nil` – the report
 still gets observed rules and suggested policy. The operator logs the error and
 continues normally.
 
@@ -115,10 +115,10 @@ continues normally.
 
 ## Related
 
-- [Compliance Scoring](../concepts/compliance-scoring.md) — Conceptual overview
+- [Compliance Scoring](../concepts/compliance-scoring.md) – Conceptual overview
   of how scoring works
-- [Strategy Engine](strategy-engine.md) — Generates the RBAC manifests that get
+- [Strategy Engine](strategy-engine.md) – Generates the RBAC manifests that get
   evaluated
-- [Controller](controller.md) — Orchestrates the compliance evaluation cycle
-- [AudiciaPolicyReport CRD](../reference/crd-audiciapolicyreport.md) —
-  `status.compliance` field reference
+- [Controller](controller.md) – Orchestrates the compliance evaluation cycle
+- [AudiciaReport CRD](../reference/crd-audiciareport.md) – `status.compliance`
+  field reference

@@ -26,7 +26,7 @@ export default function Compliance() {
                 Maps to SOC 2, ISO 27001, PCI DSS, and NIST controls
               </li>
               <li>
-                Evidence: AudiciaPolicyReport showing score, excess grants, and
+                Evidence: AudiciaReport showing score, excess grants, and
                 sensitive resources
               </li>
             </ul>

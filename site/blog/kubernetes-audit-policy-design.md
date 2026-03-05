@@ -9,7 +9,7 @@ description: "Design a Kubernetes audit policy that captures RBAC-relevant data 
 ## The Design Problem
 
 The default approach to Kubernetes audit logging is simple: log everything at
-`Metadata` level. This works — but it generates enormous volume. A production
+`Metadata` level. This works – but it generates enormous volume. A production
 cluster with 50 nodes can produce 1–10 GB of audit logs per day, and much of
 that data is noise that adds no value for RBAC analysis, security investigation,
 or compliance evidence.
@@ -22,10 +22,10 @@ analysis while lean enough to run sustainably in production.
 
 A Kubernetes audit policy is an ordered list of rules. Each rule specifies:
 
-- **level** — what to record (`None`, `Metadata`, `Request`, `RequestResponse`)
-- **matching criteria** — which events the rule applies to (users, resources,
+- **level** – what to record (`None`, `Metadata`, `Request`, `RequestResponse`)
+- **matching criteria** – which events the rule applies to (users, resources,
   namespaces, verbs, nonResourceURLs)
-- **omitStages** — which request stages to skip
+- **omitStages** – which request stages to skip
 
 Rules are evaluated in order. The first matching rule determines the audit level
 for that event.
@@ -108,7 +108,7 @@ omitStages:
   - RequestReceived
 ```
 
-**Volume reduction:** 50% — this single directive halves the number of events
+**Volume reduction:** 50% – this single directive halves the number of events
 per API call.
 
 ## The Recommended Policy
@@ -205,7 +205,7 @@ rules:
     verbs: ["get", "list", "watch"]
 ```
 
-Be careful with controller exclusions — they prevent RBAC analysis for that
+Be careful with controller exclusions – they prevent RBAC analysis for that
 controller. Only exclude controllers whose RBAC you do not need to manage.
 
 ## Audit Policy vs. Audicia Filters
@@ -230,8 +230,8 @@ in policy reports.
 ## Further Reading
 
 - **[How to Enable Kubernetes Audit Logging](/blog/kubernetes-audit-logging-guide)**
-  — platform-specific setup for kubeadm, kind, EKS, GKE, AKS
-- **[Filter Recipes](/blog/kubernetes-audit-log-filter-recipes)** — Audicia
+  – platform-specific setup for kubeadm, kind, EKS, GKE, AKS
+- **[Filter Recipes](/blog/kubernetes-audit-log-filter-recipes)** – Audicia
   filter chain patterns for common scenarios
-- **[Audit Policy Guide](/docs/guides/audit-policy)** — Audicia's documentation
+- **[Audit Policy Guide](/docs/guides/audit-policy)** – Audicia's documentation
   on configuring the audit policy

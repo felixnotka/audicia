@@ -7,7 +7,7 @@ const notFoundHtml = `<!DOCTYPE html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Page Not Found — Audicia</title>
+  <title>Page Not Found – Audicia</title>
   <link rel="icon" href="/favicon.ico" />
   <style>
     @font-face {

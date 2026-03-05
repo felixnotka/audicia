@@ -9,7 +9,7 @@ Current limitations of Audicia, organized by area.
 | Limitation                  | Impact                                                                                                                                                       |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Aggregated ClusterRoles** | The RBAC resolver does NOT follow label-selector-based aggregation. Permissions from aggregated roles may appear as "uncovered" in compliance reports.       |
-| **Group membership**        | Audit events carry the username, not the group. Group-based compliance requires matching group bindings by name — group-to-binding attribution is ambiguous. |
+| **Group membership**        | Audit events carry the username, not the group. Group-based compliance requires matching group bindings by name – group-to-binding attribution is ambiguous. |
 
 ---
 
@@ -39,4 +39,4 @@ Current limitations of Audicia, organized by area.
 | **Cloud: at-least-once delivery** | Cloud message buses provide at-least-once delivery. Duplicate events may be processed after restart; the aggregator handles idempotent merging.                               |
 | **Cloud: build tags required**    | Cloud adapters require a binary built with the appropriate Go build tags (e.g., `-tags azure,aws,gcp`). The default binary does not include cloud SDKs.                       |
 | **TLS cert rotation**             | `ListenAndServeTLS` loads certificates at startup. For rotation without pod restart, `tls.Config.GetCertificate` would be needed (not yet implemented).                       |
-| **Inode detection**               | Log rotation detection uses `syscall.Stat_t` on Linux. On non-Linux platforms, inode detection is disabled — rotation falls back to file-not-found handling.                  |
+| **Inode detection**               | Log rotation detection uses `syscall.Stat_t` on Linux. On non-Linux platforms, inode detection is disabled – rotation falls back to file-not-found handling.                  |

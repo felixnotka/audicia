@@ -3,7 +3,7 @@ import { define } from "../utils.ts";
 const SITE_NAME = "Audicia";
 const SITE_URL = "https://audicia.io";
 const DEFAULT_TITLE =
-  "Audicia — Automated RBAC Policy Generation for Kubernetes";
+  "Audicia – Automated RBAC Policy Generation for Kubernetes";
 const DEFAULT_DESCRIPTION =
   "Audicia is a Kubernetes Operator that watches audit logs and generates least-privilege RBAC policies. Open source, operator-native, with built-in compliance scoring.";
 

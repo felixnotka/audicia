@@ -2,7 +2,7 @@
 title: "audit2rbac vs Audicia: CLI Script vs Kubernetes Operator"
 seo_title: "audit2rbac vs Audicia: CLI Script vs Kubernetes Operator"
 published_at: 2026-03-07T08:00:00.000Z
-snippet: "A side-by-side comparison of audit2rbac and Audicia — two tools that generate RBAC from audit logs, with very different architectures."
+snippet: "A side-by-side comparison of audit2rbac and Audicia – two tools that generate RBAC from audit logs, with very different architectures."
 description: "Compare audit2rbac and Audicia for Kubernetes RBAC generation. Side-by-side feature comparison: CLI vs Operator, stateless vs stateful, raw YAML vs CRDs."
 ---
 
@@ -34,7 +34,7 @@ state management, compliance scoring, and GitOps integration.
 | **Architecture**           | CLI tool                         | Kubernetes Operator                          |
 | **Execution model**        | One-shot (run, get output, done) | Continuous (runs in-cluster)                 |
 | **State across restarts**  | None (re-reads entire log)       | Checkpoint/resume via CRD status             |
-| **Output format**          | Raw YAML to stdout               | `AudiciaPolicyReport` CRD                    |
+| **Output format**          | Raw YAML to stdout               | `AudiciaReport` + `AudiciaPolicy` CRDs       |
 | **Ingestion modes**        | File only                        | File, webhook, cloud (AKS)                   |
 | **Subject normalization**  | Partial                          | Full (SA, User, Group parsing)               |
 | **Subresource handling**   | Partial                          | Full concatenation (`pods/exec`)             |
@@ -66,17 +66,19 @@ change on Linux), it automatically resets and begins reading the new file.
 audit2rbac writes raw YAML to stdout. You pipe it to a file, review it, and
 apply it. There is no structured Kubernetes resource representing the output.
 
-Audicia writes `AudiciaPolicyReport` CRDs. These are first-class Kubernetes
-resources that you can query with `kubectl`, watch with controllers, and
-integrate into GitOps pipelines. The report includes the suggested manifests,
-compliance metadata, observed rule counts, and timestamps.
+Audicia writes `AudiciaReport` and `AudiciaPolicy` CRDs. These are first-class
+Kubernetes resources that you can query with `kubectl`, watch with controllers,
+and integrate into GitOps pipelines. The report includes compliance metadata,
+observed rule counts, and timestamps. The policy contains the suggested
+manifests.
 
 ```bash
 # audit2rbac: pipe to file
 audit2rbac -f audit.log --serviceaccount my-team:backend > backend-role.yaml
 
-# Audicia: query the CRD
-kubectl get audiciapolicyreport report-backend -n my-team -o yaml
+# Audicia: query the CRDs
+kubectl get areport report-backend -n my-team -o yaml
+kubectl get apolicy report-backend -n my-team -o yaml
 ```
 
 ### No Compliance Scoring
@@ -106,11 +108,11 @@ verbs listed individually. There are no knobs to control the output.
 
 Audicia provides configurable strategy knobs:
 
-- **scopeMode** — `NamespaceStrict` for per-namespace Roles, or
+- **scopeMode** – `NamespaceStrict` for per-namespace Roles, or
   `ClusterScopeAllowed` for a single ClusterRole
-- **verbMerge** — `Smart` collapses rules with the same resource into one rule
+- **verbMerge** – `Smart` collapses rules with the same resource into one rule
   with merged verbs, `Exact` keeps them separate
-- **wildcards** — `Forbidden` never generates `*`, `Safe` allows `*` only when
+- **wildcards** – `Forbidden` never generates `*`, `Safe` allows `*` only when
   all 8 standard verbs are observed
 
 ### No Filtering
@@ -169,9 +171,9 @@ walkthrough.
 
 ## Further Reading
 
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full before/after walkthrough
-- **[Kubernetes RBAC Tools Compared](/blog/kubernetes-rbac-tools-compared)** —
+- **[Kubernetes RBAC Tools Compared](/blog/kubernetes-rbac-tools-compared)** –
   where generators fit alongside scanners and enforcers
-- **[Pipeline Architecture](/docs/concepts/pipeline)** — how Audicia processes
+- **[Pipeline Architecture](/docs/concepts/pipeline)** – how Audicia processes
   events through six stages

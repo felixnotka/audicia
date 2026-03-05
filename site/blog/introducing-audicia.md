@@ -1,6 +1,6 @@
 ---
 title: "Introducing Audicia: Stop Writing RBAC by Hand"
-seo_title: "Stop Writing RBAC by Hand — Introducing Audicia"
+seo_title: "Stop Writing RBAC by Hand – Introducing Audicia"
 published_at: 2026-02-20T08:00:00.000Z
 snippet: "Audicia is a Kubernetes Operator that watches your audit logs and generates least-privilege RBAC policies. Here's why I built it and how it works."
 description: "Audicia is a Kubernetes Operator that generates least-privilege RBAC policies from audit logs. Open source, Apache 2.0, never auto-applies."
@@ -20,13 +20,14 @@ it.
 
 Audicia is a Kubernetes Operator that:
 
-1. **Ingests audit logs** — either by tailing files on the control plane or
+1. **Ingests audit logs** – either by tailing files on the control plane or
    receiving real-time events via webhook
-2. **Normalizes and filters events** — parsing ServiceAccount identities,
+2. **Normalizes and filters events** – parsing ServiceAccount identities,
    handling subresources, migrating deprecated API groups, and dropping system
    noise
-3. **Generates policy reports** — an `AudiciaPolicyReport` CRD per subject,
-   containing observed rules, ready-to-apply RBAC YAML, and a compliance score
+3. **Generates policy reports** – an `AudiciaReport` CRD per subject, containing
+   observed rules, a compliance score, and a companion `AudiciaPolicy` with
+   ready-to-apply RBAC YAML
 
 The compliance score compares what each subject _actually uses_ against what
 it's _allowed to use_. Red means significant overprivilege. Green means tight
@@ -36,7 +37,7 @@ permissions. Learn more about how this works in
 ## How It Works
 
 ```yaml
-# values.yaml — enable file-based audit log ingestion
+# values.yaml – enable file-based audit log ingestion
 auditLog:
   enabled: true
   hostPath: /var/log/kubernetes/audit/audit.log
@@ -51,7 +52,7 @@ helm install audicia oci://ghcr.io/felixnotka/audicia/charts/audicia-operator \
 kubectl apply -f audicia-source.yaml
 
 # Check reports
-kubectl get apreport --all-namespaces -o wide
+kubectl get areport --all-namespaces -o wide
 ```
 
 Create a `values.yaml` with your ingestion mode, install, apply an AudiciaSource
@@ -61,12 +62,12 @@ step.
 
 ## What Makes Audicia Different
 
-- **Continuous** — runs as an operator, not a one-shot CLI tool
-- **Stateful** — checkpoint/resume means no data loss on restarts
-- **CRD-native** — output is a Kubernetes resource, ready for GitOps
-- **Compliance scoring** — built-in Red/Yellow/Green scoring with sensitive
+- **Continuous** – runs as an operator, not a one-shot CLI tool
+- **Stateful** – checkpoint/resume means no data loss on restarts
+- **CRD-native** – output is a Kubernetes resource, ready for GitOps
+- **Compliance scoring** – built-in Red/Yellow/Green scoring with sensitive
   excess detection
-- **Never auto-applies** — Audicia generates recommendations, humans or reviewed
+- **Never auto-applies** – Audicia generates recommendations, humans or reviewed
   pipelines apply them
 
 ## Open Source

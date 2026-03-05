@@ -60,7 +60,7 @@ rules:
 
 - **Health endpoints** generate enormous volume and are never useful for RBAC
   analysis.
-- **system:apiserver** is internal plumbing — filtering it at the audit level
+- **system:apiserver** is internal plumbing – filtering it at the audit level
   reduces log volume by ~30%.
 - **`omitStages: [RequestReceived]`** skips the initial "request received"
   stage, halving the number of events per API call while keeping the
@@ -156,7 +156,7 @@ For file-based ingestion, configure log rotation to prevent disk exhaustion:
 - --audit-log-maxage=7 # Max days to retain old files
 ```
 
-Audicia handles rotation automatically via inode tracking (Linux) — when it
+Audicia handles rotation automatically via inode tracking (Linux) – when it
 detects the file was rotated, it resets the offset and starts reading the new
 file.
 

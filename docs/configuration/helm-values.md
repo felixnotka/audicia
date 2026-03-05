@@ -94,7 +94,7 @@ set via `extraEnv` or by customizing the Deployment template:
 
 | Probe     | Endpoint   | Port | Description                                  |
 | --------- | ---------- | ---- | -------------------------------------------- |
-| Liveness  | `/healthz` | 8081 | Basic ping check — operator process is alive |
+| Liveness  | `/healthz` | 8081 | Basic ping check – operator process is alive |
 | Readiness | `/readyz`  | 8081 | Operator is ready to process events          |
 
 Both use standard `healthz.Ping` checks. Ports are configurable via

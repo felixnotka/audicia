@@ -16,7 +16,7 @@ observed behavior.
 
 The result: IAM policies that match reality instead of guesswork.
 
-Kubernetes has the same problem — but until recently, no equivalent tool.
+Kubernetes has the same problem – but until recently, no equivalent tool.
 
 ## The Kubernetes Equivalent
 
@@ -40,11 +40,11 @@ In both cases, the approach is:
 
 Kubernetes RBAC has the same combinatorial complexity as IAM:
 
-- **API groups** — `""`, `apps`, `batch`, `rbac.authorization.k8s.io`, etc.
-- **Resources** — pods, deployments, secrets, configmaps, and dozens more
-- **Subresources** — `pods/exec`, `pods/log`, `deployments/scale`
-- **Verbs** — get, list, watch, create, update, patch, delete, deletecollection
-- **Namespaces** — each combination can apply per-namespace or cluster-wide
+- **API groups** – `""`, `apps`, `batch`, `rbac.authorization.k8s.io`, etc.
+- **Resources** – pods, deployments, secrets, configmaps, and dozens more
+- **Subresources** – `pods/exec`, `pods/log`, `deployments/scale`
+- **Verbs** – get, list, watch, create, update, patch, delete, deletecollection
+- **Namespaces** – each combination can apply per-namespace or cluster-wide
 
 A single workload might need 3 verbs on 4 resources across 2 namespaces. But the
 service account is typically bound to a broad Role (or `cluster-admin`) because
@@ -86,8 +86,8 @@ currently allowed to do. This includes:
 
 Compare granted against observed. For each granted permission rule:
 
-- **Used** — at least one audit event exercised this permission
-- **Excess** — no audit event exercised this permission
+- **Used** – at least one audit event exercised this permission
+- **Excess** – no audit event exercised this permission
 
 The excess rules are the overprivilege. The ratio of used to total gives the
 compliance score.
@@ -121,7 +121,7 @@ This is the Kubernetes equivalent of IAM Access Analyzer's tightened policy.
 Kubernetes subresources (`pods/exec`, `pods/log`, `deployments/scale`) are
 separate RBAC resources that need their own rules. Audit logs record the
 subresource separately from the parent resource. A proper analyzer must
-concatenate them correctly — `get pods/log` is different from `get pods`.
+concatenate them correctly – `get pods/log` is different from `get pods`.
 
 ### API Group Migration
 
@@ -134,7 +134,7 @@ generates RBAC from these events must normalize `extensions/v1beta1` to
 
 A service account may access resources in multiple namespaces. IAM Access
 Analyzer can generate a single tightened policy. For Kubernetes, the equivalent
-is per-namespace Roles — each scoped to the namespace where the access was
+is per-namespace Roles – each scoped to the namespace where the access was
 observed.
 
 ### Observation Period
@@ -149,19 +149,19 @@ policy is complete.
 Like IAM Access Analyzer flagging high-risk IAM actions, Audicia flags excess
 RBAC permissions on sensitive resources:
 
-- **Secrets** — unused access to secrets
-- **Nodes** — unused direct node access
-- **Webhook configurations** — unused mutating or validating webhook access
-- **RBAC resources** — unused ability to modify roles and bindings
+- **Secrets** – unused access to secrets
+- **Nodes** – unused direct node access
+- **Webhook configurations** – unused mutating or validating webhook access
+- **RBAC resources** – unused ability to modify roles and bindings
 
 These are flagged in the `sensitiveExcess` field of each compliance report,
 allowing teams to prioritize the most dangerous excess first.
 
 ## Further Reading
 
-- **[Kubernetes RBAC Drift Detection](/blog/kubernetes-rbac-drift-detection)** —
+- **[Kubernetes RBAC Drift Detection](/blog/kubernetes-rbac-drift-detection)** –
   detecting and acting on permission drift
 - **[Kubernetes RBAC Compliance Evidence](/blog/kubernetes-rbac-compliance-evidence)**
-  — mapping right-sizing results to SOC 2, ISO 27001, PCI DSS
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+  – mapping right-sizing results to SOC 2, ISO 27001, PCI DSS
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and start right-sizing RBAC

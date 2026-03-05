@@ -21,13 +21,13 @@ The compliance score is a single number from 0 to 100:
 score = usedEffective / totalEffective * 100
 ```
 
-- **usedEffective** — the number of distinct permission rules the subject
+- **usedEffective** – the number of distinct permission rules the subject
   actually exercised (observed in audit logs)
-- **totalEffective** — the total number of permission rules granted to the
+- **totalEffective** – the total number of permission rules granted to the
   subject via Roles and ClusterRoles
 
 A score of 100 means the subject uses every permission it has. A score of 10
-means it uses only 10% — the other 90% is excess privilege.
+means it uses only 10% – the other 90% is excess privilege.
 
 ## The Severity Bands
 
@@ -54,16 +54,16 @@ teams prioritize: fix the dangerous excess first, clean up the rest later.
 
 ## What To Do About a Red Score
 
-A Red score doesn't mean something is broken — it means there's an opportunity
+A Red score doesn't mean something is broken – it means there's an opportunity
 to tighten permissions. The typical workflow:
 
-1. **Read the report** — `kubectl get apreport <name> -o yaml` shows the full
+1. **Read the report** – `kubectl get areport <name> -o yaml` shows the full
    suggested policy
-2. **Review the diff** — compare the suggested policy against the current
+2. **Review the diff** – compare the suggested policy against the current
    Roles/Bindings
-3. **Apply in a non-production environment first** — verify that the workload
+3. **Apply in a non-production environment first** – verify that the workload
    still functions correctly with tighter permissions
-4. **Apply in production** — once validated, apply the suggested Roles and
+4. **Apply in production** – once validated, apply the suggested Roles and
    Bindings
 
 Audicia never applies policies automatically. The operator generates
@@ -82,7 +82,7 @@ snapshot.
 ## See It In Action
 
 ```bash
-kubectl get apreport --all-namespaces -o wide
+kubectl get areport --all-namespaces -o wide
 ```
 
 ```

@@ -13,7 +13,7 @@ export default function HowItWorks() {
             <p className="pipeline-step-body">
               Create an AudiciaSource custom resource. Audicia starts tailing
               the log file or receiving real-time events via webhook. Both modes
-              support checkpoint/resume — no data is lost on restart.
+              support checkpoint/resume – no data is lost on restart.
             </p>
           </div>
 
@@ -36,10 +36,10 @@ export default function HowItWorks() {
               Get a compliance-scored policy report
             </h3>
             <p className="pipeline-step-body">
-              An AudiciaPolicyReport CR appears for each subject. It contains
-              observed rules, ready-to-apply Role and RoleBinding YAML, and a
-              compliance score comparing observed usage against effective RBAC
-              grants.
+              An AudiciaReport and AudiciaPolicy CR appear for each subject. The
+              report contains observed rules and a compliance score. The policy
+              contains ready-to-apply Role and RoleBinding YAML with an approval
+              workflow.
             </p>
           </div>
 

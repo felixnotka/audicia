@@ -59,6 +59,7 @@ export const DOCS_NAV: NavSection[] = [
     pages: [
       { slug: "filter-recipes", title: "Filter Recipes" },
       { slug: "demo-walkthrough", title: "Demo Walkthrough" },
+      { slug: "upgrading-to-0.5", title: "Upgrading to 0.5.0" },
     ],
   },
   {
@@ -89,7 +90,8 @@ export const DOCS_NAV: NavSection[] = [
     expert: true,
     pages: [
       { slug: "crd-audiciasource", title: "AudiciaSource CRD" },
-      { slug: "crd-audiciapolicyreport", title: "AudiciaPolicyReport CRD" },
+      { slug: "crd-audiciareport", title: "AudiciaReport CRD" },
+      { slug: "crd-audiciapolicy", title: "AudiciaPolicy CRD" },
       { slug: "features", title: "Features" },
       { slug: "metrics", title: "Metrics" },
     ],

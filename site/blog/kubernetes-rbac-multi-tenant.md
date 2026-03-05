@@ -2,7 +2,7 @@
 title: "Kubernetes RBAC for Multi-Tenant Clusters: Per-Namespace Policy Generation"
 seo_title: "Kubernetes RBAC for Multi-Tenant Clusters: Per-Namespace Policy Generation"
 published_at: 2026-04-10T08:00:00.000Z
-snippet: "How to generate per-namespace RBAC policies in multi-tenant Kubernetes clusters — isolating teams while maintaining least-privilege across all tenants."
+snippet: "How to generate per-namespace RBAC policies in multi-tenant Kubernetes clusters – isolating teams while maintaining least-privilege across all tenants."
 description: "Generate per-namespace RBAC policies for multi-tenant Kubernetes clusters. Isolate teams with namespace-scoped Roles while maintaining least-privilege access."
 ---
 
@@ -28,7 +28,7 @@ depends on its RBAC scope:
   access resources in every namespace. Compromise affects all tenants.
 
 The default approach in many clusters is to use ClusterRoleBindings for
-convenience — binding a broad ClusterRole to a service account so it works
+convenience – binding a broad ClusterRole to a service account so it works
 across namespaces. This is the opposite of multi-tenant isolation.
 
 ## Generating Per-Namespace Policies
@@ -131,8 +131,8 @@ spec:
     wildcards: Forbidden
 ```
 
-Each `AudiciaSource` produces its own set of `AudiciaPolicyReport` CRDs, scoped
-to its configured namespace filter.
+Each `AudiciaSource` produces its own set of `AudiciaReport` CRDs, scoped to its
+configured namespace filter.
 
 ## Cross-Namespace Access Patterns
 
@@ -144,18 +144,18 @@ Multi-tenant clusters often have legitimate cross-namespace access:
 
 With `NamespaceStrict`, Audicia generates per-namespace Roles for each namespace
 the subject accesses. The monitoring agent gets a Role in each namespace it
-reads from — not a single ClusterRole that grants access to everything.
+reads from – not a single ClusterRole that grants access to everything.
 
 This is the correct trade-off for multi-tenant isolation: more Roles, but each
 one is scoped and auditable.
 
 ## Compliance Per Tenant
 
-Each `AudiciaPolicyReport` includes a compliance score. In a multi-tenant
-cluster, you can view compliance per namespace:
+Each `AudiciaReport` includes a compliance score. In a multi-tenant cluster, you
+can view compliance per namespace:
 
 ```bash
-kubectl get apreport -n team-a -o wide
+kubectl get areport -n team-a -o wide
 ```
 
 ```
@@ -171,8 +171,8 @@ enforce tenant isolation of compliance data.
 ## Further Reading
 
 - **[Audicia Strategy Knobs Explained](/blog/audicia-strategy-knobs-explained)**
-  — deep dive into scopeMode, verbMerge, and wildcards
-- **[Using Audicia with GitOps](/blog/audicia-gitops-argocd-flux)** — managing
+  – deep dive into scopeMode, verbMerge, and wildcards
+- **[Using Audicia with GitOps](/blog/audicia-gitops-argocd-flux)** – managing
   per-namespace policies in ArgoCD and Flux
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia in your multi-tenant cluster

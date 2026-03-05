@@ -17,7 +17,7 @@ the log group `/aws/eks/<CLUSTER_NAME>/cluster`.
 
 > **Cost note:** Enabling control plane logging incurs CloudWatch Logs charges.
 > Consider setting a retention policy on the log group to control costs (e.g.,
-> 30 or 90 days). AWS may also truncate very large audit log entries — see
+> 30 or 90 days). AWS may also truncate very large audit log entries – see
 > [EKS logging documentation](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)
 > for details on limits.
 
@@ -84,7 +84,7 @@ Note the policy ARN from the output.
 ## Step 3: Set Up IRSA
 
 IRSA allows Kubernetes ServiceAccounts to assume IAM roles without static
-credentials. Choose **one** of the two approaches below — do not mix them, as
+credentials. Choose **one** of the two approaches below – do not mix them, as
 having both `eksctl` and Helm manage the ServiceAccount annotation creates
 competing sources of truth for the role ARN.
 
@@ -183,11 +183,11 @@ aws iam attach-role-policy \
 Create a `values-eks.yaml` file. The ServiceAccount section differs depending on
 which IRSA approach you chose above.
 
-**If you used Option A (eksctl)** — `eksctl` already created and annotated the
+**If you used Option A (eksctl)** – `eksctl` already created and annotated the
 ServiceAccount, so tell Helm to reuse it:
 
 ```yaml
-# values-eks.yaml (Option A — eksctl-managed SA)
+# values-eks.yaml (Option A – eksctl-managed SA)
 cloudAuditLog:
   enabled: true
   provider: AWSCloudWatch
@@ -203,11 +203,11 @@ serviceAccount:
   name: audicia-operator
 ```
 
-**If you used Option B (manual)** — Helm creates the ServiceAccount and sets the
+**If you used Option B (manual)** – Helm creates the ServiceAccount and sets the
 role annotation:
 
 ```yaml
-# values-eks.yaml (Option B — Helm-managed SA)
+# values-eks.yaml (Option B – Helm-managed SA)
 cloudAuditLog:
   enabled: true
   provider: AWSCloudWatch
@@ -313,7 +313,7 @@ curl localhost:8080/metrics | grep audicia_cloud
 ```
 
 You should see `audicia_cloud_messages_received_total` incrementing and
-`AudiciaPolicyReport` resources being created.
+`AudiciaReport` resources being created.
 
 ## Production Hardening
 
@@ -403,7 +403,7 @@ endpoints.
 | No messages received                              | Audit logging not enabled on EKS cluster                                             | Enable via `aws eks update-cluster-config --logging`                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | No messages received                              | Wrong log group name                                                                 | Verify with `aws logs describe-log-groups`                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `AccessDeniedException` on CloudWatch             | Missing `logs:FilterLogEvents` permission or incomplete resource ARN                 | Verify the IAM policy grants `logs:FilterLogEvents` and `logs:DescribeLogStreams` on **both** the log group ARN (`...:cluster:*`) and the log stream ARN (`...:cluster:log-stream:*`). `FilterLogEvents` requires the `log-stream:*` resource.                                                                                                                                                                                                                                    |
-| `AccessDenied` on `sts:AssumeRoleWithWebIdentity` | Trust policy mismatch — the IAM role being assumed does not trust the pod's identity | 1. Check which role the pod is using: `kubectl set env deploy/audicia-operator -n audicia-system --list \| grep AWS_ROLE_ARN`. 2. Inspect that role's trust policy: `aws iam get-role --role-name <ROLE>`. 3. Verify the trust policy's OIDC provider ARN, `:sub` condition (`system:serviceaccount:audicia-system:audicia-operator`), and `:aud` condition (`sts.amazonaws.com`) all match. 4. Verify the OIDC provider exists in IAM: `aws iam list-open-id-connect-providers`. |
+| `AccessDenied` on `sts:AssumeRoleWithWebIdentity` | Trust policy mismatch – the IAM role being assumed does not trust the pod's identity | 1. Check which role the pod is using: `kubectl set env deploy/audicia-operator -n audicia-system --list \| grep AWS_ROLE_ARN`. 2. Inspect that role's trust policy: `aws iam get-role --role-name <ROLE>`. 3. Verify the trust policy's OIDC provider ARN, `:sub` condition (`system:serviceaccount:audicia-system:audicia-operator`), and `:aud` condition (`sts.amazonaws.com`) all match. 4. Verify the OIDC provider exists in IAM: `aws iam list-open-id-connect-providers`. |
 | `AccessDenied` on STS                             | eksctl/Helm role ARN mismatch                                                        | If you used `eksctl create iamserviceaccount` without `--role-name`, the role has an auto-generated name. Verify the SA annotation matches the role whose trust policy you configured.                                                                                                                                                                                                                                                                                            |
 | Authentication error                              | IRSA not configured                                                                  | Check SA annotation and OIDC provider setup                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `WebIdentityErr`                                  | Trust policy mismatch                                                                | Verify OIDC provider, namespace, and SA name in trust policy                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -414,9 +414,9 @@ endpoints.
 
 ## Related
 
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture and
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) – Architecture and
   design
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — Full `spec.cloud`
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – Full `spec.cloud`
   field reference
-- [Helm Values](../configuration/helm-values.md) — `cloudAuditLog` configuration
-- [Metrics Reference](../reference/metrics.md) — Cloud metrics
+- [Helm Values](../configuration/helm-values.md) – `cloudAuditLog` configuration
+- [Metrics Reference](../reference/metrics.md) – Cloud metrics

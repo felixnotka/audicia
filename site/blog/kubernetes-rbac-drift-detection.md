@@ -18,7 +18,7 @@ It happens naturally:
 - A CI pipeline had `get secrets` for a feature that was removed six months ago
 - An operator was granted broad access during initial setup and never tightened
 
-Each of these creates excess permissions — grants that exist in RBAC but are
+Each of these creates excess permissions – grants that exist in RBAC but are
 never exercised at runtime. Over time, the gap widens. This is drift.
 
 ## Why Drift Matters
@@ -27,7 +27,7 @@ never exercised at runtime. Over time, the gap widens. This is drift.
 
 Every excess permission is attack surface. If a service account with unused
 `get secrets` cluster-wide is compromised, the attacker can read every secret in
-every namespace — even though the workload never needed that access.
+every namespace – even though the workload never needed that access.
 
 ### Compliance Violations
 
@@ -45,8 +45,8 @@ has `cluster-admin` gives an attacker full cluster access.
 
 Drift detection requires two data sources:
 
-1. **Granted permissions** — what RBAC currently allows (from Roles, Bindings)
-2. **Observed usage** — what the subject actually does (from audit logs)
+1. **Granted permissions** – what RBAC currently allows (from Roles, Bindings)
+2. **Observed usage** – what the subject actually does (from audit logs)
 
 The difference between granted and observed is the drift.
 
@@ -54,15 +54,15 @@ The difference between granted and observed is the drift.
 
 For a given subject (ServiceAccount, User, or Group):
 
-1. **Resolve effective permissions** — query all ClusterRoleBindings and
+1. **Resolve effective permissions** – query all ClusterRoleBindings and
    RoleBindings that reference the subject, resolve each to its PolicyRules
-2. **Collect observed actions** — extract API calls from audit logs: verb,
+2. **Collect observed actions** – extract API calls from audit logs: verb,
    resource, API group, namespace, subresource
-3. **Compare** — for each effective rule, check whether any observed action
+3. **Compare** – for each effective rule, check whether any observed action
    exercised it
 
 Rules that were exercised are **used**. Rules that were never exercised are
-**excess** — this is the drift.
+**excess** – this is the drift.
 
 ### Manual Detection
 
@@ -95,7 +95,7 @@ permissions, diffs them against observed usage, and produces a structured
 report:
 
 ```bash
-kubectl get apreport report-backend -n my-team -o wide
+kubectl get areport report-backend -n my-team -o wide
 ```
 
 ```
@@ -107,8 +107,8 @@ This tells you:
 
 - The service account has **2 needed permission rules** and **6 excess grants**
 - It exercised only a fraction of its permissions in the observation period
-- **6 rules are excess** — this is the drift
-- **Sensitive excess is present** — unused grants include high-risk resources
+- **6 rules are excess** – this is the drift
+- **Sensitive excess is present** – unused grants include high-risk resources
 
 ### Reading the Drift Details
 
@@ -129,7 +129,7 @@ status:
 
 The `sensitiveExcess` field lists the specific high-risk resources where the
 subject has unused access. In this case, the service account has `secrets`
-access that it never uses — a priority remediation target.
+access that it never uses – a priority remediation target.
 
 ## Acting on Drift
 
@@ -138,8 +138,8 @@ access that it never uses — a priority remediation target.
 Each report includes the minimal RBAC the subject needs:
 
 ```bash
-kubectl get apreport report-backend -n my-team \
-  -o jsonpath='{range .status.suggestedPolicy.manifests[*]}{@}{"\n---\n"}{end}'
+kubectl get apolicy report-backend -n my-team \
+  -o jsonpath='{range .spec.manifests[*]}{@}{"\n---\n"}{end}'
 ```
 
 ```yaml
@@ -157,7 +157,7 @@ rules:
     verbs: ["get"]
 ```
 
-Compare this against the current Roles. The difference is the drift — every rule
+Compare this against the current Roles. The difference is the drift – every rule
 in the current Role that is not in the suggested Role is excess.
 
 ### Step 2: Test in Non-Production
@@ -193,7 +193,7 @@ NAMESPACE   NAME             SUBJECT   KIND             COMPLIANCE   SCORE   AGE
 my-team     report-backend   backend   ServiceAccount   Green        92      2h
 ```
 
-Green means the drift is resolved — the subject's permissions now closely match
+Green means the drift is resolved – the subject's permissions now closely match
 its actual behavior.
 
 ## Continuous Drift Detection
@@ -212,11 +212,11 @@ exercise.
 
 ## Further Reading
 
-- **[How to Audit Kubernetes RBAC](/blog/kubernetes-rbac-audit)** — the manual
+- **[How to Audit Kubernetes RBAC](/blog/kubernetes-rbac-audit)** – the manual
   kubectl audit process
 - **[Kubernetes RBAC Compliance Evidence](/blog/kubernetes-rbac-compliance-evidence)**
-  — mapping drift detection results to SOC 2, ISO 27001, PCI DSS
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+  – mapping drift detection results to SOC 2, ISO 27001, PCI DSS
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full before/after walkthrough
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and start detecting drift

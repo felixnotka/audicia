@@ -1,7 +1,7 @@
 # Filter Recipes
 
 Audicia's filter chain controls which audit events are processed into policy
-reports. Filters are evaluated as an ordered allow/deny chain — **first match
+reports. Filters are evaluated as an ordered allow/deny chain – **first match
 wins**. If no rule matches, the event is **allowed** by default.
 
 ## How Filters Work

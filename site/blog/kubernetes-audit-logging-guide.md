@@ -2,13 +2,13 @@
 title: "How to Enable Kubernetes Audit Logging: Complete Guide (2026)"
 seo_title: "How to Enable Kubernetes Audit Logging: Complete Guide (2026)"
 published_at: 2026-03-10T08:00:00.000Z
-snippet: "Step-by-step instructions to enable Kubernetes audit logging on kubeadm, kind, EKS, GKE, and AKS — with a recommended audit policy YAML."
+snippet: "Step-by-step instructions to enable Kubernetes audit logging on kubeadm, kind, EKS, GKE, and AKS – with a recommended audit policy YAML."
 description: "Enable Kubernetes audit logging step by step on kubeadm, kind, EKS, GKE, and AKS. Includes a recommended audit policy YAML and production tuning tips."
 ---
 
 ## Why Enable Audit Logging
 
-The Kubernetes API server processes every request to your cluster — every
+The Kubernetes API server processes every request to your cluster – every
 `kubectl get pods`, every controller reconciliation, every admission webhook
 call. By default, none of this is recorded.
 
@@ -18,10 +18,10 @@ which verb was used, and whether it succeeded or failed.
 
 This data is essential for:
 
-- **Security investigation** — who deleted that namespace?
-- **Compliance evidence** — proving which subjects accessed which resources
-- **RBAC generation** — extracting the permissions workloads actually need
-- **Anomaly detection** — spotting unusual access patterns
+- **Security investigation** – who deleted that namespace?
+- **Compliance evidence** – proving which subjects accessed which resources
+- **RBAC generation** – extracting the permissions workloads actually need
+- **Anomaly detection** – spotting unusual access patterns
 
 Without audit logging, you are flying blind.
 
@@ -37,7 +37,7 @@ Kubernetes supports four audit levels, from least to most verbose:
 | `RequestResponse` | Metadata plus the full request and response bodies.                             |
 
 **For most use cases, `Metadata` is sufficient.** It captures everything needed
-for RBAC generation, compliance evidence, and security investigation — without
+for RBAC generation, compliance evidence, and security investigation – without
 the storage cost of full request/response bodies.
 
 `RequestResponse` is useful for forensics (seeing exactly what was sent or
@@ -117,7 +117,7 @@ rules:
 - **Health endpoints** generate enormous volume and are never useful for RBAC
   analysis
 - **`system:apiserver`** traffic is internal to the API server and not relevant
-  to workload permissions — filtering it reduces volume by roughly 30%
+  to workload permissions – filtering it reduces volume by roughly 30%
 - **Event objects** (`events.v1`) are read-only and high-volume; excluding them
   avoids inflating generated policies with noise
 - **`omitStages: [RequestReceived]`** skips the initial stage of each API call,
@@ -339,15 +339,15 @@ everything at `Metadata` level.
 With audit logging enabled, your cluster is recording the data needed to
 generate correct RBAC policies. The next step is to turn that data into action.
 
-**[Generate RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** — see
+**[Generate RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** – see
 how Audicia converts audit events into least-privilege Roles in a full before/
 after walkthrough.
 
 ## Further Reading
 
-- **[Kubernetes Audit Policy Design](/blog/kubernetes-audit-policy-design)** —
+- **[Kubernetes Audit Policy Design](/blog/kubernetes-audit-policy-design)** –
   advanced audit policy patterns for reducing noise
 - **[What Can You Do with Kubernetes Audit Logs?](/blog/kubernetes-audit-log-use-cases)**
-  — five use cases beyond storage
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+  – five use cases beyond storage
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and start generating RBAC policies

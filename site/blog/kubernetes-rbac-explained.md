@@ -9,8 +9,8 @@ description: "Understand Kubernetes RBAC: Roles vs ClusterRoles, RoleBindings vs
 ## What Is Kubernetes RBAC?
 
 Role-Based Access Control (RBAC) is how Kubernetes decides who can do what. When
-any request reaches the API server — a `kubectl` command, a controller
-reconciliation, an admission webhook — RBAC determines whether to allow or deny
+any request reaches the API server – a `kubectl` command, a controller
+reconciliation, an admission webhook – RBAC determines whether to allow or deny
 it.
 
 RBAC answers three questions for every request:
@@ -51,13 +51,13 @@ subjects:
     namespace: my-team
 ```
 
-ServiceAccounts are namespaced — the name `backend` in namespace `my-team` is a
+ServiceAccounts are namespaced – the name `backend` in namespace `my-team` is a
 different identity from `backend` in namespace `other-team`.
 
 ### User
 
 Typically used for human operators authenticating via certificates, OIDC tokens,
-or other identity providers. Users are not Kubernetes resources — they exist
+or other identity providers. Users are not Kubernetes resources – they exist
 only as identities in the authentication layer.
 
 ```yaml
@@ -83,9 +83,9 @@ subjects:
 
 A Role is a list of rules. Each rule specifies:
 
-- **apiGroups** — which API groups the rule applies to (`""` is the core group)
-- **resources** — which resource types (`pods`, `deployments`, `configmaps`)
-- **verbs** — which operations (`get`, `list`, `watch`, `create`, `update`,
+- **apiGroups** – which API groups the rule applies to (`""` is the core group)
+- **resources** – which resource types (`pods`, `deployments`, `configmaps`)
+- **verbs** – which operations (`get`, `list`, `watch`, `create`, `update`,
   `patch`, `delete`, `deletecollection`)
 
 ### Namespace-Scoped Role
@@ -272,7 +272,7 @@ access, define a custom ClusterRole with only the required permissions.
 
 A Role in namespace `A` does not grant access in namespace `B`. If a workload
 needs access across namespaces, use a ClusterRole with namespace-scoped
-RoleBindings — not a ClusterRoleBinding.
+RoleBindings – not a ClusterRoleBinding.
 
 ### Missing Subresources
 
@@ -281,8 +281,8 @@ subresources that need their own rules. This is a frequent source of 403 errors.
 
 ### Stale Permissions
 
-RBAC is typically written once and never updated. As workloads evolve — new
-controllers, new API calls, removed features — the RBAC policy drifts out of
+RBAC is typically written once and never updated. As workloads evolve – new
+controllers, new API calls, removed features – the RBAC policy drifts out of
 sync. This creates both excess permissions (security risk) and missing
 permissions (availability risk).
 
@@ -299,9 +299,9 @@ data, see
 
 ## Further Reading
 
-- **[How to Audit Kubernetes RBAC](/blog/kubernetes-rbac-audit)** — finding who
+- **[How to Audit Kubernetes RBAC](/blog/kubernetes-rbac-audit)** – finding who
   has access to what with kubectl and Audicia
-- **[Kubernetes RBAC Best Practices](/blog/kubernetes-rbac-best-practices)** —
+- **[Kubernetes RBAC Best Practices](/blog/kubernetes-rbac-best-practices)** –
   opinionated production guide
-- **[Getting Started with Audicia](/docs/getting-started/introduction)** —
+- **[Getting Started with Audicia](/docs/getting-started/introduction)** –
   install Audicia and automate RBAC generation

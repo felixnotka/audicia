@@ -10,10 +10,10 @@ lifecycle, event processing, periodic flushing, and report persistence.
 
 ## Where It Sits in the Pipeline
 
-The controller is not a single stage — it **orchestrates** the entire pipeline.
+The controller is not a single stage – it **orchestrates** the entire pipeline.
 It owns the event loop, starts and stops pipelines when `AudiciaSource`
-resources change, and writes `AudiciaPolicyReport` CRDs back to the Kubernetes
-API.
+resources change, and writes `AudiciaReport` and `AudiciaPolicy` CRDs back to
+the Kubernetes API.
 
 ```
 Audit Log → Ingestor → Filter → Normalizer → Aggregator → Strategy → Compliance → Report
@@ -30,7 +30,7 @@ updated, or deleted, the `Reconcile` function is called:
 ### Create / Update
 
 1. Check if a pipeline goroutine is already running for this source.
-2. Compare `spec.generation` — if unchanged, the reconcile is a no-op (prevents
+2. Compare `spec.generation` – if unchanged, the reconcile is a no-op (prevents
    reconcile storms).
 3. If the spec changed (generation bump), stop the old pipeline and start a new
    one.
@@ -39,8 +39,8 @@ updated, or deleted, the `Reconcile` function is called:
 ### Delete
 
 When an `AudiciaSource` is deleted, the pipeline goroutine is cancelled.
-`AudiciaPolicyReport` resources with owner references to the source are garbage
-collected by Kubernetes.
+`AudiciaReport` and `AudiciaPolicy` resources with owner references to the
+source are garbage collected by Kubernetes.
 
 ---
 
@@ -53,7 +53,7 @@ single `select` statement:
    event, runs the `Filter → Normalize Subject → Normalize Event → Aggregate`
    pipeline.
 2. **Periodic flush:** On a configurable interval (default: 30 seconds), flushes
-   all accumulated data — generates manifests via the
+   all accumulated data – generates manifests via the
    [Strategy Engine](strategy-engine.md), evaluates compliance via the
    [Compliance Engine](compliance-engine.md), and writes reports to the API.
 3. **Graceful shutdown:** On context cancellation, performs a final flush before
@@ -68,14 +68,15 @@ single `select` statement:
 On each flush, the controller iterates over all subjects that have accumulated
 rules:
 
-1. **Generate manifests** — calls the [Strategy Engine](strategy-engine.md) with
+1. **Generate manifests** – calls the [Strategy Engine](strategy-engine.md) with
    the subject's aggregated rules.
-2. **Resolve effective RBAC** — calls the
+2. **Resolve effective RBAC** – calls the
    [Compliance Engine](compliance-engine.md) resolver.
-3. **Evaluate compliance** — diffs observed vs. effective rules to produce a
+3. **Evaluate compliance** – diffs observed vs. effective rules to produce a
    score.
-4. **Create or update** the `AudiciaPolicyReport` CRD with all status fields.
-5. **Update checkpoint** — persists the processing position in
+4. **Create or update** the `AudiciaReport` and `AudiciaPolicy` CRDs with all
+   status fields.
+5. **Update checkpoint** – persists the processing position in
    `AudiciaSource.status`.
 
 ### Conflict Handling
@@ -86,9 +87,9 @@ or during leader election transitions).
 
 ### Owner References
 
-`AudiciaPolicyReport` resources in the same namespace as the source get an owner
-reference pointing to the `AudiciaSource`. This enables automatic garbage
-collection when the source is deleted.
+`AudiciaReport` and `AudiciaPolicy` resources in the same namespace as the
+source get an owner reference pointing to the `AudiciaSource`. This enables
+automatic garbage collection when the source is deleted.
 
 ---
 
@@ -114,7 +115,7 @@ purposes.
 | Leader election         | Enabled                 | Only one replica processes at a time. Uses a `Lease` resource. |
 | Leader election ID      | `audicia-operator-lock` | Name of the Lease resource.                                    |
 
-With leader election enabled, you can run multiple replicas for availability —
+With leader election enabled, you can run multiple replicas for availability –
 only the leader actively processes events. On leader failover, the new leader
 resumes from the last checkpoint.
 
@@ -122,24 +123,24 @@ resumes from the last checkpoint.
 
 ## Core Functions
 
-| Function               | Purpose                                                                                                                                 |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `Reconcile`            | Kubernetes controller entry point. Tracks CRD generation to prevent anti-thrashing and starts or stops pipelines when the spec changes. |
-| `processEvent`         | Hot path for every audit event. Runs the filter → normalize subject → normalize rule → aggregate pipeline.                              |
-| `compactRules`         | Two-phase retention: first drops rules older than `retentionDays`, then truncates by count down to `maxRulesPerReport`.                 |
-| `flushSubjectReport`   | Write path. Generates manifests via the strategy package, then creates or updates the `AudiciaPolicyReport` CRD.                        |
-| `populateReportStatus` | Invokes `EffectiveRules` and `diff.Evaluate` to compute the compliance score, then sets all status fields on the report.                |
-| `eventLoop`            | Multiplexes event processing, periodic flush cycles, and graceful shutdown into a single select loop.                                   |
+| Function                      | Purpose                                                                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `Reconcile`                   | Kubernetes controller entry point. Tracks CRD generation to prevent anti-thrashing and starts or stops pipelines when the spec changes. |
+| `processEvent`                | Hot path for every audit event. Runs the filter → normalize subject → normalize rule → aggregate pipeline.                              |
+| `compactRules`                | Two-phase retention: first drops rules older than `retentionDays`, then truncates by count down to `maxRulesPerReport`.                 |
+| `flushReport` / `flushPolicy` | Write path. Creates or updates the `AudiciaReport` CRD (observed rules + compliance) and `AudiciaPolicy` CRD (suggested manifests).     |
+| `populateReportStatus`        | Invokes `EffectiveRules` and `diff.Evaluate` to compute the compliance score, then sets all status fields on the report.                |
+| `eventLoop`                   | Multiplexes event processing, periodic flush cycles, and graceful shutdown into a single select loop.                                   |
 
 ---
 
 ## Related
 
-- [Architecture](../concepts/architecture.md) — System overview and
+- [Architecture](../concepts/architecture.md) – System overview and
   reconciliation sequence diagram
-- [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
-- [Ingestor](ingestor.md) — Provides the event stream
-- [Strategy Engine](strategy-engine.md) — Generates manifests during flush
-- [Compliance Engine](compliance-engine.md) — Evaluates RBAC drift during flush
-- [Helm Values](../configuration/helm-values.md) — Operator runtime
+- [Pipeline](../concepts/pipeline.md) – Stage-by-stage processing overview
+- [Ingestor](ingestor.md) – Provides the event stream
+- [Strategy Engine](strategy-engine.md) – Generates manifests during flush
+- [Compliance Engine](compliance-engine.md) – Evaluates RBAC drift during flush
+- [Helm Values](../configuration/helm-values.md) – Operator runtime
   configuration

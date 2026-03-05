@@ -81,7 +81,7 @@ helm install audicia audicia/audicia-operator \
 > runs as non-root (UID 10000) by default, so it cannot read the log without
 > elevated privileges.
 >
-> **Option A: Run as root** — add the following to your `values-file.yaml`:
+> **Option A: Run as root** – add the following to your `values-file.yaml`:
 >
 > ```yaml
 > podSecurityContext:
@@ -148,7 +148,7 @@ including kube-apiserver configuration and mTLS.
 > # Wait for the old pod to terminate
 > sleep 5
 >
-> # Move it back — kubelet will start a new pod
+> # Move it back – kubelet will start a new pod
 > mv /etc/kubernetes/kube-apiserver.yaml /etc/kubernetes/manifests/kube-apiserver.yaml
 > ```
 >
@@ -163,7 +163,7 @@ including kube-apiserver configuration and mTLS.
 kubectl get pods -n audicia-system
 
 # Check CRDs are registered
-kubectl get crd audiciasources.audicia.io audiciapolicyreports.audicia.io
+kubectl get crd audiciasources.audicia.io audiciareports.audicia.io audiciapolicies.audicia.io
 
 # Check operator logs
 kubectl logs -f -n audicia-system deploy/audicia-operator
@@ -171,9 +171,9 @@ kubectl logs -f -n audicia-system deploy/audicia-operator
 
 ## What's Next
 
-- [Quick Start: File Ingestion](quick-start-file.md) — Create your first
+- [Quick Start: File Ingestion](quick-start-file.md) – Create your first
   AudiciaSource and generate reports
-- [Quick Start: Webhook Ingestion](quick-start-webhook.md) — Real-time audit
+- [Quick Start: Webhook Ingestion](quick-start-webhook.md) – Real-time audit
   events via HTTPS
-- [Webhook Setup Guide](../guides/webhook-setup.md) — Full webhook configuration
+- [Webhook Setup Guide](../guides/webhook-setup.md) – Full webhook configuration
   with TLS and mTLS

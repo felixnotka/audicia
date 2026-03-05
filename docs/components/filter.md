@@ -14,7 +14,7 @@ Audit Log → Ingestor → **Filter** → Normalizer → Aggregator → Strategy
 ```
 
 **Input:** Raw `audit.k8s.io/v1.Event` structs from the ingestor. **Output:**
-Events that pass the filter chain — forwarded to the normalizer.
+Events that pass the filter chain – forwarded to the normalizer.
 
 Events that match a `Deny` rule or are system users (when `ignoreSystemUsers` is
 enabled) are dropped silently. Dropped events are counted in the
@@ -36,7 +36,7 @@ Each rule can match on:
 | `userPattern`      | Regex      | `event.User.Username`       |
 | `namespacePattern` | Regex      | `event.ObjectRef.Namespace` |
 
-Rules use OR-semantics — if a rule specifies both `userPattern` and
+Rules use OR-semantics – if a rule specifies both `userPattern` and
 `namespacePattern`, either match triggers the rule.
 
 ### System User Filtering
@@ -79,7 +79,7 @@ production-hardened setups.
 
 ## Related
 
-- [Filter Recipes](../guides/filter-recipes.md) — Common filter configurations
-- [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — `spec.filters` field
+- [Filter Recipes](../guides/filter-recipes.md) – Common filter configurations
+- [Pipeline](../concepts/pipeline.md) – Stage-by-stage processing overview
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – `spec.filters` field
   reference

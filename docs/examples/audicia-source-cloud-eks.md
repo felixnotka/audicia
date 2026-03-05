@@ -72,8 +72,8 @@ IAM role creation, OIDC provider configuration, and trust policy.
 
 ## Related
 
-- [EKS Setup Guide](../guides/eks-setup.md) — Step-by-step walkthrough
-- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) — Architecture
+- [EKS Setup Guide](../guides/eks-setup.md) – Step-by-step walkthrough
+- [Cloud Ingestion Concept](../concepts/cloud-ingestion.md) – Architecture
   overview
-- [AudiciaSource CRD Reference](../reference/crd-audiciasource.md) — Full field
+- [AudiciaSource CRD Reference](../reference/crd-audiciasource.md) – Full field
   reference

@@ -139,9 +139,9 @@ limits:
 
 ## Related
 
-- [Aggregator](aggregator.md) — Provides the deduplicated rule sets
-- [Compliance Engine](compliance-engine.md) — Evaluates generated policies
+- [Aggregator](aggregator.md) – Provides the deduplicated rule sets
+- [Compliance Engine](compliance-engine.md) – Evaluates generated policies
   against effective RBAC
-- [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — `spec.policyStrategy`
+- [Pipeline](../concepts/pipeline.md) – Stage-by-stage processing overview
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – `spec.policyStrategy`
   field reference

@@ -13,7 +13,7 @@ cloud-native pipelines:
 | **GKE**  | Cloud Pub/Sub   | Cloud Logging JSON payload                   |
 
 Audicia's cloud ingestion mode connects to these pipelines and extracts standard
-`audit.k8s.io/v1.Event` structs from the provider-specific envelope format —
+`audit.k8s.io/v1.Event` structs from the provider-specific envelope format –
 feeding them into the same pipeline as file and webhook sources.
 
 ## Architecture
@@ -24,11 +24,11 @@ Cloud Pipeline → MessageSource → EnvelopeParser → CloudIngestor → Filter
 
 Cloud ingestion introduces two abstractions:
 
-- **MessageSource** — Connects to the cloud message bus, receives batches of
+- **MessageSource** – Connects to the cloud message bus, receives batches of
   messages, and acknowledges them after processing. Each provider has its own
   implementation (`EventHubSource` for Azure, `CloudWatchSource` for AWS,
   `PubSubSource` for GCP).
-- **EnvelopeParser** — Unwraps the cloud-provider-specific JSON envelope and
+- **EnvelopeParser** – Unwraps the cloud-provider-specific JSON envelope and
   extracts audit events. Azure wraps events in `records[].properties.log`, AWS
   delivers raw audit JSON in CloudWatch log events, and GCP wraps events in
   Cloud Logging `LogEntry` objects with `protoPayload` containing the audit
@@ -46,7 +46,7 @@ expected cluster. The `clusterIdentity` field in the CRD is matched against
 event annotations and request URIs.
 
 If the identity cannot be verified (e.g., missing annotations), the event is
-allowed by default — this is defense-in-depth, not a hard gate.
+allowed by default – this is defense-in-depth, not a hard gate.
 
 ## Checkpoint and Recovery
 
@@ -60,10 +60,10 @@ Checkpoint behavior varies by provider:
   persistence for distributed consumption. When `storageAccountURL` is
   configured, the Event Hub processor handles partition ownership and
   checkpointing automatically.
-- **AWS CloudWatch**: Pull-based — the `startTime` parameter resumes from the
+- **AWS CloudWatch**: Pull-based – the `startTime` parameter resumes from the
   last processed event timestamp. Implements the `CheckpointRestorer` interface
   to restore `startTime` before connecting.
-- **GCP Pub/Sub**: Push-based — Pub/Sub manages delivery state. Individual
+- **GCP Pub/Sub**: Push-based – Pub/Sub manages delivery state. Individual
   messages are acknowledged after processing; unacknowledged messages are
   redelivered automatically.
 
@@ -100,19 +100,19 @@ You can also build with a single provider tag if you only need one adapter.
 | AWS CloudWatch  | Supported | IRSA (IAM Roles for SA)      | [EKS Setup](../guides/eks-setup.md) |
 | GCP Pub/Sub     | Supported | Workload Identity Federation | [GKE Setup](../guides/gke-setup.md) |
 
-All providers use managed identity for authentication — no static credentials or
+All providers use managed identity for authentication – no static credentials or
 connection strings are stored in CRD resources.
 
 ## Related
 
-- [AKS Setup Guide](../guides/aks-setup.md) — End-to-end Azure Event Hub
+- [AKS Setup Guide](../guides/aks-setup.md) – End-to-end Azure Event Hub
   configuration
-- [EKS Setup Guide](../guides/eks-setup.md) — End-to-end AWS CloudWatch
+- [EKS Setup Guide](../guides/eks-setup.md) – End-to-end AWS CloudWatch
   configuration
-- [GKE Setup Guide](../guides/gke-setup.md) — End-to-end GCP Pub/Sub
+- [GKE Setup Guide](../guides/gke-setup.md) – End-to-end GCP Pub/Sub
   configuration
-- [Ingestor Component](../components/ingestor.md) — Ingestion mode details
-- [Pipeline](pipeline.md) — Stage-by-stage processing overview
-- [AudiciaSource CRD](../reference/crd-audiciasource.md) — `spec.cloud` field
+- [Ingestor Component](../components/ingestor.md) – Ingestion mode details
+- [Pipeline](pipeline.md) – Stage-by-stage processing overview
+- [AudiciaSource CRD](../reference/crd-audiciasource.md) – `spec.cloud` field
   reference
-- [Security Model](security-model.md) — Cloud trust boundaries
+- [Security Model](security-model.md) – Cloud trust boundaries

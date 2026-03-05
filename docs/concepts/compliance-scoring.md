@@ -11,9 +11,9 @@ remediation.
 
 For each subject (ServiceAccount, User, or Group), Audicia:
 
-1. Lists all **ClusterRoleBindings** — filters by subject match — resolves each
+1. Lists all **ClusterRoleBindings** – filters by subject match – resolves each
    referenced ClusterRole into PolicyRules with cluster-wide scope.
-2. Lists all **RoleBindings** — filters by subject match — resolves each
+2. Lists all **RoleBindings** – filters by subject match – resolves each
    referenced Role or ClusterRole into PolicyRules scoped to the RoleBinding's
    namespace.
 3. Returns a flat list of `ScopedRule` entries (PolicyRule + Namespace).
@@ -30,7 +30,7 @@ For each effective rule, it checks: **was this permission exercised by any
 observed action?**
 
 - **Used**: The effective rule was exercised at least once.
-- **Excess**: The effective rule was never observed in use — this is
+- **Excess**: The effective rule was never observed in use – this is
   overprivilege. Each excess rule is listed in `compliance.excessRules` so you
   can see exactly which permissions are unused.
 - **Uncovered**: An observed action that isn't covered by any effective rule
@@ -50,9 +50,9 @@ inflation when a single broad rule covers many observed actions.
 
 | Score  | Severity | Meaning                                                                     |
 | ------ | -------- | --------------------------------------------------------------------------- |
-| >= 80% | Green    | Tight permissions — most granted access is actually used                    |
-| >= 50% | Yellow   | Moderate overprivilege — review excess grants                               |
-| < 50%  | Red      | Significant overprivilege — the subject uses less than half its permissions |
+| >= 80% | Green    | Tight permissions – most granted access is actually used                    |
+| >= 50% | Yellow   | Moderate overprivilege – review excess grants                               |
+| < 50%  | Red      | Significant overprivilege – the subject uses less than half its permissions |
 
 ## Matching Rules
 
@@ -72,7 +72,7 @@ inflation when a single broad rule covers many observed actions.
 ### ResourceNames
 
 Effective rules constrained by `resourceNames` are treated as **NOT** covering
-general observed actions. This is conservative — audit events don't capture
+general observed actions. This is conservative – audit events don't capture
 which specific resource instance was accessed, so we can't confirm the match.
 
 ### Non-Resource URLs
@@ -103,7 +103,7 @@ access to pods, configmaps, secrets, services, and deployments. But audit logs
 show it only accesses pods and configmaps.
 
 ```
-$ kubectl get apreport -n my-team -o wide
+$ kubectl get areport -n my-team -o wide
 NAME              SUBJECT    KIND             COMPLIANCE   SCORE   AGE   NEEDED   EXCESS   UNGRANTED   SENSITIVE   AUDIT EVENTS
 report-backend    backend    ServiceAccount   Red          40      1h    2        3        0           true        150
 ```
@@ -142,14 +142,14 @@ exactly which permissions to remove.
 
 | Scenario                      | Effective rules | Observed rules | Result                                                                                            |
 | ----------------------------- | --------------- | -------------- | ------------------------------------------------------------------------------------------------- |
-| No RBAC + no observations     | 0               | 0              | Score 100, Green — nothing to do                                                                  |
-| No RBAC + observations exist  | 0               | > 0            | Compliance is `nil` — cannot be evaluated. Report still gets observed rules and suggested policy. |
-| RBAC exists + no observations | > 0             | 0              | Score 0, Red — all grants are excess                                                              |
+| No RBAC + no observations     | 0               | 0              | Score 100, Green – nothing to do                                                                  |
+| No RBAC + observations exist  | 0               | > 0            | Compliance is `nil` – cannot be evaluated. Report still gets observed rules and suggested policy. |
+| RBAC exists + no observations | > 0             | 0              | Score 0, Red – all grants are excess                                                              |
 
 ## Graceful Degradation
 
 If the RBAC resolver fails (e.g., the operator doesn't have RBAC read
-permissions, or the API server is unreachable), compliance is `nil` — the report
+permissions, or the API server is unreachable), compliance is `nil` – the report
 still gets observed rules and suggested policy. The operator logs the error and
 continues normally.
 

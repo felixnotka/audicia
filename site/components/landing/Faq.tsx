@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: "What compliance frameworks does it map to?",
-    a: "AudiciaPolicyReports map to SOC 2 CC6.1 (logical access security), ISO 27001 A.8.3 (access restriction), PCI DSS Requirement 7 (need-to-know access), and NIST AC-6 (least privilege).",
+    a: "AudiciaReports map to SOC 2 CC6.1 (logical access security), ISO 27001 A.8.3 (access restriction), PCI DSS Requirement 7 (need-to-know access), and NIST AC-6 (least privilege).",
   },
   {
     q: "What does Audicia need to run?",

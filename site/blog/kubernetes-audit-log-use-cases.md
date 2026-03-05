@@ -13,7 +13,7 @@ requires it. The logs are written to a file or shipped to a SIEM, and nobody
 looks at them until something goes wrong.
 
 This is a waste. Audit logs are the only data source that records every API
-request to your cluster — who made it, what resource was targeted, which verb
+request to your cluster – who made it, what resource was targeted, which verb
 was used, and whether it succeeded. This data enables five practical use cases
 that go beyond storage.
 
@@ -41,8 +41,8 @@ For a full walkthrough, see
 
 ## Use Case 2: Security Investigation
 
-**The problem:** When a security incident occurs — a compromised pod, an
-unauthorized deletion, a suspicious RBAC change — the first question is always
+**The problem:** When a security incident occurs – a compromised pod, an
+unauthorized deletion, a suspicious RBAC change – the first question is always
 "who did this and when?"
 
 **How audit logs help:** Each audit event records:
@@ -70,7 +70,7 @@ guesswork, no asking around.
 ## Use Case 3: Anomaly Detection
 
 **The problem:** Compromised service accounts often exhibit unusual access
-patterns — reading secrets they have never read before, accessing namespaces
+patterns – reading secrets they have never read before, accessing namespaces
 they normally do not touch, or using verbs they have never used.
 
 **How audit logs help:** Audit logs establish a behavioral baseline for each
@@ -86,14 +86,14 @@ detect anomalies:
 
 **In practice:** Build per-subject access profiles from audit data. Alert when a
 subject accesses a resource or namespace it has never accessed before. The
-Audicia pipeline naturally produces these profiles as observed rule sets — a
+Audicia pipeline naturally produces these profiles as observed rule sets – a
 foundation for anomaly detection.
 
 ## Use Case 4: Drift Detection
 
 **The problem:** RBAC permissions are set once and rarely updated. As workloads
 evolve, the gap between what is granted and what is used grows. This is
-permission drift — excess privileges that create unnecessary attack surface.
+permission drift – excess privileges that create unnecessary attack surface.
 
 **How audit logs help:** By comparing granted RBAC (from Roles and Bindings)
 against observed API access (from audit logs), you can quantify drift for every
@@ -104,7 +104,7 @@ Drift = Granted Permissions − Used Permissions
 ```
 
 **In practice:** A service account has 8 effective permission rules. Audit logs
-show it uses only 2 of them. The other 6 are drift — excess privileges that
+show it uses only 2 of them. The other 6 are drift – excess privileges that
 should be removed. If any of the excess permissions include sensitive resources
 like secrets, the remediation is urgent.
 
@@ -115,7 +115,7 @@ For a detailed guide on detecting and acting on drift, see
 
 **The problem:** SOC 2, ISO 27001, PCI DSS, and NIST all require evidence that
 access controls follow least privilege. Most teams produce this evidence
-manually — screenshots, spreadsheets, point-in-time snapshots that are stale by
+manually – screenshots, spreadsheets, point-in-time snapshots that are stale by
 the time they reach an auditor.
 
 **How audit logs help:** Audit logs provide continuous, machine-readable
@@ -127,7 +127,7 @@ evidence of actual access patterns. Combined with RBAC state, they demonstrate:
 
 **In practice:** A compliance report generated from audit log data provides
 auditors with a quantitative answer to "do your service accounts follow least
-privilege?" — not a screenshot, but a scored evaluation for every subject in the
+privilege?" – not a screenshot, but a scored evaluation for every subject in the
 cluster.
 
 See
@@ -147,11 +147,11 @@ EKS, GKE, and AKS, see
 
 ## Further Reading
 
-- **[How to Enable Audit Logging](/blog/kubernetes-audit-logging-guide)** —
+- **[How to Enable Audit Logging](/blog/kubernetes-audit-logging-guide)** –
   step-by-step platform guide
-- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** —
+- **[Generating RBAC from Audit Logs](/blog/generate-rbac-from-audit-logs)** –
   full before/after walkthrough
-- **[Pipeline Architecture](/docs/concepts/pipeline)** — how Audicia processes
+- **[Pipeline Architecture](/docs/concepts/pipeline)** – how Audicia processes
   audit events through six stages
-- **[Getting Started Guide](/docs/getting-started/introduction)** — install
+- **[Getting Started Guide](/docs/getting-started/introduction)** – install
   Audicia and start using your audit logs

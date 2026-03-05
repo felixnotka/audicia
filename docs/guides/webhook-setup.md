@@ -1,4 +1,4 @@
-# Webhook Mode — Setup Guide
+# Webhook Mode – Setup Guide
 
 Step-by-step guide for setting up Audicia's webhook-based audit event ingestion
 on a kubeadm bare-metal cluster. Tested on Kubernetes v1.35.0.
@@ -84,7 +84,7 @@ helm install audicia audicia/audicia-operator \
 ```
 
 The pod will stay in **Pending** because the TLS Secret (`audicia-webhook-tls`)
-doesn't exist yet — that's expected. The install creates the webhook Service,
+doesn't exist yet – that's expected. The install creates the webhook Service,
 which we need for the next step.
 
 ---
@@ -109,7 +109,7 @@ openssl req -x509 -newkey rsa:4096 -nodes \
   -addext "subjectAltName=DNS:audicia-operator-webhook.audicia-system.svc,DNS:audicia-operator-webhook.audicia-system.svc.cluster.local,IP:${CLUSTER_IP}"
 ```
 
-Create the TLS Secret — the pod starts automatically once this exists:
+Create the TLS Secret – the pod starts automatically once this exists:
 
 ```bash
 kubectl create secret tls audicia-webhook-tls \
@@ -128,7 +128,7 @@ kubectl create secret tls audicia-webhook-tls \
 # Pod should be Running
 kubectl get pods -n audicia-system
 
-# Service should exist with port 8443 — note the CLUSTER-IP for Step 6
+# Service should exist with port 8443 – note the CLUSTER-IP for Step 6
 kubectl get svc -n audicia-system
 
 # Expected output includes:
@@ -297,7 +297,7 @@ kubectl get secrets -n default
 Check for reports:
 
 ```bash
-kubectl get audiciapolicyreports --all-namespaces
+kubectl get audiciareports --all-namespaces
 ```
 
 Check operator logs:
@@ -401,12 +401,12 @@ manifests.
 
 | Flag                              | Default | Description                                       |
 | --------------------------------- | ------- | ------------------------------------------------- |
-| `--audit-webhook-config-file`     | —       | Path to the webhook kubeconfig (required).        |
+| `--audit-webhook-config-file`     | –       | Path to the webhook kubeconfig (required).        |
 | `--audit-webhook-mode`            | `batch` | `batch` (recommended) or `blocking`.              |
 | `--audit-webhook-batch-max-wait`  | `30s`   | Max time to buffer events before sending a batch. |
 | `--audit-webhook-batch-max-size`  | `400`   | Max events per batch.                             |
 | `--audit-webhook-initial-backoff` | `10s`   | Backoff after a failed webhook request.           |
-| `--audit-policy-file`             | —       | Shared by both file and webhook backends.         |
+| `--audit-policy-file`             | –       | Shared by both file and webhook backends.         |
 
 ---
 
@@ -440,7 +440,7 @@ helm uninstall audicia -n audicia-system
 ```bash
 kubectl delete secret audicia-webhook-tls -n audicia-system
 kubectl delete secret kube-apiserver-client-ca -n audicia-system
-kubectl delete crd audiciasources.audicia.io audiciapolicyreports.audicia.io
+kubectl delete crd audiciasources.audicia.io audiciareports.audicia.io audiciapolicies.audicia.io
 kubectl delete namespace audicia-system
 ```
 

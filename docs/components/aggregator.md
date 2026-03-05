@@ -1,7 +1,7 @@
 # Aggregator
 
 The aggregator deduplicates and merges observed rules per subject. Audit events
-arriving over time produce many duplicate rule observations — the aggregator
+arriving over time produce many duplicate rule observations – the aggregator
 collapses them into a compact rule set with metadata tracking.
 
 **Package:** `pkg/aggregator/`
@@ -40,7 +40,7 @@ When a new key arrives:
 ### Idempotency
 
 The aggregator is designed for at-least-once processing. Reprocessing the same
-event after a restart produces the same rule set — counts may over-count
+event after a restart produces the same rule set – counts may over-count
 slightly, but the rule set itself remains correct. This is an important property
 because the [Ingestor](ingestor.md) may deliver some duplicate events after a
 restart (especially in webhook mode).
@@ -85,7 +85,7 @@ prioritized by `lastSeen` (most recent kept). Compacted rules are logged at
 
 ## Related
 
-- [Pipeline](../concepts/pipeline.md) — Stage-by-stage processing overview
-- [Strategy Engine](strategy-engine.md) — How aggregated rules become RBAC
+- [Pipeline](../concepts/pipeline.md) – Stage-by-stage processing overview
+- [Strategy Engine](strategy-engine.md) – How aggregated rules become RBAC
   manifests
-- [Controller](controller.md) — Manages flush cycles and compaction
+- [Controller](controller.md) – Manages flush cycles and compaction
