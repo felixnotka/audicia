@@ -29,8 +29,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&AudiciaSource{},
 		&AudiciaSourceList{},
-		&AudiciaPolicyReport{},
-		&AudiciaPolicyReportList{},
+		&AudiciaReport{},
+		&AudiciaReportList{},
+		&AudiciaPolicy{},
+		&AudiciaPolicyList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

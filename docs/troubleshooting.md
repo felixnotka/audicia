@@ -53,8 +53,8 @@ The webhook receiver is running but the kube-apiserver is not sending events.
      Regenerate the cert with the correct ClusterIP as SAN.
    - `connection refused` — Audicia isn't running or the Service has no
      endpoints.
-   - Connection timeout / no errors — ensure your host firewall allows
-     traffic from the pod CIDR. See
+   - Connection timeout / no errors — ensure your host firewall allows traffic
+     from the pod CIDR. See
      [Operator cannot reach API server](#operator-cannot-reach-api-server-io-timeout).
    - No webhook errors at all — The apiserver may not have the
      `--audit-webhook-config-file` flag.
@@ -63,8 +63,8 @@ The webhook receiver is running but the kube-apiserver is not sending events.
    ```bash
    cat /etc/kubernetes/audit-webhook-kubeconfig.yaml
    ```
-   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443`),
-   NOT a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and
+   The `server:` field must be an IP address (`https://<CLUSTER-IP>:8443`), NOT
+   a `.svc.cluster.local` name. The apiserver uses `hostNetwork: true` and
    cannot resolve cluster DNS.
 
 3. **Check that the audit policy allows the events you expect:**

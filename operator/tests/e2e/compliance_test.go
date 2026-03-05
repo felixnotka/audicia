@@ -72,7 +72,7 @@ func TestComplianceScoring(t *testing.T) {
 
 	// Wait for report with compliance data.
 	reportName := expectedReportName(saName)
-	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaPolicyReport) bool {
+	report := waitForPolicyReportCondition(ctx, t, reportName, ns, func(r *audiciav1alpha1.AudiciaReport) bool {
 		return r.Status.Compliance != nil
 	}, defaultTimeout)
 

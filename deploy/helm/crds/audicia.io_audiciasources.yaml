@@ -188,8 +188,8 @@ spec:
                 properties:
                   maxRulesPerReport:
                     default: 200
-                    description: MaxRulesPerReport is the maximum number of rules
-                      in a single AudiciaPolicyReport.
+                    description: MaxRulesPerReport is the maximum number of observed
+                      rules in a single AudiciaReport.
                     format: int32
                     minimum: 1
                     type: integer

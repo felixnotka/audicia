@@ -389,7 +389,8 @@ func newTestReconciler(objs ...client.Object) *Reconciler {
 		WithObjects(objs...).
 		WithStatusSubresource(
 			&audiciav1alpha1.AudiciaSource{},
-			&audiciav1alpha1.AudiciaPolicyReport{},
+			&audiciav1alpha1.AudiciaReport{},
+			&audiciav1alpha1.AudiciaPolicy{},
 		).
 		Build()
 	return &Reconciler{
@@ -763,7 +764,7 @@ func TestProcessEvent_MultipleSubjects(t *testing.T) {
 
 func TestPopulateReportStatus(t *testing.T) {
 	r := &Reconciler{} // nil Resolver = skip compliance
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	subject := audiciav1alpha1.Subject{
 		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
 		Name:      "test-sa",
@@ -772,21 +773,14 @@ func TestPopulateReportStatus(t *testing.T) {
 	rules := []audiciav1alpha1.ObservedRule{
 		makeObservedRule("pods", "get", "default", time.Now()),
 	}
-	manifests := []string{"apiVersion: rbac.authorization.k8s.io/v1\nkind: Role"}
 
-	r.populateReportStatus(context.Background(), report, subject, rules, manifests, 5, logr.Discard())
+	r.populateReportStatus(context.Background(), report, subject, rules, 5, logr.Discard())
 
 	if len(report.Status.ObservedRules) != 1 {
 		t.Errorf("expected 1 observed rule, got %d", len(report.Status.ObservedRules))
 	}
 	if report.Status.EventsProcessed != 5 {
 		t.Errorf("expected 5 events processed, got %d", report.Status.EventsProcessed)
-	}
-	if report.Status.SuggestedPolicy == nil {
-		t.Fatal("expected non-nil suggested policy")
-	}
-	if len(report.Status.SuggestedPolicy.Manifests) != 1 {
-		t.Errorf("expected 1 manifest, got %d", len(report.Status.SuggestedPolicy.Manifests))
 	}
 	if report.Status.LastProcessedTime == nil {
 		t.Error("expected non-nil LastProcessedTime")
@@ -799,20 +793,8 @@ func TestPopulateReportStatus(t *testing.T) {
 	if readyCond.Status != metav1.ConditionTrue {
 		t.Errorf("expected Ready=True, got %s", readyCond.Status)
 	}
-	if readyCond.Reason != "PolicyGenerated" {
-		t.Errorf("expected reason=PolicyGenerated, got %q", readyCond.Reason)
-	}
-}
-
-func TestPopulateReportStatus_NoManifests(t *testing.T) {
-	r := &Reconciler{}
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
-	subject := audiciav1alpha1.Subject{Kind: audiciav1alpha1.SubjectKindServiceAccount, Name: "test-sa"}
-
-	r.populateReportStatus(context.Background(), report, subject, nil, nil, 0, logr.Discard())
-
-	if report.Status.SuggestedPolicy != nil {
-		t.Error("expected nil suggested policy for empty manifests")
+	if readyCond.Reason != "ReportGenerated" {
+		t.Errorf("expected reason=ReportGenerated, got %q", readyCond.Reason)
 	}
 }
 
@@ -855,9 +837,9 @@ func TestSetCondition(t *testing.T) {
 	}
 }
 
-// --- flushSubjectReport ---
+// --- flushReport ---
 
-func TestFlushSubjectReport(t *testing.T) {
+func TestFlushReport(t *testing.T) {
 	source := audiciav1alpha1.AudiciaSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "flush-source",
@@ -866,7 +848,6 @@ func TestFlushSubjectReport(t *testing.T) {
 	}
 
 	r := newTestReconciler(&source)
-	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
 	subject := audiciav1alpha1.Subject{
 		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
 		Name:      "test-sa",
@@ -876,13 +857,13 @@ func TestFlushSubjectReport(t *testing.T) {
 		makeObservedRule("pods", "get", "default", time.Now()),
 	}
 
-	err := r.flushSubjectReport(context.Background(), source, engine, subject, rules, 3, logr.Discard())
+	err := r.flushReport(context.Background(), source, subject, rules, 3, logr.Discard())
 	if err != nil {
-		t.Fatalf("flushSubjectReport: %v", err)
+		t.Fatalf("flushReport: %v", err)
 	}
 
 	reportName := fmt.Sprintf("report-%s", sanitizeName(subject.Name))
-	var report audiciav1alpha1.AudiciaPolicyReport
+	var report audiciav1alpha1.AudiciaReport
 	if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "default"}, &report); err != nil {
 		t.Fatalf("get report: %v", err)
 	}
@@ -895,9 +876,6 @@ func TestFlushSubjectReport(t *testing.T) {
 	}
 	if len(report.Status.ObservedRules) != 1 {
 		t.Errorf("expected 1 observed rule, got %d", len(report.Status.ObservedRules))
-	}
-	if report.Status.SuggestedPolicy == nil || len(report.Status.SuggestedPolicy.Manifests) == 0 {
-		t.Error("expected non-empty suggested policy manifests")
 	}
 
 	readyCond := meta.FindStatusCondition(report.Status.Conditions, "Ready")
@@ -1180,19 +1158,25 @@ func TestFlushReports(t *testing.T) {
 
 	r.flushReports(context.Background(), types.NamespacedName{Name: "flush-multi-source", Namespace: "default"}, source, engine, aggregators, subjects)
 
-	// Both subjects should have reports.
+	// Both subjects should have reports and policies.
 	for _, name := range []string{"sa-alpha", "sa-beta"} {
 		reportName := fmt.Sprintf("report-%s", sanitizeName(name))
-		var report audiciav1alpha1.AudiciaPolicyReport
+		var report audiciav1alpha1.AudiciaReport
 		if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "default"}, &report); err != nil {
 			t.Errorf("expected report for %s: %v", name, err)
+		}
+
+		policyName := fmt.Sprintf("policy-%s", sanitizeName(name))
+		var policy audiciav1alpha1.AudiciaPolicy
+		if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "default"}, &policy); err != nil {
+			t.Errorf("expected policy for %s: %v", name, err)
 		}
 	}
 }
 
-// --- flushSubjectReport cross-namespace ---
+// --- flushReport cross-namespace ---
 
-func TestFlushSubjectReport_CrossNamespace(t *testing.T) {
+func TestFlushReport_CrossNamespace(t *testing.T) {
 	source := audiciav1alpha1.AudiciaSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "xns-source",
@@ -1201,7 +1185,6 @@ func TestFlushSubjectReport_CrossNamespace(t *testing.T) {
 	}
 
 	r := newTestReconciler(&source)
-	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
 	subject := audiciav1alpha1.Subject{
 		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
 		Name:      "cross-sa",
@@ -1211,14 +1194,14 @@ func TestFlushSubjectReport_CrossNamespace(t *testing.T) {
 		makeObservedRule("pods", "get", "other-ns", time.Now()),
 	}
 
-	err := r.flushSubjectReport(context.Background(), source, engine, subject, rules, 1, logr.Discard())
+	err := r.flushReport(context.Background(), source, subject, rules, 1, logr.Discard())
 	if err != nil {
-		t.Fatalf("flushSubjectReport: %v", err)
+		t.Fatalf("flushReport: %v", err)
 	}
 
 	// Report should be in the subject's namespace, not the source's.
 	reportName := fmt.Sprintf("report-%s", sanitizeName(subject.Name))
-	var report audiciav1alpha1.AudiciaPolicyReport
+	var report audiciav1alpha1.AudiciaReport
 	if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "other-ns"}, &report); err != nil {
 		t.Fatalf("expected report in other-ns: %v", err)
 	}
@@ -1256,7 +1239,7 @@ func TestPopulateReportStatus_WithResolver(t *testing.T) {
 		Resolver: rbac.NewResolver(fakeClient),
 	}
 
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	subject := audiciav1alpha1.Subject{
 		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
 		Name:      "test-sa",
@@ -1266,7 +1249,7 @@ func TestPopulateReportStatus_WithResolver(t *testing.T) {
 		makeObservedRule("pods", "get", "default", time.Now()),
 	}
 
-	r.populateReportStatus(context.Background(), report, subject, rules, []string{"kind: Role"}, 1, logr.Discard())
+	r.populateReportStatus(context.Background(), report, subject, rules, 1, logr.Discard())
 
 	if report.Status.Compliance == nil {
 		t.Fatal("expected non-nil compliance (Resolver is set)")
@@ -1396,14 +1379,20 @@ func TestEventLoop_ProcessesEventsAndFlushes(t *testing.T) {
 		t.Fatal("eventLoop did not exit after context cancellation")
 	}
 
-	// Verify a report was created.
+	// Verify a report and policy were created.
 	reportName := fmt.Sprintf("report-%s", sanitizeName("loop-sa"))
-	var report audiciav1alpha1.AudiciaPolicyReport
+	var report audiciav1alpha1.AudiciaReport
 	if err := r.Get(context.Background(), types.NamespacedName{Name: reportName, Namespace: "default"}, &report); err != nil {
 		t.Fatalf("expected report for loop-sa: %v", err)
 	}
 	if report.Status.EventsProcessed < 2 {
 		t.Errorf("expected at least 2 events processed, got %d", report.Status.EventsProcessed)
+	}
+
+	policyName := fmt.Sprintf("policy-%s", sanitizeName("loop-sa"))
+	var policy audiciav1alpha1.AudiciaPolicy
+	if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "default"}, &policy); err != nil {
+		t.Fatalf("expected policy for loop-sa: %v", err)
 	}
 }
 
@@ -1517,7 +1506,7 @@ func TestEmitReportEvents_ReportCreated(t *testing.T) {
 	rec := record.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	report.Name = "report-test"
 	report.Namespace = "default"
 
@@ -1541,7 +1530,7 @@ func TestEmitReportEvents_DriftDetected(t *testing.T) {
 	rec := record.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	report.Name = "report-test"
 	report.Namespace = "default"
 	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
@@ -1574,7 +1563,7 @@ func TestEmitReportEvents_NoDriftWhenImproved(t *testing.T) {
 	rec := record.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	report.Name = "report-test"
 	report.Namespace = "default"
 	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
@@ -1600,7 +1589,7 @@ func TestEmitReportEvents_NoDriftOnCreate(t *testing.T) {
 	rec := record.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	report.Name = "report-test"
 	report.Namespace = "default"
 	report.Status.Compliance = &audiciav1alpha1.ComplianceReport{
@@ -1629,7 +1618,7 @@ func TestEmitReportEvents_NoComplianceNoEvent(t *testing.T) {
 	rec := record.NewFakeRecorder(10)
 	r := &Reconciler{Recorder: rec}
 
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 	report.Name = "report-test"
 	report.Namespace = "default"
 	// No compliance set.
@@ -1707,7 +1696,7 @@ func TestFlushReports_CompactionEvent(t *testing.T) {
 // --- currentSeverity ---
 
 func TestCurrentSeverity(t *testing.T) {
-	report := &audiciav1alpha1.AudiciaPolicyReport{}
+	report := &audiciav1alpha1.AudiciaReport{}
 
 	// Nil compliance → empty string.
 	if s := currentSeverity(report); s != "" {
@@ -1725,7 +1714,7 @@ func TestCurrentSeverity(t *testing.T) {
 // --- retryOnConflictOrNotFound ---
 
 func TestRetryOnConflictOrNotFound(t *testing.T) {
-	gr := schema.GroupResource{Group: "audicia.io", Resource: "audiciapolicyreports"}
+	gr := schema.GroupResource{Group: "audicia.io", Resource: "audiciareports"}
 	if !retryOnConflictOrNotFound(errors.NewConflict(gr, "test", fmt.Errorf("conflict"))) {
 		t.Error("expected true for conflict error")
 	}
@@ -1734,5 +1723,141 @@ func TestRetryOnConflictOrNotFound(t *testing.T) {
 	}
 	if retryOnConflictOrNotFound(fmt.Errorf("some other error")) {
 		t.Error("expected false for non-retriable error")
+	}
+}
+
+// --- flushPolicy ---
+
+func TestFlushPolicy(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "policy-source",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(&source)
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	subject := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "policy-sa",
+		Namespace: "default",
+	}
+	rules := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "default", time.Now()),
+	}
+
+	err := r.flushPolicy(context.Background(), source, engine, subject, rules, logr.Discard())
+	if err != nil {
+		t.Fatalf("flushPolicy: %v", err)
+	}
+
+	policyName := fmt.Sprintf("policy-%s", sanitizeName(subject.Name))
+	var policy audiciav1alpha1.AudiciaPolicy
+	if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "default"}, &policy); err != nil {
+		t.Fatalf("get policy: %v", err)
+	}
+
+	if policy.Spec.Subject.Name != "policy-sa" {
+		t.Errorf("expected subject name=policy-sa, got %q", policy.Spec.Subject.Name)
+	}
+	if policy.Spec.SourceRef != "policy-source" {
+		t.Errorf("expected sourceRef=policy-source, got %q", policy.Spec.SourceRef)
+	}
+	if len(policy.Spec.Manifests) == 0 {
+		t.Error("expected non-empty manifests")
+	}
+	if policy.Status.State != audiciav1alpha1.PolicyStatePending {
+		t.Errorf("expected state=Pending, got %q", policy.Status.State)
+	}
+	if policy.Status.RuleCount != 1 {
+		t.Errorf("expected ruleCount=1, got %d", policy.Status.RuleCount)
+	}
+}
+
+func TestFlushPolicy_OutdatedOnUpdate(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "policy-update-source",
+			Namespace: "default",
+		},
+	}
+
+	r := newTestReconciler(&source)
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	subject := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "update-sa",
+		Namespace: "default",
+	}
+
+	// First flush — creates with Pending.
+	rules1 := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "default", time.Now()),
+	}
+	if err := r.flushPolicy(context.Background(), source, engine, subject, rules1, logr.Discard()); err != nil {
+		t.Fatalf("first flushPolicy: %v", err)
+	}
+
+	// Manually set state to Approved to simulate user approval.
+	policyName := fmt.Sprintf("policy-%s", sanitizeName(subject.Name))
+	var policy audiciav1alpha1.AudiciaPolicy
+	if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "default"}, &policy); err != nil {
+		t.Fatalf("get policy: %v", err)
+	}
+	policy.Status.State = audiciav1alpha1.PolicyStateApproved
+	if err := r.Status().Update(context.Background(), &policy); err != nil {
+		t.Fatalf("update status to Approved: %v", err)
+	}
+
+	// Second flush with different rules — should set Outdated.
+	rules2 := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "default", time.Now()),
+		makeObservedRule("secrets", "list", "default", time.Now()),
+	}
+	if err := r.flushPolicy(context.Background(), source, engine, subject, rules2, logr.Discard()); err != nil {
+		t.Fatalf("second flushPolicy: %v", err)
+	}
+
+	if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "default"}, &policy); err != nil {
+		t.Fatalf("get policy after update: %v", err)
+	}
+	if policy.Status.State != audiciav1alpha1.PolicyStateOutdated {
+		t.Errorf("expected state=Outdated after manifest change, got %q", policy.Status.State)
+	}
+	if policy.Status.RuleCount != 2 {
+		t.Errorf("expected ruleCount=2, got %d", policy.Status.RuleCount)
+	}
+}
+
+func TestFlushPolicy_CrossNamespace(t *testing.T) {
+	source := audiciav1alpha1.AudiciaSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "xns-policy-source",
+			Namespace: "audicia-system",
+		},
+	}
+
+	r := newTestReconciler(&source)
+	engine := strategy.NewEngine(audiciav1alpha1.PolicyStrategy{})
+	subject := audiciav1alpha1.Subject{
+		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
+		Name:      "xns-sa",
+		Namespace: "other-ns",
+	}
+	rules := []audiciav1alpha1.ObservedRule{
+		makeObservedRule("pods", "get", "other-ns", time.Now()),
+	}
+
+	err := r.flushPolicy(context.Background(), source, engine, subject, rules, logr.Discard())
+	if err != nil {
+		t.Fatalf("flushPolicy: %v", err)
+	}
+
+	// Policy should be in the subject's namespace.
+	policyName := fmt.Sprintf("policy-%s", sanitizeName(subject.Name))
+	var policy audiciav1alpha1.AudiciaPolicy
+	if err := r.Get(context.Background(), types.NamespacedName{Name: policyName, Namespace: "other-ns"}, &policy); err != nil {
+		t.Fatalf("expected policy in other-ns: %v", err)
 	}
 }

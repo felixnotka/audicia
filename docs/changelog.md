@@ -7,6 +7,32 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.5.0
+
+### Breaking
+
+- **CRD split: `AudiciaPolicyReport` → `AudiciaReport` + `AudiciaPolicy`** — the
+  monolithic report CRD has been split into two purpose-built resources:
+  - `AudiciaReport` (`ar`, `areport`) — compliance scoring, observed rules,
+    drift analysis. This is the primary assessment resource.
+  - `AudiciaPolicy` (`ap`, `apolicy`) — suggested RBAC manifests with an
+    approval workflow. New policies start as `Pending`; when the operator
+    detects manifest changes on an approved policy, it transitions to
+    `Outdated`.
+  - **Migration:** delete the old CRD
+    (`kubectl delete crd
+    audiciapolicyreports.audicia.io`), upgrade the Helm
+    chart, and the operator will regenerate reports and policies from the next
+    audit log flush.
+
+### Added
+
+- **`AudiciaPolicy` CRD** with approval workflow states: `Pending` → `Approved`
+  → `Applied` → `Outdated`.
+- **`audicia_policies_updated_total`** Prometheus metric tracking policy writes.
+
+---
+
 ## 0.4.2
 
 ### Added
@@ -17,10 +43,10 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
   - `CompactionTriggered` (Warning) on AudiciaSource when rules exceed
     `maxRulesPerReport` and oldest rules are dropped.
   - `FlushFailed` (Warning) on AudiciaSource when a report write fails.
-  - `ReportCreated` (Normal) on AudiciaPolicyReport when a subject's report is
-    first generated.
-  - `DriftDetected` (Warning) on AudiciaPolicyReport when compliance severity
-    degrades (e.g., Green to Yellow).
+  - `ReportCreated` (Normal) on AudiciaReport when a subject's report is first
+    generated.
+  - `DriftDetected` (Warning) on AudiciaReport when compliance severity degrades
+    (e.g., Green to Yellow).
 
 ### Fixed
 

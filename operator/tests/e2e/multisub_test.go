@@ -13,7 +13,7 @@ import (
 
 // TestMultiSubject verifies that a single AudiciaSource correctly separates
 // audit events from two different ServiceAccounts into two distinct
-// AudiciaPolicyReports.
+// AudiciaReports.
 func TestMultiSubject(t *testing.T) {
 	ctx := context.Background()
 	suffix := uniqueSuffix()

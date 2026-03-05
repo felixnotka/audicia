@@ -63,24 +63,24 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 Runtime settings for the Audicia operator. These are exposed as Helm values and
 set as environment variables on the operator container.
 
-| Value                             | Type    | Default | Env Var                     | Description                                                                |
-| --------------------------------- | ------- | ------- | --------------------------- | -------------------------------------------------------------------------- |
-| `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.                                  |
-| `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address.                            |
-| `operator.leaderElection.enabled` | boolean | `true`  | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA. Disable for single-replica deployments.     |
-| `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).                                  |
+| Value                             | Type    | Default | Env Var                     | Description                                                            |
+| --------------------------------- | ------- | ------- | --------------------------- | ---------------------------------------------------------------------- |
+| `operator.metricsBindAddress`     | string  | `:8080` | `METRICS_BIND_ADDRESS`      | Prometheus metrics endpoint bind address.                              |
+| `operator.healthProbeBindAddress` | string  | `:8081` | `HEALTH_PROBE_BIND_ADDRESS` | Health probe (liveness/readiness) bind address.                        |
+| `operator.leaderElection.enabled` | boolean | `true`  | `LEADER_ELECTION_ENABLED`   | Enable leader election for HA. Disable for single-replica deployments. |
+| `operator.logLevel`               | integer | `0`     | `LOG_LEVEL`                 | Log verbosity (0=info, 1=debug, 2=trace).                              |
 
 ### Additional Runtime Environment Variables
 
 These environment variables are not exposed as top-level Helm values but can be
 set via `extraEnv` or by customizing the Deployment template:
 
-| Env Var                     | Default                 | Description                                                                          |
-| --------------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
-| `LEADER_ELECTION_ID`        | `audicia-operator-lock` | Lease resource name for leader election.                                             |
-| `LEADER_ELECTION_NAMESPACE` | `audicia-system`        | Namespace for the Lease (auto-set from pod namespace).                               |
-| `CONCURRENT_RECONCILES`     | `1`                     | Number of parallel reconcile loops.                                                  |
-| `SYNC_PERIOD`               | `10m`                   | Minimum interval between full cache resynchronizations.                              |
+| Env Var                     | Default                 | Description                                             |
+| --------------------------- | ----------------------- | ------------------------------------------------------- |
+| `LEADER_ELECTION_ID`        | `audicia-operator-lock` | Lease resource name for leader election.                |
+| `LEADER_ELECTION_NAMESPACE` | `audicia-system`        | Namespace for the Lease (auto-set from pod namespace).  |
+| `CONCURRENT_RECONCILES`     | `1`                     | Number of parallel reconcile loops.                     |
+| `SYNC_PERIOD`               | `10m`                   | Minimum interval between full cache resynchronizations. |
 
 ### Logging Levels
 
@@ -113,15 +113,15 @@ hostPath read access.
 
 ## Webhook (Webhook Mode)
 
-| Value                                    | Type    | Default | Description                                                                                                                                                                                         |
-| ---------------------------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `webhook.enabled`                        | boolean | `false` | Enable the webhook audit event receiver.                                                     |
-| `webhook.port`                           | integer | `8443`  | HTTPS port for the webhook receiver.                                                         |
+| Value                                    | Type    | Default | Description                                                                                    |
+| ---------------------------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `webhook.enabled`                        | boolean | `false` | Enable the webhook audit event receiver.                                                       |
+| `webhook.port`                           | integer | `8443`  | HTTPS port for the webhook receiver.                                                           |
 | `webhook.tlsSecretName`                  | string  | `""`    | Name of a TLS Secret (must contain `tls.crt` and `tls.key`). Required when webhook is enabled. |
-| `webhook.clientCASecretName`             | string  | `""`    | Name of a Secret containing `ca.crt` for mTLS. Optional but recommended for production.     |
-| `webhook.service.clusterIP`              | string  | `""`    | Fixed ClusterIP for the webhook Service. Survives uninstall/reinstall cycles.                |
-| `webhook.networkPolicy.enabled`          | boolean | `false` | Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.                    |
-| `webhook.networkPolicy.controlPlaneCIDR` | string  | `""`    | CIDR of your control plane node(s). Required when networkPolicy is enabled.                  |
+| `webhook.clientCASecretName`             | string  | `""`    | Name of a Secret containing `ca.crt` for mTLS. Optional but recommended for production.        |
+| `webhook.service.clusterIP`              | string  | `""`    | Fixed ClusterIP for the webhook Service. Survives uninstall/reinstall cycles.                  |
+| `webhook.networkPolicy.enabled`          | boolean | `false` | Create a NetworkPolicy restricting webhook ingress to the kube-apiserver.                      |
+| `webhook.networkPolicy.controlPlaneCIDR` | string  | `""`    | CIDR of your control plane node(s). Required when networkPolicy is enabled.                    |
 
 When enabled, adds:
 
