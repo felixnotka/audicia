@@ -59,13 +59,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Compute image tags
+        id: tags
+        run: |
+          TAGS="felixnotka/audicia-site:${{ inputs.new_version }}"
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            TAGS="${TAGS},felixnotka/audicia-site:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push site image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: site/Dockerfile
           platforms: linux/amd64
-          tags: |
-            felixnotka/audicia-site:${{ inputs.new_version }}
-            ${{ inputs.environment == 'prod' && 'felixnotka/audicia-site:latest' || '' }}
+          tags: ${{ steps.tags.outputs.tags }}
           push: true
