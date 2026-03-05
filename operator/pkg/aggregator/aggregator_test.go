@@ -350,8 +350,8 @@ func TestAdd_LastSeen_UpdatesCorrectly(t *testing.T) {
 	agg.Add(rule, t2)
 
 	rules := agg.Rules()
-	// LastSeen should be the MOST RECENT timestamp passed to Add, not the
-	// chronologically latest — it always overwrites.
+	// LastSeen is always overwritten by the most recent Add call,
+	// even if that timestamp is earlier (not a max operation).
 	if !rules[0].LastSeen.Time.Equal(t2) {
 		t.Errorf("LastSeen = %v, want %v (always overwrites with latest Add call)", rules[0].LastSeen.Time, t2)
 	}
