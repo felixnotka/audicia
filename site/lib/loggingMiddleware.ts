@@ -1,11 +1,11 @@
 import { define } from "../utils.ts";
 
 const SILENT_PREFIXES = ["/assets/", "/fonts/"];
-const SILENT_PATHS = ["/favicon.ico", "/og-image.png"];
+const SILENT_PATHS = new Set(["/favicon.ico", "/og-image.png"]);
 
 function isSilent(host: string, url: string): boolean {
   if (host.startsWith("charts.")) return false;
-  if (SILENT_PATHS.includes(url)) return true;
+  if (SILENT_PATHS.has(url)) return true;
   return SILENT_PREFIXES.some((p) => url.startsWith(p));
 }
 
