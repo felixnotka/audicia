@@ -1469,7 +1469,7 @@ func TestReportNamespaceFor(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Namespace: "audicia-system"},
 	}
 
-	// ServiceAccount with its own namespace → use subject namespace.
+	// ServiceAccount with its own namespace - use subject namespace.
 	sa := audiciav1alpha1.Subject{
 		Kind:      audiciav1alpha1.SubjectKindServiceAccount,
 		Name:      "test-sa",
@@ -1479,7 +1479,7 @@ func TestReportNamespaceFor(t *testing.T) {
 		t.Errorf("expected other-ns, got %q", ns)
 	}
 
-	// User subject → use source namespace.
+	// User subject - use source namespace.
 	user := audiciav1alpha1.Subject{
 		Kind: audiciav1alpha1.SubjectKindUser,
 		Name: "admin",
