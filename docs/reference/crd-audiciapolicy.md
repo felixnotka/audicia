@@ -4,8 +4,8 @@ Complete field reference for the AudiciaPolicy Custom Resource Definition.
 
 ---
 
-**API Group:** `audicia.io/v1alpha1` **Scope:** Namespaced **Short names:**
-`ap`, `apolicy` **kubectl columns:** Subject, Kind, State, Rules, Age
+**API Group:** `audicia.io/v1alpha1` **Scope:** Namespaced **Short name:**
+`apolicy` **kubectl columns:** Subject, Kind, State, Rules, Age
 
 ## Example
 

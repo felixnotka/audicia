@@ -5,10 +5,10 @@
 Audicia 0.5.0 splits the single `AudiciaPolicyReport` CRD into two purpose-built
 resources:
 
-| Old (0.4.x)                              | New (0.5.0)                                                   |
-| ---------------------------------------- | ------------------------------------------------------------- |
-| `AudiciaPolicyReport` (short: `apr`)     | `AudiciaReport` (short: `ar`) – compliance and observed rules |
-| `status.suggestedPolicy.manifests` field | `AudiciaPolicy` (short: `ap`) – suggested RBAC manifests      |
+| Old (0.4.x)                              | New (0.5.0)                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| `AudiciaPolicyReport` (short: `apr`)     | `AudiciaReport` (short: `areport`) – compliance and observed rules |
+| `status.suggestedPolicy.manifests` field | `AudiciaPolicy` (short: `apolicy`) – suggested RBAC manifests      |
 
 **Why:** Compliance scoring and RBAC suggestions have different lifecycles. A
 compliance report updates every flush cycle, while a suggested policy should go
@@ -89,13 +89,13 @@ kubectl delete crd audiciapolicyreports.audicia.io
 
 Update any scripts, dashboards, or automation that reference the old resource:
 
-| Before (0.4.x)                                      | After (0.5.0)                                           |
-| --------------------------------------------------- | ------------------------------------------------------- |
-| `kubectl get audiciapolicyreports`                  | `kubectl get audiciareports` (or `kubectl get ar`)      |
-| `kubectl get apr`                                   | `kubectl get ar`                                        |
-| `-o jsonpath='{.status.suggestedPolicy.manifests}'` | `kubectl get audiciapolicies` (or `kubectl get ap`)     |
-| `audiciapolicyreports` in RBAC rules                | `audiciareports` + `audiciapolicies`                    |
-| `audicia_reports_updated_total` metric              | Still exists, plus new `audicia_policies_updated_total` |
+| Before (0.4.x)                                      | After (0.5.0)                                            |
+| --------------------------------------------------- | -------------------------------------------------------- |
+| `kubectl get audiciapolicyreports`                  | `kubectl get audiciareports` (or `kubectl get areport`)  |
+| `kubectl get apr`                                   | `kubectl get areport`                                    |
+| `-o jsonpath='{.status.suggestedPolicy.manifests}'` | `kubectl get audiciapolicies` (or `kubectl get apolicy`) |
+| `audiciapolicyreports` in RBAC rules                | `audiciareports` + `audiciapolicies`                     |
+| `audicia_reports_updated_total` metric              | Still exists, plus new `audicia_policies_updated_total`  |
 
 ### 5. Update RBAC for report readers
 

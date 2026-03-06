@@ -56,7 +56,7 @@ type AudiciaPolicyStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:shortName={ap,apolicy}
+// +kubebuilder:resource:shortName=apolicy
 // +kubebuilder:printcolumn:name="Subject",type=string,JSONPath=`.spec.subject.name`
 // +kubebuilder:printcolumn:name="Kind",type=string,JSONPath=`.spec.subject.kind`
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`

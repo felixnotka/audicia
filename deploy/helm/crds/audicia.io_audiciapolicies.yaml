@@ -12,7 +12,6 @@ spec:
     listKind: AudiciaPolicyList
     plural: audiciapolicies
     shortNames:
-    - ap
     - apolicy
     singular: audiciapolicy
   scope: Namespaced

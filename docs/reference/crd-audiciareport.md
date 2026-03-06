@@ -4,9 +4,9 @@ Complete field reference for the AudiciaReport Custom Resource Definition.
 
 ---
 
-**API Group:** `audicia.io/v1alpha1` **Scope:** Namespaced **Short names:**
-`ar`, `areport` **kubectl columns:** Subject, Kind, Compliance, Score, Age
-(priority columns: Needed, Excess, Ungranted, Sensitive, Audit Events)
+**API Group:** `audicia.io/v1alpha1` **Scope:** Namespaced **Short name:**
+`areport` **kubectl columns:** Subject, Kind, Compliance, Score, Age (priority
+columns: Needed, Excess, Ungranted, Sensitive, Audit Events)
 
 ## Example
 

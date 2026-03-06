@@ -92,6 +92,10 @@ export const DOCS_NAV: NavSection[] = [
       { slug: "crd-audiciasource", title: "AudiciaSource CRD" },
       { slug: "crd-audiciareport", title: "AudiciaReport CRD" },
       { slug: "crd-audiciapolicy", title: "AudiciaPolicy CRD" },
+      {
+        slug: "crd-audiciapolicyreport",
+        title: "AudiciaPolicyReport CRD (Deprecated)",
+      },
       { slug: "features", title: "Features" },
       { slug: "metrics", title: "Metrics" },
     ],

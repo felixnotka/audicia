@@ -80,9 +80,11 @@ deep-dive documentation.
 - **`AudiciaSource`** – Input configuration defining where and how to ingest
   audit events. Short names: `as`, `asrc`. [Reference](crd-audiciasource.md)
 - **`AudiciaReport`** – Output reports with observed rules and compliance score.
-  Short names: `ar`, `areport`. [Reference](crd-audiciareport.md)
+  Short name: `areport`. [Reference](crd-audiciareport.md)
 - **`AudiciaPolicy`** – Suggested RBAC manifests with approval workflow. Short
-  names: `ap`, `apolicy`. [Reference](crd-audiciapolicy.md)
+  name: `apolicy`. [Reference](crd-audiciapolicy.md)
+- **`AudiciaPolicyReport`** _(deprecated)_ – Replaced by `AudiciaReport` +
+  `AudiciaPolicy` in 0.5.0. [Reference](crd-audiciapolicyreport.md)
 
 ## Subject Types
 

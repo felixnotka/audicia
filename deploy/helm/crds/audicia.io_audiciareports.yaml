@@ -12,7 +12,6 @@ spec:
     listKind: AudiciaReportList
     plural: audiciareports
     shortNames:
-    - ar
     - areport
     singular: audiciareport
   scope: Namespaced
