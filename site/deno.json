@@ -14,7 +14,7 @@
     "@std/front-matter": "jsr:@std/front-matter@^1.0.9",
     "@std/path": "jsr:@std/path@^1.1.2",
     "fresh": "jsr:@fresh/core@^2.1.4",
-    "preact": "npm:preact@^10.28.4",
+    "preact": "npm:preact@^10.29.0",
     "@preact/signals": "npm:@preact/signals@^2.3.2",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.5",
     "vite": "npm:vite@^7.3.1",
