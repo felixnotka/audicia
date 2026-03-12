@@ -34,7 +34,11 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- $sc := .Values.securityContext }}
+            {{- if and .Values.auditLog.enabled .Values.auditLog.seLinuxOptions }}
+            {{- $sc = merge (dict "seLinuxOptions" .Values.auditLog.seLinuxOptions) $sc }}
+            {{- end }}
+            {{- toYaml $sc | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:

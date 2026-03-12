@@ -80,6 +80,12 @@ auditLog:
   enabled: false
   # -- Host path to the audit log file.
   hostPath: /var/log/kubernetes/audit/audit.log
+  # -- SELinux options applied to the container when auditLog is enabled.
+  # On SELinux-enforcing platforms (OpenShift, RHEL), the audit log directory
+  # (/var/log/audit/) carries the auditd_log_t label. Set type: spc_t to
+  # grant the container read access.
+  seLinuxOptions: {}
+  #   type: spc_t
 
 # Webhook audit event receiver configuration.
 webhook:
