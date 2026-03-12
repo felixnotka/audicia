@@ -14,9 +14,9 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 - **`auditLog.seLinuxOptions` Helm value** – on SELinux-enforcing platforms
   (OpenShift, RHEL) the audit log directory carries the `auditd_log_t` label,
   which blocks container access even when running as root. Setting
-  `auditLog.seLinuxOptions.type: spc_t` grants the container read access.
-  The option is only applied when `auditLog.enabled` is true; existing
-  deployments are unaffected.
+  `auditLog.seLinuxOptions.type: spc_t` grants the container read access. The
+  option is only applied when `auditLog.enabled` is true; existing deployments
+  are unaffected.
 
 ---
 

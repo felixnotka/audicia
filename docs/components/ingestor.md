@@ -52,7 +52,9 @@ spec:
 
 **Helm requirement:** `auditLog.enabled=true`, `auditLog.hostPath=<path>`. The
 pod needs control plane scheduling (nodeSelector, tolerations) and typically
-`runAsUser: 0` for hostPath read access.
+`runAsUser: 0` for hostPath read access. On SELinux-enforcing platforms
+(OpenShift, RHEL), also set `auditLog.seLinuxOptions.type: spc_t` – see
+[Helm Values Reference](../configuration/helm-values.md#audit-log-file-mode).
 
 ### Webhook Ingestion (`Webhook`)
 

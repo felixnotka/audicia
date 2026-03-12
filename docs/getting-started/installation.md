@@ -99,6 +99,22 @@ helm install audicia audicia/audicia-operator \
 > Note that some kube-apiserver configurations reset file permissions on
 > restart. If you choose this approach, verify the permissions persist after an
 > apiserver restart.
+>
+> **Still getting permission denied on OpenShift / RHEL?** SELinux blocks access
+> to `/var/log/audit/` even when running as root. The directory carries the
+> `auditd_log_t` SELinux label, which containers cannot read by default. Add
+> `seLinuxOptions` to your values:
+>
+> ```yaml
+> auditLog:
+>   enabled: true
+>   hostPath: /var/log/audit/audit.log
+>   seLinuxOptions:
+>     type: spc_t
+> ```
+>
+> See the [Helm Values Reference](../configuration/helm-values.md) for more
+> details.
 
 ### For Webhook Ingestion
 
