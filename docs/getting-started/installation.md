@@ -100,15 +100,16 @@ helm install audicia audicia/audicia-operator \
 > restart. If you choose this approach, verify the permissions persist after an
 > apiserver restart.
 >
-> **Still getting permission denied on OpenShift / RHEL?** SELinux blocks access
-> to `/var/log/audit/` even when running as root. The directory carries the
-> `auditd_log_t` SELinux label, which containers cannot read by default. Add
-> `seLinuxOptions` to your values:
+> **On OpenShift?** The Kubernetes API server audit log lives at
+> `/var/log/kube-apiserver/audit.log`, **not** `/var/log/audit/audit.log` (that
+> is the Linux auditd log, which contains syscall-level events Audicia cannot
+> parse). Additionally, SELinux blocks access to audit directories even when
+> running as root. Add `seLinuxOptions` to your values:
 >
 > ```yaml
 > auditLog:
 >   enabled: true
->   hostPath: /var/log/audit/audit.log
+>   hostPath: /var/log/kube-apiserver/audit.log
 >   seLinuxOptions:
 >     type: spc_t
 > ```

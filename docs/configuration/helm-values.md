@@ -198,13 +198,15 @@ helm install audicia audicia/audicia-operator -n audicia-system --create-namespa
 
 ## Example: File Mode on OpenShift / SELinux
 
-On SELinux-enforcing platforms, add `auditLog.seLinuxOptions.type=spc_t` so the
-container can read audit logs labelled `auditd_log_t`:
+On OpenShift, the Kubernetes API server audit log is at
+`/var/log/kube-apiserver/audit.log` (not `/var/log/audit/audit.log`, which is
+the Linux auditd log). SELinux also blocks container access to audit
+directories, so add `auditLog.seLinuxOptions.type=spc_t`:
 
 ```bash
 helm install audicia audicia/audicia-operator -n audicia-system --create-namespace \
   --set auditLog.enabled=true \
-  --set auditLog.hostPath=/var/log/audit/audit.log \
+  --set auditLog.hostPath=/var/log/kube-apiserver/audit.log \
   --set auditLog.seLinuxOptions.type=spc_t \
   --set nodeSelector."node-role\.kubernetes\.io/infra"="" \
   --set tolerations[0].key=node-role.kubernetes.io/infra \
