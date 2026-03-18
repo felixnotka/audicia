@@ -28,7 +28,7 @@
     "marked-highlight": "npm:marked-highlight@^2.2.3",
     "marked-gfm-heading-id": "npm:marked-gfm-heading-id@^3.2.0",
     "prismjs": "npm:prismjs@^1.30.0",
-    "sanitize-html": "npm:sanitize-html@^2.17.1"
+    "sanitize-html": "npm:sanitize-html@^2.17.2"
   },
   "compilerOptions": {
     "lib": ["dom", "dom.asynciterable", "dom.iterable", "deno.ns"],
