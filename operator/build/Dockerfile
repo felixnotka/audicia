@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine@sha256:c2a1f7b2095d046ae14b286b18413a05bb82c9bca9b25fe7ff5efef0f0826166 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine@sha256:27f829349da645e287cb195a9921c106fc224eeebbdc33aeb0f4fca2382befa6 AS builder
 
 RUN apk --no-cache add git
 
@@ -27,7 +27,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build \
     ./cmd/audicia/
 
 # ---- Runtime stage ----
-FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
+FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 
 # Upgrade and create dedicated non-root user in a single layer.
 RUN apk --no-cache upgrade && \
