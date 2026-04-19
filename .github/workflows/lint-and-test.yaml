@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
 
       - name: Lint chart
         run: helm lint deploy/helm/
@@ -91,7 +91,7 @@ jobs:
           sudo mv ./kind /usr/local/bin/kind
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
 
       - name: Run E2E tests
         working-directory: operator
