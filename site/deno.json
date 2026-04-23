@@ -17,7 +17,7 @@
     "preact": "npm:preact@^10.29.1",
     "@preact/signals": "npm:@preact/signals@^2.3.2",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.5",
-    "vite": "npm:vite@^7.3.2",
+    "vite": "npm:vite@^8.0.10",
     "@material/web": "npm:@material/web@^2.4.0",
     "github-slugger": "npm:github-slugger@^2.0",
     "he": "npm:he@^1.2.0",
