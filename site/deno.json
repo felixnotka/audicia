@@ -10,7 +10,7 @@
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
   "exclude": ["**/_fresh/*"],
   "imports": {
-    "@deno/gfm": "jsr:@deno/gfm@^0.11.0",
+    "@deno/gfm": "jsr:@deno/gfm@^0.12.0",
     "@std/front-matter": "jsr:@std/front-matter@^1.0.9",
     "@std/path": "jsr:@std/path@^1.1.2",
     "fresh": "jsr:@fresh/core@^2.1.4",
