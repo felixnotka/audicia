@@ -24,7 +24,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.11.4
+          version: v2.12.0
           args: --timeout=5m --build-tags=azure,aws,gcp
           working-directory: operator
 
