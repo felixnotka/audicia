@@ -9,7 +9,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.7.0
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.73.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.74.0
 	github.com/go-logr/logr v1.4.3
 	github.com/prometheus/client_golang v1.23.2
 	k8s.io/api v0.36.1
