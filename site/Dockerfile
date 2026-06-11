@@ -2,7 +2,7 @@
 # Stage 1: Build
 # ============================================================================
 # Build context is the repo root (docker build -f site/Dockerfile .)
-FROM denoland/deno:2.8.2@sha256:797108ae228b32cacd9050a4a168c330c98c1b439a8d9950461834874b5523ba AS build
+FROM denoland/deno:2.8.3@sha256:438618d8c0678c3154fc77ad6edad61f38cbc42803a181e7908d3e2c9e645022 AS build
 WORKDIR /app
 
 # Copy site source
@@ -18,7 +18,7 @@ RUN deno task build
 # ===========================================================================
 # Stage 2: Runtime
 # ============================================================================
-FROM denoland/deno:2.8.2@sha256:797108ae228b32cacd9050a4a168c330c98c1b439a8d9950461834874b5523ba
+FROM denoland/deno:2.8.3@sha256:438618d8c0678c3154fc77ad6edad61f38cbc42803a181e7908d3e2c9e645022
 WORKDIR /app/site
 
 # Built Fresh server bundle
