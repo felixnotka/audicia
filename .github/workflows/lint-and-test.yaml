@@ -17,14 +17,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26"
+          go-version: "1.27"
           cache: true
           cache-dependency-path: operator/go.sum
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.12.2
+          version: v2.13.0
           args: --timeout=5m --build-tags=azure,aws,gcp
           working-directory: operator
 
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26"
+          go-version: "1.27"
           cache: true
           cache-dependency-path: operator/go.sum
 
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26"
+          go-version: "1.27"
           cache: true
           cache-dependency-path: operator/go.sum
 
