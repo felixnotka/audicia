@@ -123,9 +123,7 @@
   background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
 
-.docs-expert-toggle-input:checked
-  ~ .docs-expert-toggle-track
-  .docs-expert-toggle-thumb {
+.docs-expert-toggle-input:checked ~ .docs-expert-toggle-track .docs-expert-toggle-thumb {
   transform: translateX(16px);
   background-color: var(--color-accent);
 }

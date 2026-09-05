@@ -1,8 +1,7 @@
 const posts = [
   {
     title: "Introducing Audicia: Stop Writing RBAC by Hand",
-    snippet:
-      "Why I built Audicia and how it generates least-privilege RBAC from audit logs.",
+    snippet: "Why I built Audicia and how it generates least-privilege RBAC from audit logs.",
     href: "/blog/introducing-audicia",
   },
   {
@@ -13,8 +12,7 @@ const posts = [
   },
   {
     title: "Understanding Compliance Scores: Red, Yellow, Green",
-    snippet:
-      "How Audicia scores every service account and what to do about a Red rating.",
+    snippet: "How Audicia scores every service account and what to do about a Red rating.",
     href: "/blog/understanding-compliance-scores",
   },
 ];

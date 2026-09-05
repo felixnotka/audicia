@@ -19,9 +19,7 @@ export default define.page<typeof handler>(function Blog(props) {
 
   const postsByMonth = posts.reduce((groups, post) => {
     const date = new Date(post.published_at);
-    const monthKey = `${date.getFullYear()}-${
-      String(date.getMonth() + 1).padStart(2, "0")
-    }`;
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const monthName = date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
