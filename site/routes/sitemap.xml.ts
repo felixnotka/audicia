@@ -22,9 +22,7 @@ export const handler = define.handlers({
     const docUrls: string[] = [];
     for (const section of DOCS_NAV) {
       for (const page of section.pages) {
-        const path = section.slug
-          ? `/docs/${section.slug}/${page.slug}`
-          : `/docs/${page.slug}`;
+        const path = section.slug ? `/docs/${section.slug}/${page.slug}` : `/docs/${page.slug}`;
         docUrls.push(path);
       }
     }
@@ -43,9 +41,7 @@ export const handler = define.handlers({
           (post) =>
             `  <url>
     <loc>${SITE_URL}/blog/${post.slug}</loc>
-    <lastmod>${
-              new Date(post.published_at).toISOString().split("T")[0]
-            }</lastmod>
+    <lastmod>${new Date(post.published_at).toISOString().split("T")[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`,
