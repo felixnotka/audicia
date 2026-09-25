@@ -40,11 +40,10 @@ export default function ComplianceScore() {
         </div>
 
         <p className="score-explanation">
-          Audicia resolves every RoleBinding and ClusterRoleBinding for each
-          subject, compares effective RBAC grants against observed audit log
-          usage, and scores 0–100. Sensitive excess – unused access to secrets,
-          nodes, webhookconfigurations, CRDs, and tokenreviews – is flagged
-          separately.
+          Audicia resolves every RoleBinding and ClusterRoleBinding for each subject, compares
+          effective RBAC grants against observed audit log usage, and scores 0–100. Sensitive excess
+          – unused access to secrets, nodes, webhookconfigurations, CRDs, and tokenreviews – is
+          flagged separately.
         </p>
 
         <div className="score-output">

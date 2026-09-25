@@ -121,8 +121,8 @@ body:has(.page-content-grid) .page-content.fade-hidden::after {
 .home {
   min-height: calc(
     100dvh - var(--header-h) - var(--footer-h) - var(--header-margin-v)
-      - var(--footer-margin-v)
-      - var(--page-margin-v)
+    - var(--footer-margin-v)
+    - var(--page-margin-v)
   );
 }
 

@@ -64,8 +64,7 @@ const faqStructuredData = {
 };
 
 export default define.page(function Home({ state }) {
-  state.title =
-    "Audicia – Kubernetes RBAC Generator | Least-Privilege Policies from Audit Logs";
+  state.title = "Audicia – Kubernetes RBAC Generator | Least-Privilege Policies from Audit Logs";
   state.description =
     "Open-source Kubernetes Operator that generates least-privilege RBAC policies from audit logs. Compliance scoring, CRD-native output, never auto-applies. Apache 2.0.";
 

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Kept in step with the version site/Dockerfile builds against, so a
       # formatting or typing rule that differs between Deno releases fails
@@ -20,7 +20,7 @@ jobs:
       - name: Set up Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: "2.7.3"
+          deno-version: "2.9.6"
 
       - name: Check Site
         working-directory: site

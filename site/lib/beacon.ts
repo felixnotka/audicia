@@ -23,7 +23,7 @@
 //      is what a site owner recognises; /termine/6 is not. Public page content,
 //      nothing personal.
 export function beaconScript(route: string): string {
-  const encoded = JSON.stringify(route).replace(/</g, "\\u003c");
+  const encoded = JSON.stringify(route).replaceAll("<", String.raw`\u003c`);
 
   return `(function(){
 var R=${encoded},sent={};
