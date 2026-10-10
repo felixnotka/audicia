@@ -6,8 +6,8 @@ export default function QuickStart() {
           Three Commands to Least Privilege
         </h2>
         <p className="section-subheadline">
-          Audicia installs via Helm and works with file, webhook, or cloud audit
-          log sources out of the box.
+          Audicia installs via Helm and works with file, webhook, or cloud audit log sources out of
+          the box.
         </p>
 
         <div className="quickstart-terminal">

@@ -47,9 +47,7 @@ export default function DocsSidebar({ currentPath }: Readonly<Props>) {
         </label>
         {DOCS_NAV.map((section: NavSection) => (
           <div
-            className={`docs-sidebar-section${
-              section.expert ? " docs-expert-section" : ""
-            }`}
+            className={`docs-sidebar-section${section.expert ? " docs-expert-section" : ""}`}
             key={section.slug || "_root"}
           >
             {section.section && (
@@ -67,9 +65,7 @@ export default function DocsSidebar({ currentPath }: Readonly<Props>) {
                   <li key={page.slug}>
                     <a
                       href={href}
-                      className={`docs-sidebar-link${
-                        isActive ? " active" : ""
-                      }`}
+                      className={`docs-sidebar-link${isActive ? " active" : ""}`}
                       aria-current={isActive ? "page" : undefined}
                     >
                       {page.title}
