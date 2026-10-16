@@ -14,6 +14,22 @@
 
   "packageRules": [
     {
+      "description": "Pinned by @deno/gfm, not by us. site/deno.json only lists these so that gfm's own imports resolve; gfm declares the ranges it needs and the build fails to resolve the import when ours no longer overlaps. Raise these together with the @deno/gfm version that asks for them.",
+      "matchFileNames": ["site/deno.json"],
+      "matchPackageNames": [
+        "katex",
+        "marked",
+        "marked-alert",
+        "marked-footnote",
+        "marked-gfm-heading-id",
+        "prismjs",
+        "sanitize-html",
+        "github-slugger",
+        "he"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Group Go module updates",
       "matchManagers": ["gomod"],
       "matchUpdateTypes": ["minor", "patch", "digest"],

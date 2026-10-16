@@ -143,9 +143,7 @@ export function getFlatPages(): FlatPage[] {
   const pages: FlatPage[] = [];
   for (const section of DOCS_NAV) {
     for (const page of section.pages) {
-      const path = section.slug
-        ? `/docs/${section.slug}/${page.slug}`
-        : `/docs/${page.slug}`;
+      const path = section.slug ? `/docs/${section.slug}/${page.slug}` : `/docs/${page.slug}`;
       pages.push({
         slug: page.slug,
         category: section.slug,
@@ -273,9 +271,7 @@ async function buildSearchEntryForPage(
     return null;
   }
 
-  const urlPath = section.slug
-    ? `/docs/${section.slug}/${page.slug}`
-    : `/docs/${page.slug}`;
+  const urlPath = section.slug ? `/docs/${section.slug}/${page.slug}` : `/docs/${page.slug}`;
 
   // Extract title
   const titleMatch = /^#\s+([^\n]+)$/m.exec(text);

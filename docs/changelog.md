@@ -7,6 +7,54 @@ Major.Minor, and CI auto-increments the patch on each release to `main`.
 
 ---
 
+## 0.5.3
+
+The operator itself carries no functional change in this release. It is a
+dependency and tooling release: 124 dependency updates that had accumulated on
+`develop` since 0.5.2, plus the documentation and site work done alongside them.
+
+### Changed
+
+- **Kubernetes client libraries to 0.36.4** – `k8s.io/api`, `apimachinery`,
+  `apiserver` and `client-go` move from 0.35.2. `kubeVersion` is unchanged at
+  `>=1.32.0-0`; the client libraries support a wider range than the chart
+  declares.
+- **Cloud SDKs and runtime images** – AWS, Azure and GCP ingestor SDKs,
+  `prometheus/client_golang` and `go-logr` updated; the operator image builds on
+  `golang:1.27-alpine` and the site image on `denoland/deno:2.9.5`.
+- **Site rendering stack** – `@deno/gfm` 0.12, `marked` 18, KaTeX 0.18 and
+  `sanitize-html` 2.17.7. Rendered output was compared page by page across blog
+  and docs: heading anchors, code blocks and inline code are unchanged.
+
+### Added
+
+- **Page-view beacon on audicia.io** – the site reports a page view to the
+  platform gateway, which answers it and records it in the ingress access log.
+  It reports the route pattern rather than the resolved path, so a blog is one
+  line in a report rather than one per article, and it stores nothing on the
+  device: no cookie, no identifier, and therefore no visitor tracked across
+  sites.
+- **A check for the site in CI** – nothing ran `deno task check`, so `site/`
+  could accumulate formatting, lint and type errors indefinitely. It had.
+
+### Fixed
+
+- **OpenShift audit log path in the SELinux examples** – the documented path was
+  the Linux auditd log rather than the API server audit log at
+  `/var/log/kube-apiserver/audit.log`.
+- **Chart.yaml declared 0.1.0 / appVersion 0.4.0** – the release pipeline
+  overrides both when it packages, so no published chart was ever wrong, but a
+  local `helm template` or `helm lint` rendered a version that had not been true
+  for several releases.
+- **Type and lint errors across `site/`** – a `types` entry in `deno.json`
+  pointed at a file that has never existed in the repository, which aborted type
+  checking before it reached any source and hid five real errors underneath it.
+- **Change detection judged a push by its last commit alone** – anything changed
+  in an earlier commit of the same push was invisible to it, so an operator
+  change that was not the final commit would skip the tests and the release.
+
+---
+
 ## 0.5.2
 
 ### Added

@@ -192,7 +192,8 @@
   --container-w: min(90%, var(--max-width-xl));
 }
 
-html, body {
+html,
+body {
   font-family:
     "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -205,7 +206,9 @@ html, body {
   scrollbar-gutter: stable both-edges;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
