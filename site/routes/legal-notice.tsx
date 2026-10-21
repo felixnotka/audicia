@@ -44,9 +44,8 @@ export default define.page(function LegalNotice() {
           <section aria-labelledby="notes">
             <h2 id="notes">Notes</h2>
             <p>
-              This website is a private project providing information about the
-              open-source Audicia project. A fast electronic contact is ensured
-              via the email address above.
+              This website is a private project providing information about the open-source Audicia
+              project. A fast electronic contact is ensured via the email address above.
             </p>
           </section>
 

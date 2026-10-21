@@ -7,10 +7,9 @@ export default function OpenSource() {
         </h2>
 
         <p className="opensource-body">
-          Everything ships free. The full operator, file and webhook ingestion,
-          compliance scoring, the complete Helm chart. There is no paid tier, no
-          enterprise edition, no feature gating. I believe security tools should
-          be transparent and auditable.
+          Everything ships free. The full operator, file and webhook ingestion, compliance scoring,
+          the complete Helm chart. There is no paid tier, no enterprise edition, no feature gating.
+          I believe security tools should be transparent and auditable.
         </p>
 
         <div className="opensource-ctas">
